@@ -19,7 +19,7 @@ roughness = 0.8
 vertices = PackedVector3Array(-25, 0.5, -25, 25, 0.5, -25, 25, 0.5, 25, -25, 0.5, 25)
 polygons = [PackedInt32Array(0, 1, 2, 3)]
 
-[node name="Arena01" type="Node3D"]
+[node name="Arena01" type="Node3D" groups=["arena"]]
 script = ExtResource("4")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]

@@ -270,17 +270,23 @@ func use_ranged_attack():
 	ability_timer = ranged_cooldown
 	ability_used.emit(self, "ranged_attack")
 
-	# Create projectile
+	# Network replicate projectile spawning
+	if multiplayer.is_server():
+		_spawn_projectile.rpc(global_position, target.global_position if target else global_position + global_transform.basis.z * 10, ranged_damage)
+
+@rpc("authority", "call_local", "reliable")
+func _spawn_projectile(spawn_pos: Vector3, target_pos: Vector3, damage: float):
+	"""Network replicated projectile spawning"""
 	var projectile = create_acid_projectile()
-	if projectile and target:
+	if projectile:
 		get_parent().add_child(projectile)
-		projectile.global_position = global_position + Vector3(0, 1.0, 0)
-		projectile.launch_toward(target.global_position, ranged_damage)
+		projectile.global_position = spawn_pos + Vector3(0, 1.0, 0)
+		projectile.launch_toward(target_pos, damage)
 
 func create_acid_projectile() -> Node3D:
-	# Create simple projectile
-	var projectile = Node3D.new()
-	# Would set up actual projectile here
+	"""Create acid projectile for ranged attack"""
+	var projectile_scene = preload("res://scenes/projectiles/acid_projectile.tscn")
+	var projectile = projectile_scene.instantiate()
 	return projectile
 
 func start_buff_loop():
@@ -412,14 +418,46 @@ func reward_nearby_players():
 			player.add_points(points_reward)
 
 func drop_loot():
+	"""Drop loot items when zombie dies"""
 	if not zombie_class_data:
 		return
 
 	var drop_chance = 0.3 * zombie_class_data.loot_multiplier
 
 	if zombie_class_data.guaranteed_drop or randf() < drop_chance:
-		# Spawn loot
-		pass
+		# Determine what to drop
+		var drop_type = randf()
+
+		if drop_type < 0.5:
+			# Drop ammo
+			_spawn_ammo_drop()
+		elif drop_type < 0.8:
+			# Drop health
+			_spawn_health_drop()
+		else:
+			# Drop special item
+			_spawn_special_drop()
+
+func _spawn_ammo_drop():
+	"""Spawn ammo pickup"""
+	if has_node("/root/GameManager"):
+		var arena = get_tree().get_first_node_in_group("arena")
+		if arena and arena.has_method("spawn_ammo_pickup"):
+			arena.spawn_ammo_pickup(global_position)
+
+func _spawn_health_drop():
+	"""Spawn health pickup"""
+	if has_node("/root/GameManager"):
+		var arena = get_tree().get_first_node_in_group("arena")
+		if arena and arena.has_method("spawn_health_pickup"):
+			arena.spawn_health_pickup(global_position)
+
+func _spawn_special_drop():
+	"""Spawn special loot item"""
+	var loot_scene = preload("res://scenes/items/loot_item.tscn")
+	var loot = loot_scene.instantiate()
+	get_parent().add_child(loot)
+	loot.global_position = global_position + Vector3(0, 0.5, 0)
 
 func get_armor() -> float:
 	return armor
