@@ -251,7 +251,7 @@ func load_default_zombie_classes():
 
 	# Shambler
 	var shambler = ZombieClassData.new()
-	shambler.class_name = "Shambler"
+	shambler.display_name = "Shambler"
 	shambler.zombie_class = ZombieClassData.ZombieClass.SHAMBLER
 	shambler.base_health = 100.0
 	shambler.base_move_speed = 2.5
@@ -262,7 +262,7 @@ func load_default_zombie_classes():
 
 	# Runner
 	var runner = ZombieClassData.new()
-	runner.class_name = "Runner"
+	runner.display_name = "Runner"
 	runner.zombie_class = ZombieClassData.ZombieClass.RUNNER
 	runner.base_health = 60.0
 	runner.base_move_speed = 6.0
@@ -274,7 +274,7 @@ func load_default_zombie_classes():
 
 	# Tank
 	var tank = ZombieClassData.new()
-	tank.class_name = "Tank"
+	tank.display_name = "Tank"
 	tank.zombie_class = ZombieClassData.ZombieClass.TANK
 	tank.base_health = 300.0
 	tank.base_move_speed = 1.5
@@ -288,7 +288,7 @@ func load_default_zombie_classes():
 
 	# Poison
 	var poison = ZombieClassData.new()
-	poison.class_name = "Poison Zombie"
+	poison.display_name = "Poison Zombie"
 	poison.zombie_class = ZombieClassData.ZombieClass.POISON
 	poison.base_health = 80.0
 	poison.base_move_speed = 3.0
@@ -304,7 +304,7 @@ func load_default_zombie_classes():
 
 	# Exploder
 	var exploder = ZombieClassData.new()
-	exploder.class_name = "Exploder"
+	exploder.display_name = "Exploder"
 	exploder.zombie_class = ZombieClassData.ZombieClass.EXPLODER
 	exploder.base_health = 50.0
 	exploder.base_move_speed = 4.0
@@ -321,7 +321,7 @@ func load_default_zombie_classes():
 
 	# Behemoth Boss
 	var behemoth = ZombieClassData.new()
-	behemoth.class_name = "Behemoth"
+	behemoth.display_name = "Behemoth"
 	behemoth.zombie_class = ZombieClassData.ZombieClass.BOSS_BEHEMOTH
 	behemoth.base_health = 1000.0
 	behemoth.base_move_speed = 2.0
