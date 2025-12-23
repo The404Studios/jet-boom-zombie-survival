@@ -109,12 +109,20 @@ func cancel_nailing():
 	set_process(false)
 
 func play_nail_sound():
-	# Play hammer sound effect
-	# var sound = AudioStreamPlayer3D.new()
-	# sound.stream = preload("res://sounds/hammer.ogg")
-	# add_child(sound)
-	# sound.play()
-	pass
+	# Play hammer sound effect through AudioManager autoload
+	if current_barricade and has_node("/root/AudioManager"):
+		var audio_manager = get_node("/root/AudioManager")
+		if audio_manager.has_method("play_sound_3d"):
+			audio_manager.play_sound_3d("hammer", current_barricade.global_position)
+		elif audio_manager.has_method("play_sfx"):
+			audio_manager.play_sfx("hammer")
+
+	# Visual feedback - spawn particle effect
+	if current_barricade and has_node("/root/VFXManager"):
+		var vfx_manager = get_node("/root/VFXManager")
+		if vfx_manager.has_method("spawn_impact"):
+			var hit_pos = current_barricade.global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.5, 1.5), randf_range(-0.3, 0.3))
+			vfx_manager.spawn_impact(hit_pos, Vector3.UP, "wood")
 
 func get_nail_progress() -> float:
 	if nails_required <= 0:

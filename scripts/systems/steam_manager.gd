@@ -9,6 +9,11 @@ signal lobby_joined(lobby_id: int)
 signal lobby_join_failed(reason: String)
 signal friend_invite_sent(friend_id: int)
 signal lobby_list_received(lobbies: Array)
+signal lobby_member_joined(member_id: int, member_name: String)
+signal lobby_member_left(member_id: int)
+signal lobby_data_changed(key: String, value: String)
+signal lobby_invite_received(inviter_id: int, inviter_name: String, lobby_id: int)
+signal friend_status_changed(friend_id: int, is_online: bool)
 
 var steam_app_id: int = 480  # Replace with your Steam App ID
 var steam_id: int = 0
@@ -286,22 +291,113 @@ func _on_lobby_match_list(lobbies: Array):
 	lobby_list_received.emit(lobby_list)
 	print("Received %d lobbies" % lobby_list.size())
 
-func _on_lobby_chat_update(_lobby_id: int, _changed_id: int, _making_change_id: int, _chat_state: int):
+func _on_lobby_chat_update(lobby_id: int, changed_id: int, making_change_id: int, chat_state: int):
+	# Chat state values:
+	# 0x0001 = Entered
+	# 0x0002 = Left
+	# 0x0004 = Disconnected
+	# 0x0008 = Kicked
+	# 0x0010 = Banned
+
+	var steam = Engine.get_singleton("Steam")
+	var member_name = steam.getFriendPersonaName(changed_id)
+
+	match chat_state:
+		0x0001:  # Entered
+			print("Player joined: %s" % member_name)
+			lobby_member_joined.emit(changed_id, member_name)
+
+			# Play join sound
+			if has_node("/root/AudioManager"):
+				get_node("/root/AudioManager").play_sfx("player_join")
+
+		0x0002, 0x0004:  # Left or Disconnected
+			print("Player left: %s" % member_name)
+			lobby_member_left.emit(changed_id)
+
+			# Play leave sound
+			if has_node("/root/AudioManager"):
+				get_node("/root/AudioManager").play_sfx("player_leave")
+
+		0x0008:  # Kicked
+			print("Player kicked: %s" % member_name)
+			lobby_member_left.emit(changed_id)
+
+		0x0010:  # Banned
+			print("Player banned: %s" % member_name)
+			lobby_member_left.emit(changed_id)
+
 	# Update lobby member list
 	update_lobby_members()
 
-func _on_lobby_data_update(_success: int, _lobby_id: int, _member_id: int, _key: int):
-	# Lobby data updated
-	pass
+func _on_lobby_data_update(success: int, lobby_id: int, member_id: int, key: int):
+	if success != 1 or lobby_id != current_lobby_id:
+		return
 
-func _on_lobby_invite(_inviter: int, lobby_id: int, _game_id: int):
-	# Received lobby invite
-	print("Received lobby invite: ", lobby_id)
-	# Could auto-show join prompt here
+	var steam = Engine.get_singleton("Steam")
 
-func _on_persona_state_change(_steam_id: int, _flags: int):
-	# Friend status changed
-	pass
+	# Fetch commonly used lobby data and emit signal
+	var game_mode = steam.getLobbyData(lobby_id, "game_mode")
+	var wave = steam.getLobbyData(lobby_id, "wave")
+	var map = steam.getLobbyData(lobby_id, "map")
+	var started = steam.getLobbyData(lobby_id, "started")
+
+	# Emit for UI updates
+	lobby_data_changed.emit("game_mode", game_mode)
+	lobby_data_changed.emit("wave", wave)
+	lobby_data_changed.emit("map", map)
+	lobby_data_changed.emit("started", started)
+
+	print("Lobby data updated - Wave: %s, Map: %s" % [wave, map])
+
+func _on_lobby_invite(inviter: int, lobby_id: int, _game_id: int):
+	var steam = Engine.get_singleton("Steam")
+	var inviter_name = steam.getFriendPersonaName(inviter)
+
+	print("Received lobby invite from %s (Lobby: %d)" % [inviter_name, lobby_id])
+
+	# Emit signal for UI to show invite popup
+	lobby_invite_received.emit(inviter, inviter_name, lobby_id)
+
+	# Play invite sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sfx("invite_received")
+
+func _on_persona_state_change(friend_steam_id: int, flags: int):
+	# Flag values:
+	# 0x0001 = Name changed
+	# 0x0002 = Status changed
+	# 0x0004 = Come online
+	# 0x0008 = Gone offline
+	# 0x0010 = Game played changed
+	# 0x0020 = Game server changed
+	# 0x0040 = Avatar changed
+	# 0x0080 = Joined source
+	# 0x0100 = Left source
+	# 0x0200 = Relationship changed
+	# 0x0400 = Name first set
+	# 0x0800 = Facebook info
+	# 0x1000 = Nickname changed
+	# 0x2000 = Steam level changed
+
+	var steam = Engine.get_singleton("Steam")
+	var friend_name = steam.getFriendPersonaName(friend_steam_id)
+	var friend_state = steam.getFriendPersonaState(friend_steam_id)
+	var is_online = friend_state != 0
+
+	# Status changed
+	if flags & 0x0002 or flags & 0x0004 or flags & 0x0008:
+		friend_status_changed.emit(friend_steam_id, is_online)
+
+		if flags & 0x0004:
+			print("Friend came online: %s" % friend_name)
+		elif flags & 0x0008:
+			print("Friend went offline: %s" % friend_name)
+
+	# Check if friend started playing our game
+	if flags & 0x0010:
+		if is_friend_in_game(friend_steam_id):
+			print("Friend started playing: %s" % friend_name)
 
 func update_lobby_members():
 	if current_lobby_id == 0 or not is_steam_running:

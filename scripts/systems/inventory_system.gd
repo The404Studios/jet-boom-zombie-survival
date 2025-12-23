@@ -13,7 +13,21 @@ var max_inventory_slots: int = 20
 var max_weight: float = 100.0
 
 func _ready():
-	pass
+	# Initialize inventory with empty state
+	inventory = []
+	stash = []
+	equipped_weapon = {}
+	equipped_armor = {}
+
+	# Connect to game manager if available for persistence
+	if has_node("/root/GameManager"):
+		var game_manager = get_node("/root/GameManager")
+		if game_manager.has_signal("game_started"):
+			game_manager.game_started.connect(_on_game_started)
+
+func _on_game_started():
+	# Reset inventory state for new game
+	clear_inventory()
 
 func add_item(item: ItemData, quantity: int = 1) -> bool:
 	# Check if item can stack

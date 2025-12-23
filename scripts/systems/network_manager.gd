@@ -224,9 +224,88 @@ func damage_zombie(zombie_path: NodePath, damage: float, is_headshot: bool):
 		zombie.take_damage(damage, Vector3.ZERO)
 
 @rpc("any_peer", "call_local")
-func player_shoot(player_id: int, origin: Vector3, direction: Vector3):
+func player_shoot(player_id: int, origin: Vector3, direction: Vector3, weapon_type: String = "rifle"):
 	# Handle player shooting on all clients for visual effects
-	pass
+
+	# Get VFX manager for muzzle flash and tracer
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	if vfx_manager:
+		# Spawn muzzle flash at origin
+		if vfx_manager.has_method("spawn_muzzle_flash"):
+			vfx_manager.spawn_muzzle_flash(origin, direction, weapon_type)
+
+		# Spawn bullet tracer
+		if vfx_manager.has_method("spawn_tracer"):
+			var end_point = origin + direction * 100.0
+			vfx_manager.spawn_tracer(origin, end_point)
+
+	# Get Audio manager for gunshot sound
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager:
+		if audio_manager.has_method("play_sound_3d"):
+			audio_manager.play_sound_3d(weapon_type + "_shot", origin)
+		elif audio_manager.has_method("play_sfx_3d"):
+			audio_manager.play_sfx_3d("gunshot", origin)
+
+@rpc("any_peer", "call_local")
+func player_hit_effect(hit_position: Vector3, hit_normal: Vector3, surface_type: String = "default"):
+	# Spawn hit effects on all clients
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	if vfx_manager and vfx_manager.has_method("spawn_impact"):
+		vfx_manager.spawn_impact(hit_position, hit_normal, surface_type)
+
+	# Blood effect for zombie hits
+	if surface_type == "flesh":
+		var gore_system = get_node_or_null("/root/GoreSystem")
+		if gore_system and gore_system.has_method("spawn_blood_splatter"):
+			gore_system.spawn_blood_splatter(hit_position, hit_normal)
+
+@rpc("any_peer", "call_local")
+func player_reload(player_id: int, weapon_type: String):
+	# Play reload sound for all players
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager:
+		# Get player position
+		if player_nodes.has(player_id):
+			var player = player_nodes[player_id]
+			if audio_manager.has_method("play_sound_3d"):
+				audio_manager.play_sound_3d(weapon_type + "_reload", player.global_position)
+
+@rpc("authority", "call_local")
+func sync_player_health(player_id: int, health: float, max_health: float):
+	# Sync player health across all clients
+	if player_nodes.has(player_id):
+		var player = player_nodes[player_id]
+		if player.has_method("set_health"):
+			player.set_health(health, max_health)
+		elif "current_health" in player:
+			player.current_health = health
+			player.max_health = max_health
+
+@rpc("authority", "call_local")
+func player_died(player_id: int, killer_id: int = -1):
+	# Handle player death across all clients
+	if player_nodes.has(player_id):
+		var player = player_nodes[player_id]
+		if player.has_method("die"):
+			player.die()
+
+		# Spawn death effects
+		var gore_system = get_node_or_null("/root/GoreSystem")
+		if gore_system and gore_system.has_method("spawn_death_effect"):
+			gore_system.spawn_death_effect(player.global_position)
+
+@rpc("any_peer", "reliable")
+func player_use_item(player_id: int, item_name: String, target_position: Vector3):
+	# Handle item usage across network
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and audio_manager.has_method("play_sound_3d"):
+		audio_manager.play_sound_3d("item_use", target_position)
+
+	# VFX for item use
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	if vfx_manager and vfx_manager.has_method("spawn_item_effect"):
+		vfx_manager.spawn_item_effect(item_name, target_position)
 
 # ============================================
 # CALLBACKS
