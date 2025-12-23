@@ -189,7 +189,7 @@ func _complete_wave():
 
 	print("Wave %d completed!" % current_wave)
 
-func _on_zombie_died(zombie: Node, points: int, experience: int):
+func _on_zombie_died(zombie: Node, points: int, _experience: int):
 	zombies_alive -= 1
 
 	# Award points
