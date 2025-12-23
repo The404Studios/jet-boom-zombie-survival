@@ -1,0 +1,201 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/voice_options_ui.gd" id="1"]
+
+[node name="VoiceOptionsUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -350.0
+offset_right = 300.0
+offset_bottom = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Title" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Voice Chat Options"
+horizontal_alignment = 1
+
+[node name="VoiceEnabled" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/VoiceEnabled"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Voice Chat Enabled"
+
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBoxContainer/VoiceEnabled"]
+layout_mode = 2
+button_pressed = true
+
+[node name="PushToTalk" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/PushToTalk"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Push to Talk (V)"
+
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBoxContainer/PushToTalk"]
+layout_mode = 2
+button_pressed = true
+
+[node name="ProximityVoice" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/ProximityVoice"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Proximity Voice"
+
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBoxContainer/ProximityVoice"]
+layout_mode = 2
+button_pressed = true
+
+[node name="GlobalVoice" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/GlobalVoice"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Global Voice"
+
+[node name="CheckButton" type="CheckButton" parent="Panel/MarginContainer/VBoxContainer/GlobalVoice"]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MasterVolume" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MasterVolume"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/MasterVolume/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Master Volume"
+
+[node name="ValueLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MasterVolume/HBoxContainer"]
+layout_mode = 2
+text = "100%"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/MasterVolume"]
+layout_mode = 2
+min_value = 0.0
+max_value = 2.0
+step = 0.01
+value = 1.0
+
+[node name="VoiceVolume" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/VoiceVolume"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/VoiceVolume/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Voice Volume"
+
+[node name="ValueLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/VoiceVolume/HBoxContainer"]
+layout_mode = 2
+text = "100%"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/VoiceVolume"]
+layout_mode = 2
+max_value = 2.0
+step = 0.01
+value = 1.0
+
+[node name="MicGain" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer/MicGain"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/MicGain/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Microphone Gain"
+
+[node name="ValueLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/MicGain/HBoxContainer"]
+layout_mode = 2
+text = "100%"
+
+[node name="HSlider" type="HSlider" parent="Panel/MarginContainer/VBoxContainer/MicGain"]
+layout_mode = 2
+max_value = 2.0
+step = 0.01
+value = 1.0
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TestMicrophone" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="Panel/MarginContainer/VBoxContainer/TestMicrophone"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Test Microphone"
+
+[node name="VoiceIndicator" type="VBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/MarginContainer/VBoxContainer/VoiceIndicator"]
+layout_mode = 2
+text = "Voice Activity"
+
+[node name="ProgressBar" type="ProgressBar" parent="Panel/MarginContainer/VBoxContainer/VoiceIndicator"]
+layout_mode = 2
+max_value = 1.0
+step = 0.01
+show_percentage = false
+
+[node name="Spacer" type="Control" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+
+[node name="ApplyButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/Buttons"]
+layout_mode = 2
+text = "Apply"
+
+[node name="CloseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer/Buttons"]
+layout_mode = 2
+text = "Close"
