@@ -1,0 +1,25 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Combat Shotgun"
+item_type = 0
+rarity = 2
+description = "Pump-action shotgun with devastating close-range damage. 8 pellets per shot."
+stack_size = 1
+weight = 5.0
+value = 1800
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 15.0
+fire_rate = 0.8
+magazine_size = 8
+reload_time = 3.5
+weapon_range = 30.0
+projectile_count = 8
+spread_angle = 8.0
+strength_bonus = 2
+socket_count = 2
+model_scale = 1.0

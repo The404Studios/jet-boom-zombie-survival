@@ -1,0 +1,224 @@
+extends Node
+class_name PlayerPersistence
+
+const SAVE_FILE_PATH = "user://player_data.save"
+const STASH_FILE_PATH = "user://stash_data.save"
+
+signal data_loaded
+signal data_saved
+
+# Player data structure
+var player_data = {
+	"character": {
+		"level": 1,
+		"experience": 0,
+		"stat_points": 0,
+		"strength": 10.0,
+		"dexterity": 10.0,
+		"intelligence": 10.0,
+		"agility": 10.0,
+		"vitality": 10.0
+	},
+	"currency": {
+		"coins": 0,
+		"tokens": 0,
+		"scrap": 0
+	},
+	"stash": [],
+	"equipped": {
+		"helmet": null,
+		"chest": null,
+		"gloves": null,
+		"boots": null,
+		"ring_1": null,
+		"ring_2": null,
+		"amulet": null,
+		"primary": null,
+		"secondary": null
+	},
+	"unlocks": {
+		"weapons": [],
+		"perks": [],
+		"zones": []
+	},
+	"stats": {
+		"zombies_killed": 0,
+		"waves_survived": 0,
+		"items_looted": 0,
+		"extractions": 0,
+		"deaths": 0
+	},
+	"settings": {
+		"mouse_sensitivity": 0.003,
+		"master_volume": 1.0,
+		"psx_effects": true
+	}
+}
+
+func save_player_data(character_stats: CharacterStats = null, equipment: EquipmentSystem = null, inventory: InventorySystem = null):
+	# Update character stats
+	if character_stats:
+		player_data.character.level = character_stats.level
+		player_data.character.experience = character_stats.experience
+		player_data.character.stat_points = character_stats.stat_points
+		player_data.character.strength = character_stats.strength
+		player_data.character.dexterity = character_stats.dexterity
+		player_data.character.intelligence = character_stats.intelligence
+		player_data.character.agility = character_stats.agility
+		player_data.character.vitality = character_stats.vitality
+
+	# Save equipped items
+	if equipment:
+		player_data.equipped = serialize_equipment(equipment)
+
+	# Save stash
+	if inventory:
+		player_data.stash = serialize_inventory(inventory.stash)
+
+	# Write to file
+	var file = FileAccess.open(SAVE_FILE_PATH, FileAccess.WRITE)
+	if file:
+		file.store_var(player_data)
+		file.close()
+		data_saved.emit()
+		print("Player data saved successfully")
+		return true
+	else:
+		print("Failed to save player data")
+		return false
+
+func load_player_data() -> bool:
+	if not FileAccess.file_exists(SAVE_FILE_PATH):
+		print("No save file found, using defaults")
+		return false
+
+	var file = FileAccess.open(SAVE_FILE_PATH, FileAccess.READ)
+	if file:
+		player_data = file.get_var()
+		file.close()
+		data_loaded.emit()
+		print("Player data loaded successfully")
+		return true
+	else:
+		print("Failed to load player data")
+		return false
+
+func apply_to_character_stats(character_stats: CharacterStats):
+	if not character_stats:
+		return
+
+	character_stats.level = player_data.character.level
+	character_stats.experience = player_data.character.experience
+	character_stats.stat_points = player_data.character.stat_points
+	character_stats.strength = player_data.character.strength
+	character_stats.dexterity = player_data.character.dexterity
+	character_stats.intelligence = player_data.character.intelligence
+	character_stats.agility = player_data.character.agility
+	character_stats.vitality = player_data.character.vitality
+	character_stats.calculate_derived_stats()
+
+func apply_to_equipment(equipment: EquipmentSystem):
+	if not equipment:
+		return
+	# Would need to deserialize and equip items
+
+func serialize_equipment(equipment: EquipmentSystem) -> Dictionary:
+	return {
+		"helmet": serialize_item(equipment.helmet),
+		"chest": serialize_item(equipment.chest_armor),
+		"gloves": serialize_item(equipment.gloves),
+		"boots": serialize_item(equipment.boots),
+		"ring_1": serialize_item(equipment.ring_1),
+		"ring_2": serialize_item(equipment.ring_2),
+		"amulet": serialize_item(equipment.amulet),
+		"primary": serialize_item(equipment.primary_weapon),
+		"secondary": serialize_item(equipment.secondary_weapon)
+	}
+
+func serialize_inventory(inventory: Array) -> Array:
+	var serialized = []
+	for item_data in inventory:
+		serialized.append({
+			"item": serialize_item(item_data.item),
+			"quantity": item_data.quantity
+		})
+	return serialized
+
+func serialize_item(item: ItemDataExtended) -> Dictionary:
+	if not item:
+		return {}
+
+	return {
+		"name": item.item_name,
+		"type": item.item_type,
+		"rarity": item.rarity,
+		# Would save all item properties
+	}
+
+func add_currency(type: String, amount: int):
+	if player_data.currency.has(type):
+		player_data.currency[type] += amount
+
+func spend_currency(type: String, amount: int) -> bool:
+	if player_data.currency.has(type) and player_data.currency[type] >= amount:
+		player_data.currency[type] -= amount
+		return true
+	return false
+
+func get_currency(type: String) -> int:
+	if player_data.currency.has(type):
+		return player_data.currency[type]
+	return 0
+
+func add_stat(stat_name: String, value: int):
+	if player_data.stats.has(stat_name):
+		player_data.stats[stat_name] += value
+
+func unlock_weapon(weapon_id: String):
+	if not player_data.unlocks.weapons.has(weapon_id):
+		player_data.unlocks.weapons.append(weapon_id)
+
+func is_weapon_unlocked(weapon_id: String) -> bool:
+	return player_data.unlocks.weapons.has(weapon_id)
+
+func get_stats_summary() -> Dictionary:
+	return player_data.stats.duplicate()
+
+func reset_player_data():
+	player_data = {
+		"character": {
+			"level": 1,
+			"experience": 0,
+			"stat_points": 0,
+			"strength": 10.0,
+			"dexterity": 10.0,
+			"intelligence": 10.0,
+			"agility": 10.0,
+			"vitality": 10.0
+		},
+		"currency": {
+			"coins": 1000,  # Starting currency
+			"tokens": 0,
+			"scrap": 100
+		},
+		"stash": [],
+		"equipped": {},
+		"unlocks": {
+			"weapons": [],
+			"perks": [],
+			"zones": []
+		},
+		"stats": {
+			"zombies_killed": 0,
+			"waves_survived": 0,
+			"items_looted": 0,
+			"extractions": 0,
+			"deaths": 0
+		},
+		"settings": {
+			"mouse_sensitivity": 0.003,
+			"master_volume": 1.0,
+			"psx_effects": true
+		}
+	}
+	save_player_data()

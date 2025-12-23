@@ -1,0 +1,144 @@
+[gd_scene format=3]
+
+[node name="HUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopLeft" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 300.0
+offset_bottom = 200.0
+theme_override_constants/separation = 5
+
+[node name="WaveLabel" type="Label" parent="TopLeft"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Wave: 1"
+
+[node name="ZombiesLabel" type="Label" parent="TopLeft"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Zombies: 0/20"
+
+[node name="PointsLabel" type="Label" parent="TopLeft"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Points: 500"
+
+[node name="TopRight" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -300.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 200.0
+theme_override_constants/separation = 5
+
+[node name="HealthBar" type="ProgressBar" parent="TopRight"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HealthLabel" type="Label" parent="TopRight"]
+layout_mode = 2
+text = "Health: 100/100"
+horizontal_alignment = 2
+
+[node name="StaminaBar" type="ProgressBar" parent="TopRight"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="StaminaLabel" type="Label" parent="TopRight"]
+layout_mode = 2
+text = "Stamina: 100/100"
+horizontal_alignment = 2
+
+[node name="BottomCenter" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -120.0
+offset_right = 150.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 5
+
+[node name="WeaponLabel" type="Label" parent="BottomCenter"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Pistol"
+horizontal_alignment = 1
+
+[node name="AmmoLabel" type="Label" parent="BottomCenter"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "15 / 45"
+horizontal_alignment = 1
+
+[node name="BottomRight" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -250.0
+offset_top = -150.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_constants/separation = 10
+
+[node name="InteractLabel" type="Label" parent="BottomRight"]
+layout_mode = 2
+text = "[E] Interact"
+horizontal_alignment = 2
+
+[node name="ExtractionLabel" type="Label" parent="BottomRight"]
+visible = false
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "[X] EXTRACT"
+horizontal_alignment = 2
+
+[node name="Crosshair" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -2.0
+offset_top = -2.0
+offset_right = 2.0
+offset_bottom = 2.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ColorRect" type="ColorRect" parent="Crosshair"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 0.8)

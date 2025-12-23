@@ -1,0 +1,40 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Abomination"
+zombie_class = 11
+description = "Ultimate boss with all abilities. Massive health pool, regeneration, and devastating attacks."
+base_health = 1500.0
+base_move_speed = 3.0
+base_damage = 60.0
+base_armor = 40.0
+attack_range = 4.0
+attack_speed = 2.0
+health_per_wave = 250.0
+damage_per_wave = 12.0
+armor_per_wave = 5.0
+points_reward = 2500
+experience_reward = 1250
+can_break_barricades = true
+barricade_damage = 75.0
+is_boss = true
+spawn_cost = 8
+has_regeneration = true
+regeneration_per_second = 5.0
+has_ranged_attack = true
+ranged_attack_cooldown = 5.0
+ranged_damage = 30.0
+ranged_range = 20.0
+has_aoe_attack = true
+aoe_damage = 40.0
+aoe_radius = 8.0
+aoe_cooldown = 12.0
+model_scale = 2.5
+tint_color = Color(0.1, 0.1, 0.1, 1)
+emission_color = Color(1.0, 0.0, 0.0, 1)
+emission_strength = 3.0
+guaranteed_drop = true
+loot_multiplier = 5.0

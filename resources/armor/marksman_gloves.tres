@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Marksman Gloves"
+item_type = 4
+rarity = 3
+description = "Precision gloves that enhance accuracy"
+stack_size = 1
+weight = 0.5
+value = 1200
+level_requirement = 8
+armor_value = 5.0
+dexterity_bonus = 5.0
+crit_chance_bonus = 0.05
+headshot_bonus = 0.15
+max_sockets = 1

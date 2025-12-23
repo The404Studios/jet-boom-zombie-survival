@@ -1,0 +1,30 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Behemoth"
+zombie_class = 9
+description = "Massive tank boss with incredible health and armor. Destroys barricades easily."
+base_health = 1000.0
+base_move_speed = 2.0
+base_damage = 50.0
+base_armor = 50.0
+attack_range = 3.0
+attack_speed = 2.5
+health_per_wave = 200.0
+damage_per_wave = 10.0
+armor_per_wave = 5.0
+points_reward = 1000
+experience_reward = 500
+can_break_barricades = true
+barricade_damage = 50.0
+is_boss = true
+spawn_cost = 5
+model_scale = 2.0
+tint_color = Color(0.8, 0.2, 0.2, 1)
+emission_color = Color(1.0, 0.0, 0.0, 1)
+emission_strength = 2.0
+guaranteed_drop = true
+loot_multiplier = 3.0

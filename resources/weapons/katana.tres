@@ -1,0 +1,26 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Katana"
+item_type = 0
+rarity = 3
+description = "Razor-sharp blade with high critical chance. Can cleave through multiple zombies."
+stack_size = 1
+weight = 2.5
+value = 3000
+is_equippable = true
+equipment_slot = "weapon_secondary"
+damage = 60.0
+fire_rate = 0.5
+is_melee = true
+weapon_range = 3.5
+melee_cleave_count = 3
+dexterity_bonus = 5
+agility_bonus = 3
+crit_chance_bonus = 0.2
+crit_damage_bonus = 1.0
+socket_count = 3
+model_scale = 1.0

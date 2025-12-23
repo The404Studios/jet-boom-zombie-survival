@@ -1,0 +1,25 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Auto Shotgun"
+item_type = 0
+rarity = 3
+description = "Fully automatic shotgun for close quarters combat. High ammo consumption."
+stack_size = 1
+weight = 6.0
+value = 3500
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 12.0
+fire_rate = 0.3
+magazine_size = 12
+reload_time = 4.0
+weapon_range = 25.0
+projectile_count = 6
+spread_angle = 10.0
+strength_bonus = 3
+socket_count = 3
+model_scale = 1.0

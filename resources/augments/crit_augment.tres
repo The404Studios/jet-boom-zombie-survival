@@ -1,0 +1,15 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Critical Gem"
+item_type = 10
+rarity = 3
+description = "Socket to increase crit chance"
+stack_size = 10
+weight = 0.1
+value = 500
+augment_stat_type = "crit_chance"
+augment_stat_value = 0.08

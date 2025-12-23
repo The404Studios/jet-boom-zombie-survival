@@ -1,0 +1,33 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Screamer"
+zombie_class = 6
+description = "Screams to buff nearby zombies, increasing their speed and damage."
+base_health = 90.0
+base_move_speed = 3.5
+base_damage = 8.0
+base_armor = 0.0
+attack_range = 2.0
+attack_speed = 1.5
+health_per_wave = 20.0
+damage_per_wave = 1.5
+armor_per_wave = 0.5
+points_reward = 180
+experience_reward = 90
+can_break_barricades = false
+is_boss = false
+spawn_cost = 1
+has_buff_aura = true
+buff_radius = 10.0
+buff_speed_multiplier = 1.3
+buff_damage_multiplier = 1.2
+scream_cooldown = 8.0
+model_scale = 0.9
+tint_color = Color(1.0, 0.8, 0.6, 1)
+emission_color = Color(1.0, 0.5, 0.5, 1)
+emission_strength = 1.2
+loot_multiplier = 1.3

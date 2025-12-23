@@ -1,0 +1,32 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Spitter"
+zombie_class = 5
+description = "Ranged zombie that spits acid from a distance."
+base_health = 70.0
+base_move_speed = 2.0
+base_damage = 10.0
+base_armor = 0.0
+attack_range = 2.0
+attack_speed = 2.0
+health_per_wave = 16.0
+damage_per_wave = 1.5
+armor_per_wave = 0.5
+points_reward = 160
+experience_reward = 80
+can_break_barricades = false
+is_boss = false
+spawn_cost = 1
+has_ranged_attack = true
+ranged_attack_cooldown = 3.0
+ranged_damage = 15.0
+ranged_range = 15.0
+model_scale = 1.0
+tint_color = Color(0.6, 1.0, 0.6, 1)
+emission_color = Color(0.5, 1.0, 0.0, 1)
+emission_strength = 0.8
+loot_multiplier = 1.2

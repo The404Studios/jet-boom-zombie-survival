@@ -1,0 +1,27 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Tank"
+zombie_class = 2
+description = "Heavily armored zombie. Slow but extremely durable."
+base_health = 300.0
+base_move_speed = 1.5
+base_damage = 25.0
+base_armor = 20.0
+attack_range = 2.5
+attack_speed = 2.0
+health_per_wave = 40.0
+damage_per_wave = 3.0
+armor_per_wave = 2.0
+points_reward = 200
+experience_reward = 100
+can_break_barricades = true
+barricade_damage = 15.0
+is_boss = false
+spawn_cost = 2
+model_scale = 1.3
+tint_color = Color(0.6, 0.6, 0.6, 1)
+loot_multiplier = 1.5

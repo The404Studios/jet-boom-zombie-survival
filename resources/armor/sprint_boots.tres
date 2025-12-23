@@ -1,0 +1,18 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Sprint Boots"
+item_type = 5
+rarity = 2
+description = "Lightweight boots for faster movement"
+stack_size = 1
+weight = 1.5
+value = 600
+level_requirement = 3
+armor_value = 8.0
+agility_bonus = 4.0
+stamina_regen_bonus = 2.0
+max_sockets = 1
