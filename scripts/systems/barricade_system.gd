@@ -131,7 +131,7 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 func _destroy():
 	# Spawn destruction particles
 	if has_node("/root/VFXManager"):
-		get_node("/root/VFXManager").spawn_explosion(global_position, "wood")
+		get_node("/root/VFXManager").spawn_explosion(global_position, 2.0)  # Small explosion for barricade
 
 	barricade_destroyed.emit()
 	queue_free()
