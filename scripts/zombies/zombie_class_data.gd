@@ -16,7 +16,7 @@ enum ZombieClass {
 	BOSS_ABOMINATION # Special boss
 }
 
-@export var class_name: String = "Shambler"
+@export var display_name: String = "Shambler"
 @export var zombie_class: ZombieClass = ZombieClass.SHAMBLER
 @export var description: String = ""
 
