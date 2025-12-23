@@ -17,15 +17,15 @@ var player_muted: Dictionary = {} # peer_id -> bool
 func _ready():
 	# Connect to network signals
 	if NetworkManager:
-		NetworkManager.player_joined.connect(_on_player_joined)
-		NetworkManager.player_left.connect(_on_player_left)
+		NetworkManager.player_connected.connect(_on_player_connected)
+		NetworkManager.player_disconnected.connect(_on_player_disconnected)
 
-func _on_player_joined(peer_id: int, player_data: Dictionary):
+func _on_player_connected(peer_id: int, player_data: Dictionary):
 	var msg = "%s joined the game" % player_data.get("name", "Player")
 	emit_system_message(msg)
 	message_timestamps[peer_id] = []
 
-func _on_player_left(peer_id: int):
+func _on_player_disconnected(peer_id: int):
 	var player_name = "Player"
 	if NetworkManager and NetworkManager.players.has(peer_id):
 		player_name = NetworkManager.players[peer_id].get("name", "Player")

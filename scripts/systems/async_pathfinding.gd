@@ -15,8 +15,15 @@ func _ready():
 	if has_node("/root/ThreadPool"):
 		thread_pool = get_node("/root/ThreadPool")
 
-	# Get default navigation map
-	navigation_map = get_world_3d().navigation_map
+	# Get default navigation map from the viewport
+	await get_tree().process_frame
+	var viewport = get_viewport()
+	if viewport and viewport.world_3d:
+		navigation_map = viewport.world_3d.navigation_map
+	else:
+		# Fallback to creating a new navigation map
+		navigation_map = NavigationServer3D.map_create()
+		NavigationServer3D.map_set_active(navigation_map, true)
 
 func request_path(start: Vector3, end: Vector3, callback: Callable = Callable()) -> int:
 	if not thread_pool:

@@ -39,8 +39,8 @@ func _ready():
 
 	# Connect to network signals
 	if NetworkManager:
-		NetworkManager.player_joined.connect(_on_player_joined)
-		NetworkManager.player_left.connect(_on_player_left)
+		NetworkManager.player_connected.connect(_on_player_connected)
+		NetworkManager.player_disconnected.connect(_on_player_disconnected)
 
 	# Load settings
 	_load_voice_settings()
@@ -238,11 +238,11 @@ func _get_player_position(peer_id: int) -> Vector3:
 
 	return Vector3.ZERO
 
-func _on_player_joined(peer_id: int, _player_data: Dictionary):
+func _on_player_connected(peer_id: int, _player_data: Dictionary):
 	# Initialize voice buffer
 	voice_buffers[peer_id] = PackedByteArray()
 
-func _on_player_left(peer_id: int):
+func _on_player_disconnected(peer_id: int):
 	# Clean up
 	voice_buffers.erase(peer_id)
 
