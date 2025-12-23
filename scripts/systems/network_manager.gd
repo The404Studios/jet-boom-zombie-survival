@@ -251,8 +251,8 @@ func player_shoot(player_id: int, origin: Vector3, direction: Vector3, weapon_ty
 func player_hit_effect(hit_position: Vector3, hit_normal: Vector3, surface_type: String = "default"):
 	# Spawn hit effects on all clients
 	var vfx_manager = get_node_or_null("/root/VFXManager")
-	if vfx_manager and vfx_manager.has_method("spawn_impact"):
-		vfx_manager.spawn_impact(hit_position, hit_normal, surface_type)
+	if vfx_manager and vfx_manager.has_method("spawn_impact_effect"):
+		vfx_manager.spawn_impact_effect(hit_position, hit_normal, surface_type)
 
 	# Blood effect for zombie hits
 	if surface_type == "flesh":

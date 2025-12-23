@@ -120,9 +120,9 @@ func play_nail_sound():
 	# Visual feedback - spawn particle effect
 	if current_barricade and has_node("/root/VFXManager"):
 		var vfx_manager = get_node("/root/VFXManager")
-		if vfx_manager.has_method("spawn_impact"):
+		if vfx_manager.has_method("spawn_impact_effect"):
 			var hit_pos = current_barricade.global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.5, 1.5), randf_range(-0.3, 0.3))
-			vfx_manager.spawn_impact(hit_pos, Vector3.UP, "wood")
+			vfx_manager.spawn_impact_effect(hit_pos, Vector3.UP, "wood")
 
 func get_nail_progress() -> float:
 	if nails_required <= 0:

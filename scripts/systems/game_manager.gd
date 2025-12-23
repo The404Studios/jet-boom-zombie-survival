@@ -16,8 +16,13 @@ var wave_timer: float = 0.0
 signal wave_started(wave_number: int)
 signal wave_completed(wave_number: int)
 signal zombie_spawned(zombie: Zombie)
+signal game_started
+signal game_over(victory: bool)
 
 func _ready():
+	# Emit game started signal
+	game_started.emit()
+
 	# Start first wave after delay
 	await get_tree().create_timer(5.0).timeout
 	start_next_wave()
