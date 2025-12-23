@@ -306,9 +306,71 @@ func take_damage(amount: float):
 		_die()
 
 func _die():
-	# Handle player death
+	"""Handle player death"""
 	print("Player died!")
-	# TODO: Death screen, respawn, etc.
+
+	# Disable player controls
+	set_physics_process(false)
+	set_process_input(false)
+
+	# Hide viewmodel
+	if viewmodel:
+		viewmodel.visible = false
+
+	# Show death screen
+	_show_death_screen()
+
+	# Network replicate death
+	if multiplayer.is_server():
+		_player_died.rpc(multiplayer.get_unique_id())
+
+	# Schedule respawn
+	await get_tree().create_timer(5.0).timeout
+	_respawn()
+
+@rpc("authority", "call_local", "reliable")
+func _player_died(player_id: int):
+	"""Network replicated player death"""
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("Player died!")
+
+func _show_death_screen():
+	"""Show death UI"""
+	# Could create a death screen UI here
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("You died! Respawning in 5 seconds...")
+
+func _respawn():
+	"""Respawn the player"""
+	# Reset health
+	current_health = max_health
+	current_stamina = max_stamina
+
+	# Find spawn point
+	var spawn_points = get_tree().get_nodes_in_group("player_spawn")
+	if spawn_points.size() > 0:
+		var spawn = spawn_points[randi() % spawn_points.size()]
+		global_position = spawn.global_position
+
+	# Re-enable controls
+	set_physics_process(true)
+	set_process_input(true)
+
+	# Show viewmodel
+	if viewmodel:
+		viewmodel.visible = true
+
+	# Network replicate respawn
+	if multiplayer.is_server():
+		_player_respawned.rpc(multiplayer.get_unique_id(), global_position)
+
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("Respawned!")
+
+@rpc("authority", "call_local", "reliable")
+func _player_respawned(player_id: int, position: Vector3):
+	"""Network replicated player respawn"""
+	pass  # Could add respawn effects here
 
 func _camera_shake(intensity: float, duration: float):
 	if not camera:

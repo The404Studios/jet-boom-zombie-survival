@@ -1,6 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://health_pickup001"]
 
 [ext_resource type="Script" path="res://scripts/items/pickup_item.gd" id="1"]
+[ext_resource type="PackedScene" path="res://KloWorks_Healthy&Junk_Food_Kit/Fbx/Healthy_Food/Chicken_Cooking_A.fbx" id="2"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_1"]
 size = Vector3(0.3, 0.3, 0.3)
@@ -15,8 +16,8 @@ health_amount = 25.0
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("BoxShape3D_1")
 
-[node name="Model" type="MeshInstance3D" parent="."]
-mesh = BoxMesh.new()
+[node name="Model" parent="." instance=ExtResource("2")]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)

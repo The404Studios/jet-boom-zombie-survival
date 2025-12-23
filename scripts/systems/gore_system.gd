@@ -12,6 +12,7 @@ const GIB_LIFETIME: float = 10.0
 
 var blood_decals: Array = []
 var active_gibs: Array = []
+var gore_enabled: bool = true
 
 # Particle scenes (will be created procedurally)
 var blood_particle_scene: PackedScene
@@ -22,9 +23,16 @@ func _ready():
 	_create_gore_scenes()
 
 func _create_gore_scenes():
-	# Blood particles will be created on-demand
-	# Gibs will be simple RigidBody3D with mesh
-	pass
+	"""Initialize gore system - particles and gibs created on-demand"""
+	# Pre-allocate arrays
+	blood_decals.resize(MAX_DECALS)
+	active_gibs.resize(MAX_GIBS)
+
+	# Fill with null
+	for i in range(MAX_DECALS):
+		blood_decals[i] = null
+	for i in range(MAX_GIBS):
+		active_gibs[i] = null
 
 # ============================================
 # BLOOD EFFECTS (Network Replicated)
@@ -388,6 +396,11 @@ func clear_all_gore():
 	active_gibs.clear()
 
 func set_gore_enabled(enabled: bool):
-	"""Toggle gore system"""
-	# Can be used for settings
-	pass
+	"""Toggle gore system on/off"""
+	gore_enabled = enabled
+
+	# If disabling, clear all gore
+	if not enabled:
+		clear_all_gore()
+
+	print("Gore system %s" % ("enabled" if enabled else "disabled"))

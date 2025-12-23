@@ -27,8 +27,8 @@ func _process(delta):
 	position.y += sin(Time.get_ticks_msec() / 500.0) * 0.001
 
 func _start_rotation_animation():
-	# Simple rotation
-	pass
+	"""Simple rotation - handled in _process"""
+	rotation_speed = randf_range(0.8, 1.2)  # Randomize rotation speed slightly
 
 func _on_body_entered(body: Node3D):
 	if is_picked_up:
@@ -103,9 +103,21 @@ func _pickup_networked(item_path: NodePath):
 	_respawn()
 
 func _spawn_pickup_effect():
-	# Simple particle burst
+	"""Spawn visual effect when picked up"""
 	if has_node("/root/VFXManager"):
-		pass  # Could add pickup particle effect
+		var vfx = get_node("/root/VFXManager")
+		# Spawn sparkle effect based on pickup type
+		var effect_type = "sparkle"
+		match pickup_type:
+			"health":
+				effect_type = "health_pickup"
+			"ammo":
+				effect_type = "ammo_pickup"
+			"weapon":
+				effect_type = "weapon_pickup"
+
+		if vfx.has_method("spawn_impact_effect"):
+			vfx.spawn_impact_effect(global_position, Vector3.UP, effect_type)
 
 func _respawn():
 	if not is_instance_valid(self):
