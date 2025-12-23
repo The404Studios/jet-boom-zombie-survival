@@ -25,11 +25,11 @@ func _ready():
 func _create_gore_scenes():
 	"""Initialize gore system - particles and gibs created on-demand"""
 	# Pre-allocate arrays
-	blood_decals.resize(MAX_DECALS)
+	blood_decals.resize(MAX_BLOOD_DECALS)
 	active_gibs.resize(MAX_GIBS)
 
 	# Fill with null
-	for i in range(MAX_DECALS):
+	for i in range(MAX_BLOOD_DECALS):
 		blood_decals[i] = null
 	for i in range(MAX_GIBS):
 		active_gibs[i] = null

@@ -80,12 +80,28 @@ func _broadcast_message(sender_id: int, sender_name: String, message: String, is
 	# Record timestamp
 	record_message_timestamp(sender_id)
 
-	# Broadcast to all clients
+	# Broadcast to clients
 	if is_team:
-		# TODO: Filter by team when team system is implemented
-		_receive_message.rpc(sender_name, message, true)
+		# Filter by team - only send to teammates
+		var sender_team = _get_player_team(sender_id)
+		for peer_id in NetworkManager.players.keys():
+			var peer_team = _get_player_team(peer_id)
+			if peer_team == sender_team:
+				_receive_message.rpc_id(peer_id, sender_name, message, true)
+		# Also send to self if server
+		if multiplayer.is_server():
+			_receive_message(sender_name, message, true)
 	else:
+		# Send to all players
 		_receive_message.rpc(sender_name, message, false)
+
+func _get_player_team(peer_id: int) -> int:
+	"""Get player's team ID. Returns 0 for no team/solo, 1+ for team IDs"""
+	if not NetworkManager or not NetworkManager.players.has(peer_id):
+		return 0
+
+	var player_data = NetworkManager.players[peer_id]
+	return player_data.get("team", 0)
 
 @rpc("authority", "call_local")
 func _receive_message(sender_name: String, message: String, is_team: bool):

@@ -91,6 +91,11 @@ func _start_repair(player: Node):
 func cancel_nailing():
 	is_being_nailed = false
 
+func repair(player: Node = null):
+	"""Public repair method - called from BarricadeSpot"""
+	if current_health < max_health:
+		_start_repair(player)
+
 func add_nail():
 	# Called by BarricadeNailing system
 	nails_placed += 1

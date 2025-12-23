@@ -315,8 +315,21 @@ func _on_peer_connected(peer_id: int):
 	print("Peer connected: %d" % peer_id)
 
 	if is_server:
-		# Server: Wait for client to send their info
-		pass
+		# Server: Send existing player list to new peer
+		# Wait a frame for connection to stabilize
+		await get_tree().process_frame
+
+		# Send all existing players to the new peer
+		if players.size() > 0:
+			rpc_id(peer_id, "receive_all_players", players)
+
+		# Sync current game state if wave manager exists
+		var wave_manager = get_node_or_null("/root/Main/WaveManager")
+		if wave_manager:
+			var wave = wave_manager.current_wave if "current_wave" in wave_manager else 1
+			var zombies = wave_manager.zombies_alive if "zombies_alive" in wave_manager else 0
+			var intermission = wave_manager.is_intermission if "is_intermission" in wave_manager else false
+			rpc_id(peer_id, "sync_wave_state", wave, zombies, intermission)
 	else:
 		# Client: Send our info to server
 		rpc_id(1, "sync_player_info", get_local_player_info())
