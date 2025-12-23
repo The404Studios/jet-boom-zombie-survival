@@ -1,0 +1,26 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "M134 Minigun"
+item_type = 0
+rarity = 5
+description = "Ultimate heavy weapon with extreme fire rate. Slows movement significantly."
+stack_size = 1
+weight = 15.0
+value = 10000
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 20.0
+fire_rate = 0.03
+magazine_size = 200
+reload_time = 6.0
+weapon_range = 120.0
+strength_bonus = 6
+vitality_bonus = 4
+agility_bonus = -5
+movement_speed_multiplier = 0.7
+socket_count = 4
+model_scale = 1.0

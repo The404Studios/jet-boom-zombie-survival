@@ -1,0 +1,23 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Combat Knife"
+item_type = 0
+rarity = 0
+description = "Quick melee weapon. Silent and reliable backup option."
+stack_size = 1
+weight = 1.0
+value = 300
+is_equippable = true
+equipment_slot = "weapon_secondary"
+damage = 25.0
+fire_rate = 0.4
+is_melee = true
+weapon_range = 2.5
+dexterity_bonus = 1
+agility_bonus = 1
+socket_count = 1
+model_scale = 1.0

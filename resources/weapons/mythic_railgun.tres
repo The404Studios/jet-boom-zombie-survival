@@ -1,0 +1,31 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Experimental Railgun 'Annihilator'"
+item_type = 0
+rarity = 5
+description = "Mythic energy weapon that pierces infinitely. One shot to rule them all."
+stack_size = 1
+weight = 10.0
+value = 25000
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 300.0
+fire_rate = 3.0
+magazine_size = 1
+reload_time = 4.0
+weapon_range = 500.0
+projectile_piercing = 999
+strength_bonus = 5
+dexterity_bonus = 5
+intelligence_bonus = 8
+crit_chance_bonus = 0.3
+crit_damage_bonus = 2.0
+armor_penetration = 100.0
+true_damage = 50.0
+additional_damage = 100.0
+socket_count = 5
+model_scale = 1.0

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "M249 LMG"
+item_type = 0
+rarity = 3
+description = "Light machine gun with large magazine. Excellent for sustained fire."
+stack_size = 1
+weight = 8.0
+value = 4000
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 22.0
+fire_rate = 0.07
+magazine_size = 100
+reload_time = 5.0
+weapon_range = 100.0
+strength_bonus = 4
+vitality_bonus = 2
+socket_count = 2
+model_scale = 1.0

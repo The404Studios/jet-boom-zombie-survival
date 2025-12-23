@@ -1,0 +1,25 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Tactical Crossbow"
+item_type = 0
+rarity = 2
+description = "Silent weapon with high damage. Bolts can pierce through multiple zombies."
+stack_size = 1
+weight = 4.5
+value = 2500
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 80.0
+fire_rate = 1.5
+magazine_size = 1
+reload_time = 2.5
+weapon_range = 80.0
+projectile_piercing = 3
+dexterity_bonus = 4
+crit_damage_bonus = 0.5
+socket_count = 2
+model_scale = 1.0

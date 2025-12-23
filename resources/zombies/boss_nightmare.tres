@@ -1,0 +1,36 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Nightmare"
+zombie_class = 10
+description = "Fast boss that teleports short distances and summons minor zombies. Extremely dangerous."
+base_health = 800.0
+base_move_speed = 4.5
+base_damage = 40.0
+base_armor = 30.0
+attack_range = 2.5
+attack_speed = 1.5
+health_per_wave = 180.0
+damage_per_wave = 8.0
+armor_per_wave = 4.0
+points_reward = 1500
+experience_reward = 750
+can_break_barricades = true
+barricade_damage = 40.0
+is_boss = true
+spawn_cost = 5
+has_teleport = true
+teleport_cooldown = 10.0
+teleport_range = 15.0
+can_summon_zombies = true
+summon_cooldown = 15.0
+summon_count = 3
+model_scale = 1.8
+tint_color = Color(0.3, 0.0, 0.3, 1)
+emission_color = Color(0.8, 0.0, 1.0, 1)
+emission_strength = 2.5
+guaranteed_drop = true
+loot_multiplier = 4.0

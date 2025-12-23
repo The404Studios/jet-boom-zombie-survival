@@ -1,0 +1,31 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Exploder"
+zombie_class = 4
+description = "Explosive zombie that detonates on death. Keep your distance!"
+base_health = 50.0
+base_move_speed = 4.0
+base_damage = 5.0
+base_armor = 0.0
+attack_range = 1.5
+attack_speed = 1.0
+health_per_wave = 12.0
+damage_per_wave = 1.0
+armor_per_wave = 0.0
+points_reward = 180
+experience_reward = 90
+can_break_barricades = true
+is_boss = false
+spawn_cost = 1
+has_explosion = true
+explosion_damage = 60.0
+explosion_radius = 6.0
+model_scale = 0.95
+tint_color = Color(1.0, 0.5, 0.0, 1)
+emission_color = Color(1.0, 0.3, 0.0, 1)
+emission_strength = 1.5
+loot_multiplier = 1.1

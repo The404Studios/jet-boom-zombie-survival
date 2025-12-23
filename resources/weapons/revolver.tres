@@ -1,0 +1,24 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Revolver"
+item_type = 0
+rarity = 1
+description = "High damage revolver with slow fire rate. Reliable and powerful."
+stack_size = 1
+weight = 2.5
+value = 800
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 35.0
+fire_rate = 0.5
+magazine_size = 6
+reload_time = 2.0
+weapon_range = 60.0
+crit_chance_bonus = 0.1
+headshot_damage_multiplier = 2.5
+socket_count = 1
+model_scale = 1.0

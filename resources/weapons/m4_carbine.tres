@@ -1,0 +1,24 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "M4 Carbine"
+item_type = 0
+rarity = 2
+description = "Versatile assault rifle with excellent accuracy and moderate damage."
+stack_size = 1
+weight = 4.0
+value = 2000
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 28.0
+fire_rate = 0.09
+magazine_size = 30
+reload_time = 2.2
+weapon_range = 120.0
+dexterity_bonus = 3
+crit_chance_bonus = 0.05
+socket_count = 2
+model_scale = 1.0

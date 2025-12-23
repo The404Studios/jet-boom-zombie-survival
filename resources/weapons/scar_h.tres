@@ -1,0 +1,25 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "SCAR-H"
+item_type = 0
+rarity = 3
+description = "Heavy battle rifle with high damage and good range. Effective against armored targets."
+stack_size = 1
+weight = 5.0
+value = 3000
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 40.0
+fire_rate = 0.12
+magazine_size = 20
+reload_time = 2.8
+weapon_range = 150.0
+armor_penetration = 15.0
+strength_bonus = 2
+dexterity_bonus = 2
+socket_count = 3
+model_scale = 1.0

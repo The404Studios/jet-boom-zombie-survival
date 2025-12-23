@@ -1,0 +1,29 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Desert Eagle 'Reaper'"
+item_type = 0
+rarity = 4
+description = "Legendary hand cannon with devastating power. Each shot guarantees critical damage."
+stack_size = 1
+weight = 3.0
+value = 8000
+is_equippable = true
+equipment_slot = "weapon_secondary"
+damage = 75.0
+fire_rate = 0.6
+magazine_size = 7
+reload_time = 2.0
+weapon_range = 70.0
+strength_bonus = 3
+dexterity_bonus = 4
+crit_chance_bonus = 0.5
+crit_damage_bonus = 1.5
+headshot_damage_multiplier = 3.0
+armor_penetration = 25.0
+true_damage = 10.0
+socket_count = 4
+model_scale = 1.0

@@ -1,0 +1,27 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_class_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+class_name = "Shambler"
+zombie_class = 0
+description = "Basic slow zombie. Easy to kill but dangerous in numbers."
+base_health = 100.0
+base_move_speed = 2.5
+base_damage = 10.0
+base_armor = 0.0
+attack_range = 2.0
+attack_speed = 1.5
+health_per_wave = 20.0
+damage_per_wave = 2.0
+armor_per_wave = 1.0
+points_reward = 100
+experience_reward = 50
+can_break_barricades = true
+barricade_damage = 5.0
+is_boss = false
+spawn_cost = 1
+model_scale = 1.0
+tint_color = Color(0.8, 0.8, 0.7, 1)
+loot_multiplier = 1.0

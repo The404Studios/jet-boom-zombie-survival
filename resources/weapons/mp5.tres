@@ -1,0 +1,23 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "MP5"
+item_type = 0
+rarity = 1
+description = "Compact SMG with high fire rate and good control."
+stack_size = 1
+weight = 3.0
+value = 1200
+is_equippable = true
+equipment_slot = "weapon_primary"
+damage = 18.0
+fire_rate = 0.08
+magazine_size = 30
+reload_time = 2.0
+weapon_range = 70.0
+agility_bonus = 2
+socket_count = 2
+model_scale = 1.0
