@@ -26,6 +26,10 @@ ThreadPool="*res://scripts/systems/thread_pool.gd"
 AsyncPathfinding="*res://scripts/systems/async_pathfinding.gd"
 AsyncLoader="*res://scripts/systems/async_loader.gd"
 ResourceCache="*res://scripts/systems/resource_cache.gd"
+AudioManager="*res://scripts/systems/audio_manager.gd"
+GoreSystem="*res://scripts/systems/gore_system.gd"
+VFXManager="*res://scripts/systems/vfx_manager.gd"
+GameManager="*res://scripts/systems/game_manager.gd"
 
 [display]
 

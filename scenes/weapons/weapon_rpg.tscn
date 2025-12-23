@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_rpg001"]
+
+[ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_RPG7.fbx" id="1"]
+
+[node name="WeaponRPG" instance=ExtResource("1")]
+
+[node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.7)
+emitting = false
+amount = 60
+lifetime = 0.2
+one_shot = true
+explosiveness = 1.0
+
+[node name="MuzzlePoint" type="Marker3D" parent="." index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.7)
+
+[node name="BackBlast" type="GPUParticles3D" parent="." index="2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0.3)
+emitting = false
+amount = 40
+lifetime = 0.3
+one_shot = true
