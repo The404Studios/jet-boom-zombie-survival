@@ -164,9 +164,28 @@ func pickup_item(item_node: Node3D):
 			item_node.queue_free()
 
 func place_barricade(spot: Node3D):
-	# Check if player has barricade material
-	# This would be implemented with the barricade system
-	pass
+	# Check if player has barricade material in inventory
+	var material_item: ItemData = null
+	for inv_item in inventory.inventory:
+		if inv_item.item.item_type == ItemData.ItemType.MATERIAL:
+			material_item = inv_item.item
+			break
+
+	# If no material, check if spot has existing barricade to repair
+	if not material_item:
+		# Allow free repairs if barricade exists
+		if spot.has_method("interact"):
+			spot.interact(self)
+		return
+
+	# Try to interact with barricade spot (build or repair)
+	if spot.has_method("interact"):
+		# Remove material from inventory
+		inventory.remove_item(material_item, 1)
+		spot.interact(self)
+	elif spot.has_method("start_build"):
+		inventory.remove_item(material_item, 1)
+		spot.start_build(self)
 
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	current_health -= amount

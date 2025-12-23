@@ -263,8 +263,161 @@ func animate_item_transfer(to_inventory: bool):
 	label.queue_free()
 
 func _on_slot_hover(index: int, is_stash: bool):
-	# Show tooltip
-	pass
+	# Get item data based on source
+	var item: ItemDataExtended = null
+	var slot: Panel = null
+
+	if is_stash:
+		if player_persistence and index < player_persistence.player_data.stash.size():
+			item = player_persistence.player_data.stash[index].item
+		if index < stash_slots.size():
+			slot = stash_slots[index]
+	else:
+		if inventory_system and index < inventory_system.inventory.size():
+			item = inventory_system.inventory[index].item
+		if index < inventory_slots.size():
+			slot = inventory_slots[index]
+
+	if item and slot:
+		show_tooltip(item, slot.global_position)
+
+		# Connect mouse exit
+		var button = slot.get_node_or_null("Button") as Button
+		if button and not button.mouse_exited.is_connected(_on_slot_exit):
+			button.mouse_exited.connect(_on_slot_exit)
+
+func _on_slot_exit():
+	hide_tooltip()
+
+func show_tooltip(item: ItemDataExtended, position: Vector2):
+	var tooltip = get_node_or_null("ItemTooltip")
+	if not tooltip:
+		tooltip = create_tooltip()
+		add_child(tooltip)
+
+	# Position tooltip
+	tooltip.global_position = position + Vector2(70, 0)
+
+	# Clamp to screen bounds
+	var screen_size = get_viewport().get_visible_rect().size
+	if tooltip.global_position.x + tooltip.size.x > screen_size.x:
+		tooltip.global_position.x = position.x - tooltip.size.x - 10
+	if tooltip.global_position.y + tooltip.size.y > screen_size.y:
+		tooltip.global_position.y = screen_size.y - tooltip.size.y - 10
+
+	update_tooltip(tooltip, item)
+	tooltip.visible = true
+
+func create_tooltip() -> Panel:
+	var panel = Panel.new()
+	panel.name = "ItemTooltip"
+	panel.custom_minimum_size = Vector2(220, 180)
+	panel.z_index = 100
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.15, 0.95)
+	style.border_color = Color(0.4, 0.4, 0.5)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", style)
+
+	var vbox = VBoxContainer.new()
+	vbox.name = "Content"
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 4)
+	vbox.offset_left = 8
+	vbox.offset_top = 8
+	vbox.offset_right = -8
+	vbox.offset_bottom = -8
+	panel.add_child(vbox)
+
+	# Name
+	var name_label = RichTextLabel.new()
+	name_label.name = "NameLabel"
+	name_label.bbcode_enabled = true
+	name_label.fit_content = true
+	name_label.scroll_active = false
+	vbox.add_child(name_label)
+
+	# Type/Rarity
+	var type_label = Label.new()
+	type_label.name = "TypeLabel"
+	type_label.add_theme_font_size_override("font_size", 11)
+	vbox.add_child(type_label)
+
+	# Separator
+	vbox.add_child(HSeparator.new())
+
+	# Stats
+	var stats_label = RichTextLabel.new()
+	stats_label.name = "StatsLabel"
+	stats_label.bbcode_enabled = true
+	stats_label.fit_content = true
+	stats_label.scroll_active = false
+	vbox.add_child(stats_label)
+
+	# Description
+	var desc_label = Label.new()
+	desc_label.name = "DescLabel"
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	desc_label.add_theme_font_size_override("font_size", 10)
+	desc_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	vbox.add_child(desc_label)
+
+	# Click hint
+	var hint_label = Label.new()
+	hint_label.name = "HintLabel"
+	hint_label.text = "Click to transfer"
+	hint_label.add_theme_font_size_override("font_size", 10)
+	hint_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(hint_label)
+
+	return panel
+
+func update_tooltip(tooltip: Panel, item: ItemDataExtended):
+	var content = tooltip.get_node("Content")
+	if not content:
+		return
+
+	var name_label = content.get_node_or_null("NameLabel") as RichTextLabel
+	var type_label = content.get_node_or_null("TypeLabel") as Label
+	var stats_label = content.get_node_or_null("StatsLabel") as RichTextLabel
+	var desc_label = content.get_node_or_null("DescLabel") as Label
+
+	if name_label:
+		var color_hex = item.get_rarity_color().to_html()
+		name_label.text = "[b][color=#%s]%s[/color][/b]" % [color_hex, item.item_name]
+
+	if type_label:
+		type_label.text = "%s %s" % [item.get_rarity_name(), ItemDataExtended.ItemType.keys()[item.item_type].capitalize().replace("_", " ")]
+		type_label.add_theme_color_override("font_color", item.get_rarity_color())
+
+	if stats_label:
+		var stats_text = ""
+		if item.item_type == ItemDataExtended.ItemType.WEAPON:
+			stats_text += "Damage: %.1f\n" % item.damage
+			stats_text += "Fire Rate: %.2f/s\n" % (1.0 / max(item.fire_rate, 0.01))
+
+		if item.armor_value > 0:
+			stats_text += "Armor: %.1f\n" % item.armor_value
+
+		var all_stats = item.get_all_stats()
+		for stat_name in all_stats:
+			stats_text += "[color=lime]+%.1f %s[/color]\n" % [all_stats[stat_name], stat_name.capitalize()]
+
+		stats_label.text = stats_text
+
+	if desc_label and item.description != "":
+		desc_label.text = item.description
+		desc_label.visible = true
+	elif desc_label:
+		desc_label.visible = false
+
+func hide_tooltip():
+	var tooltip = get_node_or_null("ItemTooltip")
+	if tooltip:
+		tooltip.visible = false
 
 func _input(event):
 	if is_open and event.is_action_pressed("ui_cancel"):
