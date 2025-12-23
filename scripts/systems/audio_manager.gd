@@ -220,6 +220,38 @@ func play_gunshot(weapon_type: String, position: Vector3):
 	var pitch = randf_range(0.95, 1.05)
 	play_sound_3d("gunshot_%s" % weapon_type, position, 1.0, pitch)
 
+func play_sfx(sound_name: String, volume: float = 1.0, pitch: float = 1.0):
+	"""Play a 2D sound effect (UI sounds, etc.)"""
+	var sound = _get_sound_from_library(sound_name)
+	if not sound:
+		# Try common variations
+		sound = _get_sound_from_library("sfx_" + sound_name)
+		if not sound:
+			sound = _get_sound_from_library("ui_" + sound_name)
+
+	if not sound:
+		print("Sound not found: %s" % sound_name)
+		return
+
+	var player = _get_next_2d_player()
+	if player:
+		player.stream = sound
+		player.volume_db = linear_to_db(sfx_volume * volume)
+		player.pitch_scale = pitch
+		player.play()
+
+func _get_next_2d_player() -> AudioStreamPlayer:
+	"""Get available 2D audio player from pool"""
+	# Create a simple player if needed
+	for child in get_children():
+		if child is AudioStreamPlayer and not child.playing:
+			return child
+
+	# Create new player if none available
+	var player = AudioStreamPlayer.new()
+	add_child(player)
+	return player
+
 func play_impact(surface_type: String, position: Vector3):
 	play_sound_3d("impact_%s" % surface_type, position, 0.8)
 
