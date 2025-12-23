@@ -30,6 +30,7 @@ AudioManager="*res://scripts/systems/audio_manager.gd"
 GoreSystem="*res://scripts/systems/gore_system.gd"
 VFXManager="*res://scripts/systems/vfx_manager.gd"
 GameManager="*res://scripts/systems/game_manager.gd"
+MatchmakingManager="*res://scripts/systems/matchmaking_manager.gd"
 
 [display]
 

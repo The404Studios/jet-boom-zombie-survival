@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://player_fps001"]
+[gd_scene load_steps=5 format=3 uid="uid://player_fps001"]
 
 [ext_resource type="Script" path="res://scripts/player/fps_controller.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://viewmodel_fps001" path="res://scenes/player/viewmodel.tscn" id="2"]
+[ext_resource type="Script" path="res://scripts/player/foot_ik_controller.gd" id="3"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.4
@@ -21,6 +22,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
 fov = 90.0
 
 [node name="Viewmodel" parent="Camera3D" instance=ExtResource("2")]
+
+[node name="FootIK" type="Node3D" parent="Camera3D"]
+script = ExtResource("3")
 
 [node name="RayCast3D" type="RayCast3D" parent="Camera3D"]
 target_position = Vector3(0, 0, -100)

@@ -18,6 +18,9 @@ extends CharacterBody3D
 var current_speed: float = 5.0
 var is_sprinting: bool = false
 
+# Phasing (Z key to phase through props)
+var is_phasing: bool = false
+
 # Weapon system
 var current_ammo: int = 15
 var reserve_ammo: int = 45
@@ -75,6 +78,9 @@ func _physics_process(delta):
 	# Sprint
 	is_sprinting = Input.is_action_pressed("sprint") and is_on_floor()
 	current_speed = sprint_speed if is_sprinting else move_speed
+
+	# Phasing through props (Z key)
+	_handle_phasing()
 
 	# Movement
 	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
@@ -324,6 +330,30 @@ func _camera_shake(intensity: float, duration: float):
 		await get_tree().physics_frame
 
 	camera.position = original_pos
+
+# ============================================
+# PHASING SYSTEM
+# ============================================
+
+func _handle_phasing():
+	"""JetBoom mechanic - hold Z to phase through props"""
+	var wants_phase = Input.is_key_pressed(KEY_Z)
+
+	if wants_phase and not is_phasing:
+		# Start phasing
+		is_phasing = true
+		var props = get_tree().get_nodes_in_group("props")
+		for prop in props:
+			if prop.has_method("enable_phasing"):
+				prop.enable_phasing()
+
+	elif not wants_phase and is_phasing:
+		# Stop phasing
+		is_phasing = false
+		var props = get_tree().get_nodes_in_group("props")
+		for prop in props:
+			if prop.has_method("disable_phasing"):
+				prop.disable_phasing()
 
 # ============================================
 # NETWORK

@@ -16,6 +16,10 @@ var is_being_nailed: bool = false
 signal barricade_built
 signal barricade_destroyed
 
+func _ready():
+	add_to_group("barricades")
+	add_to_group("zombie_targets")
+
 func interact(player: Node):
 	if not is_built:
 		_start_build(player)

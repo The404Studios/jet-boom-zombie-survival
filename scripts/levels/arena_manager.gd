@@ -90,6 +90,18 @@ func start_wave():
 	# Notify systems
 	wave_started.emit(current_wave)
 
+	# Update sigil health for wave
+	var sigils = get_tree().get_nodes_in_group("sigil")
+	for sigil in sigils:
+		if sigil.has_method("setup_for_wave"):
+			sigil.setup_for_wave(current_wave)
+
+	# Update prop health for wave
+	var props = get_tree().get_nodes_in_group("props")
+	for prop in props:
+		if prop.has_method("setup_for_wave"):
+			prop.setup_for_wave(current_wave)
+
 	if has_node("/root/ChatSystem"):
 		get_node("/root/ChatSystem").emit_system_message("Wave %d starting! %d zombies incoming!" % [current_wave, zombies_to_spawn])
 
