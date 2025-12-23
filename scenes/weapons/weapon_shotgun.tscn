@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://weapon_shotgun001"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_shotgun"]
+size = Vector3(0.1, 0.15, 0.6)
+
+[node name="WeaponShotgun" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_shotgun")
+
+[node name="MuzzlePoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.35)

@@ -1,0 +1,35 @@
+[gd_scene load_steps=5 format=3 uid="uid://zombie001"]
+
+[ext_resource type="Script" path="res://scripts/zombies/zombie_ai.gd" id="1"]
+[ext_resource type="PackedScene" path="res://Free_Character/ShowcaseFreeCharacter/Characters/Zombie/male_z.tscn" id="2"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_zombie"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_zombie"]
+radius = 0.4
+height = 1.8
+
+[node name="Zombie" type="CharacterBody3D" groups=["zombies"]]
+collision_layer = 4
+collision_mask = 23
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_zombie")
+
+[node name="Model" type="Node3D" parent="."]
+transform = Transform3D(0.5, 0, 0, 0, 0.5, 0, 0, 0, 0.5, 0, 0, 0)
+
+[node name="Fallback" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.8, 0)
+mesh = SubResource("CapsuleMesh_zombie")
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+path_desired_distance = 0.5
+target_desired_distance = 2.0
+path_max_distance = 3.0
+avoidance_enabled = true
+radius = 0.5

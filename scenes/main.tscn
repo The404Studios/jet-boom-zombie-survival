@@ -1,0 +1,146 @@
+[gd_scene load_steps=16 format=3 uid="uid://main001"]
+
+[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://zombie001" path="res://scenes/zombies/zombie.tscn" id="2"]
+[ext_resource type="PackedScene" uid="uid://sigil001" path="res://scenes/environment/sigil.tscn" id="3"]
+[ext_resource type="PackedScene" uid="uid://barricade_spot001" path="res://scenes/environment/barricade_spot.tscn" id="4"]
+[ext_resource type="Script" path="res://scripts/systems/game_manager.gd" id="5"]
+[ext_resource type="Shader" path="res://shaders/psx_post_process.gdshader" id="6"]
+[ext_resource type="Script" path="res://scripts/systems/main_scene.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/systems/fps_limiter.gd" id="8"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.385, 0.454, 0.55, 1)
+sky_horizon_color = Color(0.646, 0.656, 0.67, 1)
+ground_horizon_color = Color(0.646, 0.656, 0.67, 1)
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 3
+ambient_light_color = Color(0.6, 0.6, 0.7, 1)
+ambient_light_energy = 0.5
+tonemap_mode = 2
+ssao_enabled = false
+glow_enabled = false
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_1"]
+vertices = PackedVector3Array(-50, 0.1, -50, -50, 0.1, 50, 50, 0.1, 50, 50, 0.1, -50)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(100, 100)
+
+[sub_resource type="StandardMaterial3D" id="Material_ground"]
+albedo_color = Color(0.3, 0.4, 0.3, 1)
+texture_filter = 0
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(100, 0.2, 100)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_post"]
+shader = ExtResource("6")
+shader_parameter/dither_amount = 0.3
+shader_parameter/color_depth = 16.0
+shader_parameter/enable_dithering = true
+shader_parameter/enable_scanlines = false
+shader_parameter/scanline_intensity = 0.2
+
+[node name="Main" type="Node3D"]
+script = ExtResource("7")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 20, 0)
+light_color = Color(1, 0.95, 0.9, 1)
+shadow_enabled = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_1")
+
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D"]
+collision_layer = 1
+collision_mask = 0
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D/Ground"]
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("Material_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Ground"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
+shape = SubResource("BoxShape3D_ground")
+
+[node name="Player" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Sigil" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("5")
+zombie_scene = ExtResource("2")
+zombies_per_wave = 5
+wave_delay = 20.0
+max_zombies_alive = 25
+
+[node name="ZombieSpawnPoints" type="Node3D" parent="."]
+
+[node name="Spawn1" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 30)
+
+[node name="Spawn2" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 30)
+
+[node name="Spawn3" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, -30)
+
+[node name="Spawn4" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, -30)
+
+[node name="Spawn5" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 0)
+
+[node name="Spawn6" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0, 0)
+
+[node name="Spawn7" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 40)
+
+[node name="Spawn8" type="Marker3D" parent="ZombieSpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -40)
+
+[node name="BarricadeSpots" type="Node3D" parent="."]
+
+[node name="Spot1" parent="BarricadeSpots" instance=ExtResource("4")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 10)
+
+[node name="Spot2" parent="BarricadeSpots" instance=ExtResource("4")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 10, 0, -10)
+
+[node name="Spot3" parent="BarricadeSpots" instance=ExtResource("4")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -10, 0, 10)
+
+[node name="Spot4" parent="BarricadeSpots" instance=ExtResource("4")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -10, 0, -10)
+
+[node name="Props" type="Node3D" parent="."]
+
+[node name="PSXPostProcess" type="ColorRect" parent="."]
+material = SubResource("ShaderMaterial_post")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="FPSLimit" type="Node" parent="."]
+script = ExtResource("8")
+target_fps = 144
+
+[editable path="Player"]

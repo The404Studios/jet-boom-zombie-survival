@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://weapon_ak47001" path="res://scenes/weapons/weapon_ak47.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_name = "AK-47"
+item_type = 0
+description = "Assault rifle"
+mesh_scene = ExtResource("2")
+stack_size = 1
+weight = 4.5
+value = 1500
+damage = 25.0
+fire_rate = 0.1
+magazine_size = 30
+reload_time = 2.5
+weapon_range = 100.0

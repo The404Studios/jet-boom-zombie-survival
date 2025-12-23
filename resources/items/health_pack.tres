@@ -1,0 +1,13 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Health Pack"
+item_type = 4
+description = "Restores 50 HP"
+stack_size = 5
+weight = 0.5
+value = 200
+health_restore = 50.0

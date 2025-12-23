@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://weapon_pistol001" path="res://scenes/weapons/weapon_pistol.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Pistol"
+item_type = 0
+description = "Standard 9mm pistol"
+mesh_scene = ExtResource("2")
+stack_size = 1
+weight = 2.0
+value = 500
+damage = 15.0
+fire_rate = 0.2
+magazine_size = 15
+reload_time = 1.5
+weapon_range = 50.0
