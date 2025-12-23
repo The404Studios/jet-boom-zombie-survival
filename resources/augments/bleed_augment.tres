@@ -1,0 +1,15 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Blood Gem"
+item_type = 10
+rarity = 3
+description = "Socket to add bleed damage"
+stack_size = 10
+weight = 0.1
+value = 600
+augment_stat_type = "bleed_damage"
+augment_stat_value = 10.0

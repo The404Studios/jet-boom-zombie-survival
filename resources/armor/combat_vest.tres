@@ -1,0 +1,20 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Combat Vest"
+item_type = 3
+rarity = 3
+description = "Heavy armor vest with ammo pouches"
+stack_size = 1
+weight = 5.0
+value = 1500
+level_requirement = 10
+armor_value = 35.0
+durability = 150.0
+max_durability = 150.0
+strength_bonus = 2.0
+vitality_bonus = 5.0
+max_sockets = 2

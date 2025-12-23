@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Critical Strike Amulet"
+item_type = 7
+rarity = 4
+description = "Increases critical hit chance and damage"
+stack_size = 1
+weight = 0.2
+value = 2500
+level_requirement = 12
+dexterity_bonus = 4.0
+intelligence_bonus = 2.0
+crit_chance_bonus = 0.10
+crit_damage_bonus = 0.25
+max_sockets = 1

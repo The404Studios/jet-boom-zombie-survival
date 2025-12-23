@@ -1,0 +1,19 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Tactical Helmet"
+item_type = 2
+rarity = 2
+description = "Military-grade helmet providing head protection"
+stack_size = 1
+weight = 2.5
+value = 800
+level_requirement = 5
+armor_value = 15.0
+durability = 100.0
+max_durability = 100.0
+vitality_bonus = 3.0
+max_sockets = 1

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data_extended.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Sniper Rifle"
+item_type = 0
+rarity = 3
+description = "High-precision long-range rifle"
+stack_size = 1
+weight = 6.0
+value = 2500
+level_requirement = 10
+damage = 80.0
+fire_rate = 1.2
+magazine_size = 5
+reload_time = 3.0
+weapon_range = 200.0
+accuracy = 0.95
+headshot_bonus = 1.0
+dexterity_bonus = 2.0
+max_sockets = 2
