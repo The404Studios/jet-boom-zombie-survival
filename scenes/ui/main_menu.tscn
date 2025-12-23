@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://main_menu001"]
+[gd_scene load_steps=7 format=3 uid="uid://main_menu001"]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu_controller.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://stash_panel001" path="res://scenes/ui/stash_panel.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://market_panel001" path="res://scenes/ui/market_panel.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://merchant_panel001" path="res://scenes/ui/merchant_panel.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://trading_panel001" path="res://scenes/ui/trading_panel.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://lobby_panel001" path="res://scenes/ui/lobby_panel.tscn" id="6"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -169,6 +170,8 @@ text = "version - x.xx"
 [node name="MerchantPanel" parent="." instance=ExtResource("4")]
 
 [node name="TradingPanel" parent="." instance=ExtResource("5")]
+
+[node name="LobbyPanel" parent="." instance=ExtResource("6")]
 
 [node name="LeaderboardPanel" type="Control" parent="."]
 visible = false

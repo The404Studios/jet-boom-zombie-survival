@@ -26,7 +26,7 @@ func interact(player: Node):
 	elif current_health < max_health:
 		_start_repair(player)
 
-func _start_build(player: Node):
+func _start_build(_player: Node):
 	if is_being_nailed:
 		return
 
@@ -55,7 +55,7 @@ func _start_build(player: Node):
 	is_being_nailed = false
 	barricade_built.emit()
 
-func _start_repair(player: Node):
+func _start_repair(_player: Node):
 	if is_being_nailed or current_health >= max_health:
 		return
 
