@@ -1,0 +1,19 @@
+[gd_resource type="Resource" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://weapon_shotgun001" path="res://scenes/weapons/weapon_shotgun.tscn" id="2"]
+
+[resource]
+script = ExtResource("1")
+item_name = "Shotgun"
+item_type = 0
+description = "Pump-action shotgun"
+mesh_scene = ExtResource("2")
+stack_size = 1
+weight = 3.5
+value = 1200
+damage = 50.0
+fire_rate = 0.8
+magazine_size = 8
+reload_time = 3.0
+weapon_range = 20.0
