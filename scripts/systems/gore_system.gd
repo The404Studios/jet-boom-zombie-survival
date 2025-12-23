@@ -404,3 +404,13 @@ func set_gore_enabled(enabled: bool):
 		clear_all_gore()
 
 	print("Gore system %s" % ("enabled" if enabled else "disabled"))
+
+# Alias methods for compatibility
+func spawn_blood_splatter(position: Vector3, normal: Vector3):
+	"""Alias for spawn_blood_effect - for compatibility"""
+	spawn_blood_effect(position, normal, 1)
+
+func spawn_death_effect(position: Vector3):
+	"""Spawn death gore effect at position"""
+	spawn_gibs(position, Vector3.UP * 3.0, 5)
+	spawn_blood_effect(position, Vector3.UP, 3)

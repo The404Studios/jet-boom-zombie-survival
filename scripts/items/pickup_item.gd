@@ -63,14 +63,14 @@ func _pickup_networked(item_path: NodePath):
 	# Apply pickup effect
 	match pickup_type:
 		"ammo":
-			if player.has("reserve_ammo"):
+			if "reserve_ammo" in player:
 				player.reserve_ammo += ammo_amount
 
 				if has_node("/root/ChatSystem"):
 					get_node("/root/ChatSystem").emit_system_message("+%d Ammo" % ammo_amount)
 
 		"health":
-			if player.has("current_health") and player.has("max_health"):
+			if "current_health" in player and "max_health" in player:
 				player.current_health = min(player.current_health + health_amount, player.max_health)
 
 				if has_node("/root/ChatSystem"):

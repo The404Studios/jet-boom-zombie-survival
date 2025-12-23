@@ -7,11 +7,18 @@ class_name PlayerExtended
 @export var mouse_sensitivity: float = 0.003
 
 var current_health: float = 100.0
+var max_health: float = 100.0
 var current_stamina: float = 100.0
+var max_stamina: float = 100.0
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var is_sprinting: bool = false
 var can_shoot: bool = true
 var is_reloading: bool = false
+
+# Ammo tracking
+var current_ammo: int = 30
+var reserve_ammo: int = 120
+var magazine_size: int = 30
 
 @onready var camera: Camera3D = $Camera3D
 @onready var weapon_holder: Node3D = $Camera3D/WeaponHolder
@@ -44,12 +51,17 @@ func _ready():
 
 	# Setup stats-based values
 	if character_stats:
-		current_health = character_stats.max_health
-		current_stamina = character_stats.max_stamina
+		max_health = character_stats.max_health
+		current_health = max_health
+		max_stamina = character_stats.max_stamina
+		current_stamina = max_stamina
 		mouse_sensitivity = player_persistence.player_data.settings.mouse_sensitivity if player_persistence else 0.003
+	else:
+		max_health = 100.0
+		max_stamina = 100.0
 
-	health_changed.emit(current_health, character_stats.max_health if character_stats else 100.0)
-	stamina_changed.emit(current_stamina, character_stats.max_stamina if character_stats else 100.0)
+	health_changed.emit(current_health, max_health)
+	stamina_changed.emit(current_stamina, max_stamina)
 
 	# Connect signals
 	if equipment_system:
@@ -135,8 +147,15 @@ func shoot():
 
 	current_weapon_data = equipment_system.primary_weapon
 
-	# Check ammo (would track ammo separately)
-	# For now, assume infinite
+	# Check ammo
+	if current_ammo <= 0:
+		# Play empty click sound
+		if has_node("/root/AudioManager"):
+			get_node("/root/AudioManager").play_sfx("empty_click")
+		return
+
+	# Consume ammo
+	current_ammo -= 1
 
 	# Raycast for hit detection
 	var space_state = get_world_3d().direct_space_state
@@ -236,12 +255,32 @@ func reload_weapon():
 	if not equipment_system or not equipment_system.primary_weapon:
 		return
 
+	# Check if already full or no reserve ammo
+	if current_ammo >= magazine_size or reserve_ammo <= 0:
+		return
+
 	current_weapon_data = equipment_system.primary_weapon
+
+	# Update magazine size from weapon data if available
+	if "magazine_size" in current_weapon_data:
+		magazine_size = current_weapon_data.magazine_size
 
 	is_reloading = true
 
+	# Play reload sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sfx("reload")
+
 	# Animation would play here
 	await get_tree().create_timer(current_weapon_data.reload_time).timeout
+
+	# Calculate ammo to reload
+	var ammo_needed = magazine_size - current_ammo
+	var ammo_to_load = min(ammo_needed, reserve_ammo)
+
+	# Transfer ammo
+	current_ammo += ammo_to_load
+	reserve_ammo -= ammo_to_load
 
 	# Reload complete
 	is_reloading = false

@@ -47,7 +47,7 @@ func _update_health():
 	if not player:
 		return
 
-	if player.has("current_health") and player.has("max_health"):
+	if "current_health" in player and "max_health" in player:
 		var health = player.current_health
 		var max_health = player.max_health
 
@@ -59,7 +59,7 @@ func _update_stamina():
 	if not player:
 		return
 
-	if player.has("current_stamina") and player.has("max_stamina"):
+	if "current_stamina" in player and "max_stamina" in player:
 		var stamina = player.current_stamina
 		var max_stamina = player.max_stamina
 
@@ -71,14 +71,14 @@ func _update_weapon_info():
 	if not player:
 		return
 
-	if player.has("current_weapon_data"):
+	if "current_weapon_data" in player:
 		var weapon = player.current_weapon_data
 		if weapon:
 			weapon_label.text = weapon.item_name
 		else:
 			weapon_label.text = "Unarmed"
 
-	if player.has("current_ammo") and player.has("reserve_ammo"):
+	if "current_ammo" in player and "reserve_ammo" in player:
 		ammo_label.text = "%d / %d" % [player.current_ammo, player.reserve_ammo]
 
 func update_wave_info(wave: int, zombies_alive: int, zombies_total: int):

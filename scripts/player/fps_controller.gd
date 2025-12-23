@@ -251,7 +251,7 @@ func _get_weapon_scene_path(weapon_name: String) -> String:
 	return "res://scenes/weapons/weapon_pistol.tscn"  # Default
 
 func _check_headshot(target: Node, hit_position: Vector3) -> bool:
-	if not target.has("global_position"):
+	if not "global_position" in target:
 		return false
 
 	# Simple headshot check - hit point is above center of target

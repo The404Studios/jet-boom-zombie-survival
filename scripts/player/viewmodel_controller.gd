@@ -301,7 +301,7 @@ func _update_weapon_bob(delta):
 
 	# Check if player is moving
 	var is_moving = false
-	if player.has("velocity"):
+	if "velocity" in player:
 		is_moving = player.velocity.length() > 0.1
 
 	if is_moving:

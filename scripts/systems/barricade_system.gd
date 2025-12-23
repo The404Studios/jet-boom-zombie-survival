@@ -49,7 +49,7 @@ func _start_build(player: Node):
 		# VFX feedback
 		if has_node("/root/VFXManager"):
 			var hit_pos = global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.5, 1.5), randf_range(-0.3, 0.3))
-			get_node("/root/VFXManager").spawn_impact(hit_pos, Vector3.UP, "wood")
+			get_node("/root/VFXManager").spawn_impact_effect(hit_pos, Vector3.UP, "wood")
 
 	is_built = true
 	is_being_nailed = false
@@ -81,7 +81,7 @@ func _start_repair(player: Node):
 		# VFX feedback
 		if has_node("/root/VFXManager"):
 			var hit_pos = global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.5, 1.5), randf_range(-0.3, 0.3))
-			get_node("/root/VFXManager").spawn_impact(hit_pos, Vector3.UP, "wood")
+			get_node("/root/VFXManager").spawn_impact_effect(hit_pos, Vector3.UP, "wood")
 
 		if current_health >= max_health:
 			break
@@ -123,7 +123,7 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 		get_node("/root/AudioManager").play_sound_3d("wood_break", global_position)
 
 	if has_node("/root/VFXManager"):
-		get_node("/root/VFXManager").spawn_impact(global_position, Vector3.UP, "wood")
+		get_node("/root/VFXManager").spawn_impact_effect(global_position, Vector3.UP, "wood")
 
 	if current_health <= 0:
 		_destroy()
@@ -131,7 +131,7 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 func _destroy():
 	# Spawn destruction particles
 	if has_node("/root/VFXManager"):
-		get_node("/root/VFXManager").spawn_explosion(global_position, "wood")
+		get_node("/root/VFXManager").spawn_explosion(global_position, 2.0)  # Small explosion for barricade
 
 	barricade_destroyed.emit()
 	queue_free()
