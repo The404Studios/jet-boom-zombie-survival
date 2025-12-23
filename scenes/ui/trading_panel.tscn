@@ -1,0 +1,208 @@
+[gd_scene load_steps=1 format=3 uid="uid://trading_panel001"]
+
+[node name="TradingPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+visible = false
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.03, 0.03, 0.05, 0.95)
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 32
+text = "TRADE"
+horizontal_alignment = 1
+
+[node name="CloseButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -60.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = 60.0
+text = "X"
+
+[node name="YourOffer" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 50.0
+offset_top = -200.0
+offset_right = 450.0
+offset_bottom = 200.0
+
+[node name="Title" type="Label" parent="YourOffer"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 20
+text = "Your Offer"
+horizontal_alignment = 1
+
+[node name="OfferGrid" type="GridContainer" parent="YourOffer"]
+layout_mode = 1
+offset_left = 20.0
+offset_top = 50.0
+offset_right = 380.0
+offset_bottom = 300.0
+columns = 5
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="CurrencyInput" type="HBoxContainer" parent="YourOffer"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -60.0
+offset_right = -20.0
+offset_bottom = -20.0
+
+[node name="Label" type="Label" parent="YourOffer/CurrencyInput"]
+layout_mode = 2
+text = "Currency:"
+
+[node name="Amount" type="SpinBox" parent="YourOffer/CurrencyInput"]
+layout_mode = 2
+min_value = 0.0
+max_value = 999999.0
+
+[node name="TheirOffer" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -450.0
+offset_top = -200.0
+offset_right = -50.0
+offset_bottom = 200.0
+
+[node name="Title" type="Label" parent="TheirOffer"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 20
+text = "Their Offer"
+horizontal_alignment = 1
+
+[node name="OfferGrid" type="GridContainer" parent="TheirOffer"]
+layout_mode = 1
+offset_left = 20.0
+offset_top = 50.0
+offset_right = 380.0
+offset_bottom = 300.0
+columns = 5
+theme_override_constants/h_separation = 6
+theme_override_constants/v_separation = 6
+
+[node name="TheirCurrency" type="Label" parent="TheirOffer"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -50.0
+offset_right = -20.0
+offset_bottom = -20.0
+theme_override_font_sizes/font_size = 16
+text = "Currency: 0"
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -30.0
+offset_right = 150.0
+offset_bottom = 30.0
+theme_override_font_sizes/font_size = 18
+text = "Waiting for partner..."
+horizontal_alignment = 1
+
+[node name="BottomBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 200.0
+offset_top = -80.0
+offset_right = -200.0
+offset_bottom = -20.0
+theme_override_constants/separation = 30
+alignment = 1
+
+[node name="ReadyButton" type="Button" parent="BottomBar"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Ready"
+
+[node name="AcceptButton" type="Button" parent="BottomBar"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+disabled = true
+theme_override_font_sizes/font_size = 18
+text = "Accept Trade"
+
+[node name="CancelButton" type="Button" parent="BottomBar"]
+custom_minimum_size = Vector2(150, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Cancel"
+
+[node name="YourInventory" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = 500.0
+offset_right = 300.0
+offset_bottom = -100.0
+
+[node name="Title" type="Label" parent="YourInventory"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 5.0
+offset_bottom = 30.0
+text = "Your Inventory"
+horizontal_alignment = 1
+
+[node name="Grid" type="GridContainer" parent="YourInventory"]
+layout_mode = 1
+offset_left = 10.0
+offset_top = 35.0
+offset_right = 590.0
+offset_bottom = 200.0
+columns = 10
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
