@@ -1,0 +1,27 @@
+[gd_scene load_steps=3 format=3 uid="uid://health_pickup001"]
+
+[ext_resource type="Script" path="res://scripts/items/pickup_item.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.3, 0.3, 0.3)
+
+[node name="HealthPickup" type="Area3D" groups=["pickup", "health"]]
+collision_layer = 16
+collision_mask = 2
+script = ExtResource("1")
+pickup_type = "health"
+health_amount = 25.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")
+
+[node name="Model" type="MeshInstance3D" parent="."]
+mesh = BoxMesh.new()
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+pixel_size = 0.01
+text = "+ HEALTH"
+font_size = 32
+outline_size = 4
+modulate = Color(0, 1, 0, 1)

@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=3 uid="uid://prop_barrel001"]
+
+[ext_resource type="Script" path="res://scripts/systems/prop_system.gd" id="1"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1"]
+radius = 0.5
+height = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 0.5
+bottom_radius = 0.5
+height = 1.0
+
+[node name="PropBarrel" type="StaticBody3D" groups=["props", "zombie_targets"]]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1")
+max_health = 300.0
+health_per_wave = 75.0
+prop_name = "Barrel"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("CylinderShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("CylinderMesh_1")

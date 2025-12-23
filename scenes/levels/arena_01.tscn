@@ -1,0 +1,153 @@
+[gd_scene load_steps=11 format=3 uid="uid://arena_main001"]
+
+[ext_resource type="PackedScene" uid="uid://player_fps001" path="res://scenes/player/player_fps.tscn" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/ui/chat_ui.tscn" id="3"]
+[ext_resource type="Script" path="res://scripts/levels/arena_manager.gd" id="4"]
+[ext_resource type="PackedScene" uid="uid://sigil_protector001" path="res://scenes/systems/sigil.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://prop_crate001" path="res://scenes/props/prop_crate.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://prop_barrel001" path="res://scenes/props/prop_barrel.tscn" id="7"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.3, 0.3, 0.35, 1)
+roughness = 0.8
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_1"]
+vertices = PackedVector3Array(-25, 0.5, -25, 25, 0.5, -25, 25, 0.5, 25, -25, 0.5, 25)
+polygons = [PackedInt32Array(0, 1, 2, 3)]
+
+[node name="Arena01" type="Node3D"]
+script = ExtResource("4")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 20, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="Ground" type="StaticBody3D" parent="." groups=["environment"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+mesh = BoxMesh.new()
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_1")
+
+[node name="Player" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Sigil" parent="." instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="Props" type="Node3D" parent="."]
+
+[node name="Crate1" parent="Props" instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.75, 5)
+
+[node name="Crate2" parent="Props" instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.75, 5)
+
+[node name="Crate3" parent="Props" instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.75, -5)
+
+[node name="Crate4" parent="Props" instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.75, -5)
+
+[node name="Barrel1" parent="Props" instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0)
+
+[node name="Barrel2" parent="Props" instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
+
+[node name="Barrel3" parent="Props" instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 8)
+
+[node name="Barrel4" parent="Props" instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="SpawnPoint1" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -20)
+
+[node name="SpawnPoint2" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -20)
+
+[node name="SpawnPoint3" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 20)
+
+[node name="SpawnPoint4" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 20)
+
+[node name="SpawnPoint5" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
+
+[node name="SpawnPoint6" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
+
+[node name="Walls" type="Node3D" parent="."]
+
+[node name="WallNorth" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -25)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallNorth"]
+shape = BoxShape3D.new()
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallNorth"]
+mesh = BoxMesh.new()
+
+[node name="WallSouth" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 25)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallSouth"]
+shape = BoxShape3D.new()
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallSouth"]
+mesh = BoxMesh.new()
+
+[node name="WallEast" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 2.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallEast"]
+shape = BoxShape3D.new()
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallEast"]
+mesh = BoxMesh.new()
+
+[node name="WallWest" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 2.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallWest"]
+shape = BoxShape3D.new()
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallWest"]
+mesh = BoxMesh.new()
+
+[node name="ItemSpawns" type="Node3D" parent="."]
+
+[node name="AmmoSpawn1" type="Marker3D" parent="ItemSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
+
+[node name="AmmoSpawn2" type="Marker3D" parent="ItemSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 0)
+
+[node name="HealthSpawn1" type="Marker3D" parent="ItemSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+
+[node name="WeaponSpawn1" type="Marker3D" parent="ItemSpawns"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="HUD" parent="UI" instance=ExtResource("2")]
+
+[node name="ChatUI" parent="UI" instance=ExtResource("3")]

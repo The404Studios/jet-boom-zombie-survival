@@ -153,24 +153,77 @@ func _physics_process(delta):
 	update_animation()
 
 func find_target():
+	"""
+	JetBoom targeting priority:
+	1. Sigil (primary objective)
+	2. Props (secondary targets)
+	3. Barricades (player-built obstacles)
+	4. Players (if they get too close or are blocking path)
+	"""
+
+	# Priority 1: Sigil (always primary target)
+	var sigils = get_tree().get_nodes_in_group("sigil")
+	if sigils.size() > 0:
+		target = sigils[0]
+		return
+
+	# Priority 2: Props (secondary targets blocking path to sigil)
+	var props = get_tree().get_nodes_in_group("props")
+	if props.size() > 0:
+		var closest_prop = null
+		var closest_distance = INF
+
+		for prop in props:
+			if not is_instance_valid(prop):
+				continue
+			var dist = global_position.distance_to(prop.global_position)
+			if dist < closest_distance and dist < 5.0:  # Only target nearby props
+				closest_distance = dist
+				closest_prop = prop
+
+		if closest_prop:
+			target = closest_prop
+			return
+
+	# Priority 3: Barricades (player-built obstacles)
+	var barricades = get_tree().get_nodes_in_group("barricades")
+	if barricades.size() > 0:
+		var closest_barricade = null
+		var closest_distance = INF
+
+		for barricade in barricades:
+			if not is_instance_valid(barricade):
+				continue
+			var dist = global_position.distance_to(barricade.global_position)
+			if dist < closest_distance and dist < 5.0:  # Only target nearby barricades
+				closest_distance = dist
+				closest_barricade = barricade
+
+		if closest_barricade:
+			target = closest_barricade
+			return
+
+	# Priority 4: Players (if very close or no other targets)
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
-		# Find closest player
 		var closest_player = null
 		var closest_distance = INF
 
 		for player in players:
+			if not is_instance_valid(player):
+				continue
 			var dist = global_position.distance_to(player.global_position)
 			if dist < closest_distance:
 				closest_distance = dist
 				closest_player = player
 
-		target = closest_player
-	else:
-		# Target sigil
-		var sigils = get_tree().get_nodes_in_group("sigil")
-		if sigils.size() > 0:
-			target = sigils[0]
+		# Only target players if they're close (within 10 units)
+		if closest_player and closest_distance < 10.0:
+			target = closest_player
+			return
+
+	# Fallback: No valid target found
+	target = null
 
 func move_toward_target(delta):
 	if navigation_agent.is_navigation_finished():
