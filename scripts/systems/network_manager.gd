@@ -167,7 +167,7 @@ func receive_all_players(all_players: Dictionary):
 
 func spawn_player(peer_id: int, player_info: Dictionary):
 	# Spawn player node
-	var player_scene = preload("res://scenes/player/player.tscn")
+	var player_scene = preload("res://scenes/player/player_fps.tscn")
 	var player = player_scene.instantiate()
 
 	player.name = "Player_%d" % peer_id
@@ -205,7 +205,11 @@ func sync_wave_state(wave: int, zombies_alive: int, is_intermission: bool):
 @rpc("authority", "call_local")
 func spawn_zombie_networked(zombie_class_name: String, position: Vector3, zombie_id: int):
 	# Spawn zombie on all clients
-	var zombie_scene = preload("res://scenes/zombies/zombie.tscn")
+	var zombie_scene_path = "res://scenes/zombies/zombie_%s.tscn" % zombie_class_name
+	if not ResourceLoader.exists(zombie_scene_path):
+		zombie_scene_path = "res://scenes/zombies/zombie_shambler.tscn"  # Fallback
+
+	var zombie_scene = load(zombie_scene_path)
 	var zombie = zombie_scene.instantiate()
 
 	zombie.name = "Zombie_%d" % zombie_id

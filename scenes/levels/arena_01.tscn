@@ -76,22 +76,22 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
 
 [node name="SpawnPoints" type="Node3D" parent="."]
 
-[node name="SpawnPoint1" type="Marker3D" parent="SpawnPoints"]
+[node name="SpawnPoint1" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, -20)
 
-[node name="SpawnPoint2" type="Marker3D" parent="SpawnPoints"]
+[node name="SpawnPoint2" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, -20)
 
-[node name="SpawnPoint3" type="Marker3D" parent="SpawnPoints"]
+[node name="SpawnPoint3" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 20)
 
-[node name="SpawnPoint4" type="Marker3D" parent="SpawnPoints"]
+[node name="SpawnPoint4" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 0, 20)
 
-[node name="SpawnPoint5" type="Marker3D" parent="SpawnPoints"]
+[node name="SpawnPoint5" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -20)
 
-[node name="SpawnPoint6" type="Marker3D" parent="SpawnPoints"]
+[node name="SpawnPoint6" type="Marker3D" parent="SpawnPoints" groups=["player_spawn", "spawn_points"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
 
 [node name="Walls" type="Node3D" parent="."]

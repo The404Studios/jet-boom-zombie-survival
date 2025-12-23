@@ -19,14 +19,13 @@ signal prop_damaged(health_remaining: float, health_percent: float)
 signal prop_destroyed
 
 @onready var mesh: MeshInstance3D = $MeshInstance3D if has_node("MeshInstance3D") else null
-@onready var health_bar: SubViewport = $HealthBarViewport if has_node("HealthBarViewport") else null
-@onready var health_bar_sprite: Sprite3D = $HealthBarSprite if has_node("HealthBarSprite") else null
+@onready var health_label: Label3D = $HealthLabel3D if has_node("HealthLabel3D") else null
 
 func _ready():
 	add_to_group("props")
 	add_to_group("zombie_targets")
+	_setup_health_label()
 	_update_visual()
-	_setup_health_bar()
 
 func setup_for_wave(wave: int):
 	"""Scale health based on wave"""
@@ -55,9 +54,9 @@ func take_damage(amount: float, attacker: Node = null):
 	if has_node("/root/AudioManager"):
 		get_node("/root/AudioManager").play_sound_3d("wood_hit", global_position, 0.5)
 
-	# Show health bar when damaged
-	if health_bar_sprite:
-		health_bar_sprite.visible = true
+	# Show health label when damaged
+	if health_label:
+		health_label.visible = true
 
 	# Check destroyed
 	if current_health <= 0:
@@ -66,8 +65,8 @@ func take_damage(amount: float, attacker: Node = null):
 func _update_visual():
 	var health_percent = current_health / max_health
 
-	# Update health bar
-	_update_health_bar(health_percent)
+	# Update health label
+	_update_health_label(health_percent)
 
 	# Change material based on damage
 	if mesh:
@@ -77,67 +76,34 @@ func _update_visual():
 			var damage_factor = health_percent
 			mat.albedo_color = Color(damage_factor, damage_factor, damage_factor, 1.0)
 
-func _setup_health_bar():
-	"""Create 3D health bar display"""
-	if not health_bar_sprite:
-		# Create health bar sprite
-		health_bar_sprite = Sprite3D.new()
-		add_child(health_bar_sprite)
-		health_bar_sprite.name = "HealthBarSprite"
-		health_bar_sprite.pixel_size = 0.01
-		health_bar_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-		health_bar_sprite.offset = Vector2(0, 50)  # Above prop
-		health_bar_sprite.visible = false
+func _setup_health_label():
+	"""Create 3D health label"""
+	if not health_label:
+		health_label = Label3D.new()
+		add_child(health_label)
+		health_label.name = "HealthLabel3D"
+		health_label.pixel_size = 0.01
+		health_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		health_label.position = Vector3(0, 2, 0)  # Above prop
+		health_label.font_size = 24
+		health_label.outline_size = 4
+		health_label.visible = false
 
-		# Create viewport for health bar rendering
-		var viewport = SubViewport.new()
-		add_child(viewport)
-		viewport.name = "HealthBarViewport"
-		viewport.size = Vector2i(200, 20)
-		viewport.transparent_bg = true
-
-		# Create ColorRect for health bar
-		var bg = ColorRect.new()
-		bg.size = Vector2(200, 20)
-		bg.color = Color(0.2, 0.2, 0.2, 0.8)
-		viewport.add_child(bg)
-
-		var fill = ColorRect.new()
-		fill.name = "HealthFill"
-		fill.size = Vector2(200, 20)
-		fill.color = Color(0, 1, 0, 1)
-		viewport.add_child(fill)
-
-		var label = Label.new()
-		label.name = "HealthLabel"
-		label.text = prop_name
-		label.position = Vector2(5, 0)
-		label.add_theme_font_size_override("font_size", 14)
-		viewport.add_child(label)
-
-		health_bar = viewport
-		health_bar_sprite.texture = viewport.get_texture()
-
-func _update_health_bar(health_percent: float):
-	"""Update health bar display"""
-	if not health_bar:
+func _update_health_label(health_percent: float):
+	"""Update health label display"""
+	if not health_label:
 		return
 
-	var fill = health_bar.get_node_or_null("HealthFill")
-	if fill:
-		fill.size.x = 200 * health_percent
+	# Update text
+	health_label.text = "%s\n%.0f/%.0f HP" % [prop_name, current_health, max_health]
 
-		# Color based on health
-		if health_percent > 0.6:
-			fill.color = Color(0, 1, 0, 1)  # Green
-		elif health_percent > 0.3:
-			fill.color = Color(1, 1, 0, 1)  # Yellow
-		else:
-			fill.color = Color(1, 0, 0, 1)  # Red
-
-	var label = health_bar.get_node_or_null("HealthLabel")
-	if label:
-		label.text = "%s: %.0f/%.0f" % [prop_name, current_health, max_health]
+	# Color based on health
+	if health_percent > 0.6:
+		health_label.modulate = Color(0, 1, 0, 1)  # Green
+	elif health_percent > 0.3:
+		health_label.modulate = Color(1, 1, 0, 1)  # Yellow
+	else:
+		health_label.modulate = Color(1, 0, 0, 1)  # Red
 
 func enable_phasing():
 	"""Allow player to phase through (called when holding Z)"""

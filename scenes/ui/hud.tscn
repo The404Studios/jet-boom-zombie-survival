@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/ui/hud_controller.gd" id="1"]
 
-[node name="HUD" type="Control"]
+[node name="HUD" type="Control" groups=["hud"]]
 script = ExtResource("1")
 layout_mode = 3
 anchors_preset = 15
