@@ -99,10 +99,10 @@ func _physics_process(delta):
 
 	last_body_pos = player.global_position
 
-func _update_stepping(delta):
+func _update_stepping(_delta):
 	"""Handle foot stepping when moving"""
 	var move_delta = player.global_position - last_body_pos
-	var move_distance = Vector2(move_delta.x, move_delta.z).length()
+	var _move_distance = Vector2(move_delta.x, move_delta.z).length()
 
 	# Check if we need to step
 	if not is_left_moving and not is_right_moving:
@@ -121,7 +121,7 @@ func _step_foot(is_left: bool):
 	"""Move a foot to new position"""
 	if is_left:
 		is_left_moving = true
-		var target_pos = player.global_position + Vector3(-foot_offset, 0, 0.3)
+		var _target_pos = player.global_position + Vector3(-foot_offset, 0, 0.3)
 
 		# Raycast to find ground
 		if left_raycast and left_raycast.is_colliding():
@@ -134,7 +134,7 @@ func _step_foot(is_left: bool):
 		is_left_moving = false
 	else:
 		is_right_moving = true
-		var target_pos = player.global_position + Vector3(foot_offset, 0, 0.3)
+		var _target_pos = player.global_position + Vector3(foot_offset, 0, 0.3)
 
 		# Raycast to find ground
 		if right_raycast and right_raycast.is_colliding():

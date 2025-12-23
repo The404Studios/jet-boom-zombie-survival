@@ -34,7 +34,7 @@ func _ready():
 # SERVER / HOST
 # ============================================
 
-func create_server_steam(lobby_id: int) -> bool:
+func create_server_steam(_lobby_id: int) -> bool:
 	if not steam_manager or not steam_manager.is_initialized():
 		print("Steam not initialized!")
 		return false
@@ -165,7 +165,7 @@ func receive_all_players(all_players: Dictionary):
 		if peer_id != local_player_id and not players.has(peer_id):
 			register_player(peer_id, all_players[peer_id])
 
-func spawn_player(peer_id: int, player_info: Dictionary):
+func spawn_player(peer_id: int, _player_info: Dictionary):
 	# Spawn player node
 	var player_scene = preload("res://scenes/player/player_fps.tscn")
 	var player = player_scene.instantiate()
@@ -218,13 +218,13 @@ func spawn_zombie_networked(zombie_class_name: String, position: Vector3, zombie
 	get_tree().current_scene.add_child(zombie)
 
 @rpc("any_peer", "call_local")
-func damage_zombie(zombie_path: NodePath, damage: float, is_headshot: bool):
+func damage_zombie(zombie_path: NodePath, damage: float, _is_headshot: bool):
 	var zombie = get_node_or_null(zombie_path)
 	if zombie and zombie.has_method("take_damage"):
 		zombie.take_damage(damage, Vector3.ZERO)
 
 @rpc("any_peer", "call_local")
-func player_shoot(player_id: int, origin: Vector3, direction: Vector3, weapon_type: String = "rifle"):
+func player_shoot(_player_id: int, origin: Vector3, direction: Vector3, weapon_type: String = "rifle"):
 	# Handle player shooting on all clients for visual effects
 
 	# Get VFX manager for muzzle flash and tracer
@@ -283,7 +283,7 @@ func sync_player_health(player_id: int, health: float, max_health: float):
 			player.max_health = max_health
 
 @rpc("authority", "call_local")
-func player_died(player_id: int, killer_id: int = -1):
+func player_died(player_id: int, _killer_id: int = -1):
 	# Handle player death across all clients
 	if player_nodes.has(player_id):
 		var player = player_nodes[player_id]
@@ -296,7 +296,7 @@ func player_died(player_id: int, killer_id: int = -1):
 			gore_system.spawn_death_effect(player.global_position)
 
 @rpc("any_peer", "reliable")
-func player_use_item(player_id: int, item_name: String, target_position: Vector3):
+func player_use_item(_player_id: int, item_name: String, target_position: Vector3):
 	# Handle item usage across network
 	var audio_manager = get_node_or_null("/root/AudioManager")
 	if audio_manager and audio_manager.has_method("play_sound_3d"):
