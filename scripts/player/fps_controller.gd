@@ -329,7 +329,7 @@ func _die():
 	_respawn()
 
 @rpc("authority", "call_local", "reliable")
-func _player_died(player_id: int):
+func _player_died(_player_id: int):
 	"""Network replicated player death"""
 	if has_node("/root/ChatSystem"):
 		get_node("/root/ChatSystem").emit_system_message("Player died!")
@@ -368,7 +368,7 @@ func _respawn():
 		get_node("/root/ChatSystem").emit_system_message("Respawned!")
 
 @rpc("authority", "call_local", "reliable")
-func _player_respawned(player_id: int, position: Vector3):
+func _player_respawned(_player_id: int, _spawn_position: Vector3):
 	"""Network replicated player respawn"""
 	pass  # Could add respawn effects here
 

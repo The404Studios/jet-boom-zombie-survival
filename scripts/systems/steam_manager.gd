@@ -291,7 +291,7 @@ func _on_lobby_match_list(lobbies: Array):
 	lobby_list_received.emit(lobby_list)
 	print("Received %d lobbies" % lobby_list.size())
 
-func _on_lobby_chat_update(lobby_id: int, changed_id: int, making_change_id: int, chat_state: int):
+func _on_lobby_chat_update(_lobby_id: int, changed_id: int, _making_change_id: int, chat_state: int):
 	# Chat state values:
 	# 0x0001 = Entered
 	# 0x0002 = Left
@@ -330,7 +330,7 @@ func _on_lobby_chat_update(lobby_id: int, changed_id: int, making_change_id: int
 	# Update lobby member list
 	update_lobby_members()
 
-func _on_lobby_data_update(success: int, lobby_id: int, member_id: int, key: int):
+func _on_lobby_data_update(success: int, lobby_id: int, _member_id: int, _key: int):
 	if success != 1 or lobby_id != current_lobby_id:
 		return
 
@@ -383,11 +383,11 @@ func _on_persona_state_change(friend_steam_id: int, flags: int):
 	var steam = Engine.get_singleton("Steam")
 	var friend_name = steam.getFriendPersonaName(friend_steam_id)
 	var friend_state = steam.getFriendPersonaState(friend_steam_id)
-	var is_online = friend_state != 0
+	var friend_online = friend_state != 0
 
 	# Status changed
 	if flags & 0x0002 or flags & 0x0004 or flags & 0x0008:
-		friend_status_changed.emit(friend_steam_id, is_online)
+		friend_status_changed.emit(friend_steam_id, friend_online)
 
 		if flags & 0x0004:
 			print("Friend came online: %s" % friend_name)

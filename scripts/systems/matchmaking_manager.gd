@@ -123,7 +123,7 @@ func _on_lobby_joined(lobby_id: int):
 		# Get lobby owner's Steam ID to connect
 		var steam = Engine.get_singleton("Steam")
 		if steam:
-			var owner_steam_id = steam.getLobbyOwner(lobby_id)
+			var _owner_steam_id = steam.getLobbyOwner(lobby_id)
 
 			# Join the network game via Steam P2P or fallback to LAN
 			if steam_manager.is_initialized():
