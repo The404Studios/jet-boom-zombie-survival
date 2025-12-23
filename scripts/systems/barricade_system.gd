@@ -1,53 +1,44 @@
-extends StaticBody3D
-class_name Barricade
+extends Node3D
 
-@export var max_health: float = 200.0
-@export var repair_cost: int = 10
+# Barricade that can be built and repaired
+# JetBoom-style nailing mechanic
 
-var current_health: float = 200.0
-var is_placed: bool = false
+@export var max_health: float = 100.0
+@export var nail_health: float = 20.0
+@export var nails_required: int = 6
+@export var cost_to_build: int = 50
 
-@onready var mesh_instance: MeshInstance3D = $MeshInstance3D if has_node("MeshInstance3D") else null
+var current_health: float = 0.0
+var nails_placed: int = 0
+var is_built: bool = false
+var is_being_nailed: bool = false
 
+signal barricade_built
 signal barricade_destroyed
 
-func _ready():
-	add_to_group("barricades")
-	current_health = max_health
+func interact(player: Node):
+	if not is_built:
+		_start_build(player)
+	elif current_health < max_health:
+		_start_repair(player)
 
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
+func _start_build(player: Node):
+	is_being_nailed = true
+	nails_placed = 0
+	
+	for i in range(nails_required):
+		await get_tree().create_timer(0.5).timeout
+		nails_placed += 1
+		current_health += nail_health
+		
+		if has_node("/root/AudioManager"):
+			get_node("/root/AudioManager").play_sound_3d("hammer", global_position)
+	
+	is_built = true
+	barricade_built.emit()
+
+func take_damage(amount: float):
 	current_health -= amount
-	current_health = max(current_health, 0)
-
-	# Visual feedback for damage
-	update_damage_visual()
-
 	if current_health <= 0:
-		destroy()
-
-func repair(amount: float = 50.0):
-	current_health = min(current_health + amount, max_health)
-	update_damage_visual()
-
-func update_damage_visual():
-	# Change material or color based on health percentage
-	if mesh_instance:
-		var health_percent = current_health / max_health
-		var mat = StandardMaterial3D.new()
-		if health_percent > 0.66:
-			mat.albedo_color = Color(0.6, 0.4, 0.2)  # Brown
-		elif health_percent > 0.33:
-			mat.albedo_color = Color(0.5, 0.3, 0.1)  # Darker brown
-		else:
-			mat.albedo_color = Color(0.3, 0.2, 0.1)  # Almost broken
-		mesh_instance.material_override = mat
-
-func destroy():
-	barricade_destroyed.emit()
-	queue_free()
-
-func interact(player: Player):
-	# Allow player to repair barricade
-	if current_health < max_health:
-		# Check if player has repair materials
-		repair(50.0)
+		queue_free()
+		barricade_destroyed.emit()
