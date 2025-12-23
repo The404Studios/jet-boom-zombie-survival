@@ -112,18 +112,34 @@ func _on_lobby_joined(lobby_id: int):
 
 	# Get match state
 	var state_str = steam_manager.get_lobby_data("match_state")
-	if state_str:
+	if state_str and state_str.is_valid_int():
 		current_match_state = int(state_str) as MatchState
 
-	# Connect to host
-	var owner_id = steam_manager.get_lobby_data("owner_steam_id")
-	if owner_id and network_manager:
-		# Join the network session
-		# Note: This requires Steam P2P networking implementation
-		pass
+	# Stop matchmaking since we found a lobby
+	is_searching = false
+
+	# Connect to host network session
+	if network_manager:
+		# Get lobby owner's Steam ID to connect
+		var steam = Engine.get_singleton("Steam")
+		if steam:
+			var owner_steam_id = steam.getLobbyOwner(lobby_id)
+
+			# Join the network game via Steam P2P or fallback to LAN
+			if steam_manager.is_initialized():
+				var result = network_manager.join_server_steam(lobby_id)
+				if not result:
+					# Steam P2P failed, try LAN fallback
+					print("Steam P2P join failed, attempting LAN fallback")
+					# Get host IP from lobby data if available
+					var host_ip = steam_manager.get_lobby_data("host_ip")
+					if host_ip and not host_ip.is_empty():
+						network_manager.join_server_lan(host_ip)
+					else:
+						network_manager.join_server_lan("127.0.0.1")
 
 	match_found.emit(lobby_id)
-	print("Joined match! State: ", current_match_state)
+	print("Joined match! Lobby: %d, State: %s" % [lobby_id, MatchState.keys()[current_match_state]])
 
 func _on_lobby_list_received(lobbies: Array):
 	"""Called when lobby search completes"""

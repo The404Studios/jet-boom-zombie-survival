@@ -47,7 +47,7 @@ func place_barricade(player: Player):
 
 func repair_barricade(player: Player):
 	if current_barricade:
-		current_barricade.repair()
+		current_barricade.repair(player)
 
 func _on_barricade_destroyed():
 	has_barricade = false
