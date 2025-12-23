@@ -15,7 +15,7 @@ extends Control
 @onready var voice_volume_label = $Panel/MarginContainer/VBoxContainer/VoiceVolume/ValueLabel
 
 @onready var mic_gain_slider = $Panel/MarginContainer/VBoxContainer/MicGain/HSlider
-@ontml:parameter name="mic_gain_label = $Panel/MarginContainer/VBoxContainer/MicGain/ValueLabel
+@onready var mic_gain_label = $Panel/MarginContainer/VBoxContainer/MicGain/ValueLabel
 
 @onready var test_mic_button = $Panel/MarginContainer/VBoxContainer/TestMicrophone/Button
 @onready var voice_indicator = $Panel/MarginContainer/VBoxContainer/VoiceIndicator/ProgressBar

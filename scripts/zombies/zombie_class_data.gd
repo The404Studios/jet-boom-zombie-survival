@@ -58,6 +58,39 @@ enum ZombieClass {
 @export var buff_radius: float = 10.0
 @export var buff_amount: float = 0.2
 
+# Additional Abilities
+@export var has_buff_aura: bool = false
+@export var buff_speed_multiplier: float = 1.0
+@export var buff_damage_multiplier: float = 1.0
+@export var scream_cooldown: float = 10.0
+
+@export var has_rage_mode: bool = false
+@export var rage_threshold: float = 0.5  # Activate when health below this %
+@export var rage_speed_bonus: float = 1.5
+@export var rage_damage_bonus: float = 1.3
+
+@export var has_gas_cloud: bool = false
+@export var gas_damage_per_second: float = 5.0
+@export var gas_radius: float = 5.0
+@export var gas_duration: float = 3.0
+@export var gas_slow_amount: float = 0.5
+
+@export var has_teleport: bool = false
+@export var teleport_cooldown: float = 10.0
+@export var teleport_range: float = 15.0
+
+@export var can_summon_zombies: bool = false
+@export var summon_cooldown: float = 20.0
+@export var summon_count: int = 2
+
+@export var has_regeneration: bool = false
+@export var regeneration_per_second: float = 5.0
+
+@export var has_aoe_attack: bool = false
+@export var aoe_damage: float = 30.0
+@export var aoe_radius: float = 5.0
+@export var aoe_cooldown: float = 10.0
+
 # Visual
 @export var model_scale: float = 1.0
 @export var tint_color: Color = Color.WHITE
