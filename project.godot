@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameSettings="*res://scripts/systems/game_settings.gd"
 EventBus="*res://scripts/systems/event_bus.gd"
 SteamManager="*res://scripts/systems/steam_manager.gd"
 NetworkManager="*res://scripts/systems/network_manager.gd"

@@ -1,4 +1,4 @@
-[gd_scene load_steps=23 format=3 uid="uid://arena_main001"]
+[gd_scene load_steps=27 format=3 uid="uid://arena_main001"]
 
 [ext_resource type="PackedScene" uid="uid://player_fps001" path="res://scenes/player/player_fps.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2"]
@@ -10,6 +10,33 @@
 [ext_resource type="PackedScene" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Meshes/tree_dead.fbx" id="8"]
 [ext_resource type="PackedScene" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Meshes/plant_fern.fbx" id="9"]
 [ext_resource type="PackedScene" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Meshes/plant_small.fbx" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="11"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
+sky_top_color = Color(0.15, 0.15, 0.25, 1)
+sky_horizon_color = Color(0.3, 0.25, 0.3, 1)
+ground_bottom_color = Color(0.08, 0.08, 0.1, 1)
+ground_horizon_color = Color(0.2, 0.18, 0.22, 1)
+sun_angle_max = 15.0
+sun_curve = 0.1
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("ProceduralSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_arena"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 2
+ambient_light_color = Color(0.25, 0.25, 0.35, 1)
+ambient_light_energy = 0.4
+tonemap_mode = 2
+tonemap_exposure = 0.95
+glow_enabled = true
+glow_intensity = 0.4
+glow_bloom = 0.15
+fog_enabled = true
+fog_light_color = Color(0.2, 0.2, 0.25, 1)
+fog_density = 0.008
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
 size = Vector3(50, 1, 50)
@@ -41,11 +68,20 @@ size = Vector3(1, 5, 50)
 script = ExtResource("4")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_arena")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 20, 0)
-light_energy = 0.8
+light_color = Color(0.8, 0.75, 0.7, 1)
+light_energy = 0.9
 shadow_enabled = true
+shadow_opacity = 0.8
+
+[node name="MoonLight" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, 0.433, -0.25, 0, 0.5, 0.866, 0.5, -0.75, 0.433, 0, 15, 0)
+light_color = Color(0.5, 0.55, 0.7, 1)
+light_energy = 0.3
+shadow_enabled = false
 
 [node name="Ground" type="StaticBody3D" parent="." groups=["environment"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
@@ -201,3 +237,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
 [node name="HUD" parent="UI" instance=ExtResource("2")]
 
 [node name="ChatUI" parent="UI" instance=ExtResource("3")]
+
+[node name="PauseMenu" parent="UI" instance=ExtResource("11")]
+visible = false

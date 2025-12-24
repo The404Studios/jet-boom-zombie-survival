@@ -2,6 +2,13 @@ extends Node
 
 # Steam integration using GodotSteam
 # Requires GodotSteam addon: https://github.com/GodotSteam/GodotSteam
+#
+# SETUP INSTRUCTIONS:
+# 1. Download GodotSteam from: https://github.com/GodotSteam/GodotSteam/releases
+# 2. Use the GodotSteam Godot editor build OR place the addon in your project
+# 3. Place steam_api64.dll (Windows) / libsteam_api.so (Linux) next to the executable
+# 4. Create steam_appid.txt with your App ID (480 for Spacewar test)
+# 5. Make sure Steam client is running before launching the game
 
 signal steam_initialized(success: bool)
 signal lobby_created(lobby_id: int)
@@ -15,7 +22,7 @@ signal lobby_data_changed(key: String, value: String)
 signal lobby_invite_received(inviter_id: int, inviter_name: String, lobby_id: int)
 signal friend_status_changed(friend_id: int, is_online: bool)
 
-var steam_app_id: int = 480  # Replace with your Steam App ID
+var steam_app_id: int = 480  # Replace with your Steam App ID (480 = Spacewar for testing)
 var steam_id: int = 0
 var steam_username: String = ""
 var is_steam_running: bool = false
@@ -25,43 +32,115 @@ var current_lobby_id: int = 0
 var lobby_members: Array[Dictionary] = []
 var is_lobby_owner: bool = false
 
+# Offline fallback mode
+var offline_mode: bool = false
+
 # Lobby settings
 const MAX_LOBBY_MEMBERS: int = 4
 const MIN_PLAYERS_TO_START: int = 2
 
 func _ready():
+	print("[SteamManager] ================================")
+	print("[SteamManager] Initializing Steam integration...")
+	print("[SteamManager] ================================")
+
+	# Small delay to ensure everything is loaded
+	await get_tree().create_timer(0.1).timeout
+	if not is_instance_valid(self):
+		return
 	initialize_steam()
 
 func initialize_steam():
-	# Check if Steam is available
+	# Check if Steam singleton is available (GodotSteam addon must be installed)
 	if not Engine.has_singleton("Steam"):
-		print("Steam API not available! Install GodotSteam.")
-		steam_initialized.emit(false)
+		print("[SteamManager] Steam singleton not found!")
+		print("[SteamManager] ")
+		print("[SteamManager] GodotSteam addon is required for Steam integration.")
+		print("[SteamManager] Download from: https://github.com/GodotSteam/GodotSteam")
+		print("[SteamManager] ")
+		print("[SteamManager] Make sure you're using a GodotSteam-enabled editor build")
+		print("[SteamManager] or have properly installed the addon.")
+		print("[SteamManager] ")
+		print("[SteamManager] Running in OFFLINE MODE...")
+		_enable_offline_mode()
 		return
 
 	var steam = Engine.get_singleton("Steam")
+	print("[SteamManager] Steam singleton found!")
+
+	# Check if steamInit method exists
+	if not steam.has_method("steamInit"):
+		print("[SteamManager] steamInit method not found!")
+		print("[SteamManager] Please ensure you have the correct GodotSteam version.")
+		_enable_offline_mode()
+		return
 
 	# Initialize Steam
+	print("[SteamManager] Calling steamInit()...")
 	var init_result = steam.steamInit()
 
-	if init_result.status != 1:
-		print("Failed to initialize Steam: ", init_result)
-		steam_initialized.emit(false)
+	print("[SteamManager] Init result: ", init_result)
+
+	# Check initialization status
+	var init_success = false
+	if typeof(init_result) == TYPE_DICTIONARY:
+		init_success = init_result.get("status", 0) == 1
+		if not init_success:
+			print("[SteamManager] Steam initialization failed!")
+			print("[SteamManager] Status: ", init_result.get("status", "unknown"))
+			print("[SteamManager] Verbal: ", init_result.get("verbal", "unknown"))
+			print("[SteamManager] ")
+			print("[SteamManager] TROUBLESHOOTING:")
+			print("[SteamManager] 1. Make sure Steam client is running")
+			print("[SteamManager] 2. Check steam_appid.txt exists with correct App ID")
+			print("[SteamManager] 3. Verify steam_api64.dll is in the correct location")
+	elif init_result == true or init_result == 1:
+		init_success = true
+	else:
+		print("[SteamManager] Unexpected init result type: ", typeof(init_result))
+
+	if not init_success:
+		_enable_offline_mode()
 		return
 
 	is_steam_running = true
+	offline_mode = false
+
+	# Get user information
 	steam_id = steam.getSteamID()
 	steam_username = steam.getPersonaName()
 	is_online = steam.loggedOn()
 
-	print("Steam initialized successfully!")
-	print("Steam ID: ", steam_id)
-	print("Username: ", steam_username)
+	print("[SteamManager] ================================")
+	print("[SteamManager] STEAM INITIALIZED SUCCESSFULLY!")
+	print("[SteamManager] Steam ID: ", steam_id)
+	print("[SteamManager] Username: ", steam_username)
+	print("[SteamManager] Online: ", is_online)
+	print("[SteamManager] ================================")
 
 	# Connect Steam callbacks
 	connect_steam_signals()
 
 	steam_initialized.emit(true)
+
+func _enable_offline_mode():
+	offline_mode = true
+	is_steam_running = false
+	steam_username = "Player"
+	is_online = false
+
+	# Generate a pseudo-random offline ID for this session
+	randomize()
+	steam_id = randi() % 1000000 + 1000000
+
+	print("[SteamManager] ================================")
+	print("[SteamManager] Running in OFFLINE MODE")
+	print("[SteamManager] Username: ", steam_username)
+	print("[SteamManager] Session ID: ", steam_id)
+	print("[SteamManager] Multiplayer features will be limited")
+	print("[SteamManager] ================================")
+
+	steam_initialized.emit(false)
 
 func connect_steam_signals():
 	var steam = Engine.get_singleton("Steam")
@@ -433,8 +512,16 @@ func get_username() -> String:
 func is_initialized() -> bool:
 	return is_steam_running
 
+func is_offline() -> bool:
+	return offline_mode
+
 func get_lobby_id() -> int:
 	return current_lobby_id
 
 func is_in_lobby() -> bool:
 	return current_lobby_id != 0
+
+func restart_steam():
+	"""Attempt to reinitialize Steam"""
+	print("[SteamManager] Attempting to restart Steam...")
+	initialize_steam()
