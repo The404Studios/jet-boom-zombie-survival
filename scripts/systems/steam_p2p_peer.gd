@@ -266,9 +266,9 @@ func _get_transfer_mode() -> int:
 func _is_server() -> bool:
 	return is_server
 
-func _poll():
+func _poll() -> Error:
 	if not steam or not is_active:
-		return
+		return OK
 
 	# Check for incoming P2P packets
 	while true:
@@ -286,6 +286,8 @@ func _poll():
 		var data = packet.data
 
 		_handle_packet(sender_steam_id, data)
+
+	return OK
 
 func _handle_packet(sender_steam_id: int, data: PackedByteArray):
 	if data.is_empty():
