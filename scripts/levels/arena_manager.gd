@@ -41,11 +41,17 @@ func _ready():
 	await get_tree().process_frame
 	player = get_tree().get_first_node_in_group("player")
 
+	# Notify network manager that we've loaded
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	if network_manager and multiplayer.has_multiplayer_peer():
+		network_manager.notify_player_loaded.rpc_id(1)
+
 	# Wait for player to be ready
 	await get_tree().create_timer(1.0).timeout
 
-	# Start first wave
-	start_wave()
+	# Start first wave (only on server or single-player)
+	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+		start_wave()
 
 func _process(delta):
 	if wave_active:

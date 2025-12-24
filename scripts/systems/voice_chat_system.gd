@@ -124,7 +124,7 @@ func _send_voice_data(voice_data: PackedByteArray):
 		# Server broadcasts to all clients
 		_broadcast_voice_data(multiplayer.get_unique_id(), voice_data)
 
-@rpc("any_peer", "call_remote", "unreliable")
+@rpc("any_peer", "unreliable")
 func _receive_voice_data(voice_data: PackedByteArray):
 	var sender_id = multiplayer.get_remote_sender_id()
 
@@ -153,7 +153,7 @@ func _broadcast_voice_data(sender_id: int, voice_data: PackedByteArray):
 		# Send to this peer
 		_play_voice_data.rpc_id(peer_id, sender_id, voice_data)
 
-@rpc("authority", "call_remote", "unreliable")
+@rpc("authority", "unreliable")
 func _play_voice_data(sender_id: int, voice_data: PackedByteArray):
 	# Store in buffer
 	if not voice_buffers.has(sender_id):

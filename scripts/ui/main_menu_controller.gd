@@ -78,7 +78,7 @@ func _load_player_info():
 	# Try to get Steam username
 	if has_node("/root/SteamManager"):
 		var steam = get_node("/root/SteamManager")
-		if steam.is_steam_running:
+		if steam.is_initialized():
 			steam_username = steam.steam_username
 
 	# Load saved player data

@@ -41,7 +41,7 @@ func _on_body_entered(body: Node3D):
 	# Pick up
 	_pickup(body)
 
-func _pickup(player: Node):
+func _pickup(_player: Node):
 	# Network replicate pickup
 	if multiplayer.is_server():
 		_pickup_networked.rpc(get_path())
