@@ -42,7 +42,7 @@ func take_damage(amount: float, attacker: Node = null):
 	current_health -= amount
 	current_health = max(current_health, 0)
 
-	var health_percent = current_health / max_health
+	var health_percent = current_health / max_health if max_health > 0 else 0.0
 
 	# Emit signal
 	prop_damaged.emit(current_health, health_percent)
@@ -63,7 +63,7 @@ func take_damage(amount: float, attacker: Node = null):
 		_destroy()
 
 func _update_visual():
-	var health_percent = current_health / max_health
+	var health_percent = current_health / max_health if max_health > 0 else 0.0
 
 	# Update health label
 	_update_health_label(health_percent)

@@ -142,10 +142,10 @@ func _physics_process(delta):
 		interact()
 
 func shoot():
-	if not equipment_system or not equipment_system.primary_weapon:
+	if not equipment_system or not equipment_system.weapon_main:
 		return
 
-	current_weapon_data = equipment_system.primary_weapon
+	current_weapon_data = equipment_system.weapon_main
 
 	# Check ammo
 	if current_ammo <= 0:
@@ -252,14 +252,14 @@ func spawn_damage_number(damage_instance: DamageCalculator.DamageInstance, posit
 	label.queue_free()
 
 func reload_weapon():
-	if not equipment_system or not equipment_system.primary_weapon:
+	if not equipment_system or not equipment_system.weapon_main:
 		return
 
 	# Check if already full or no reserve ammo
 	if current_ammo >= magazine_size or reserve_ammo <= 0:
 		return
 
-	current_weapon_data = equipment_system.primary_weapon
+	current_weapon_data = equipment_system.weapon_main
 
 	# Update magazine size from weapon data if available
 	if "magazine_size" in current_weapon_data:
@@ -273,6 +273,10 @@ func reload_weapon():
 
 	# Animation would play here
 	await get_tree().create_timer(current_weapon_data.reload_time).timeout
+
+	# Validate after await - player may have been freed
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 
 	# Calculate ammo to reload
 	var ammo_needed = magazine_size - current_ammo

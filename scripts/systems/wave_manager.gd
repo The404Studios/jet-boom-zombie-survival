@@ -44,6 +44,8 @@ func _ready():
 
 	# Start first wave after delay
 	await get_tree().create_timer(5.0).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 	start_next_wave()
 
 func _process(delta):
@@ -163,7 +165,7 @@ func get_boss_for_wave(wave: int) -> ZombieClassData:
 		ZombieClassData.ZombieClass.BOSS_ABOMINATION
 	]
 
-	var boss_index = (wave / boss_wave_interval - 1) % boss_types.size()
+	var boss_index = int(wave / boss_wave_interval - 1) % boss_types.size()
 	return get_zombie_class(boss_types[boss_index])
 
 func spawn_next_zombie():
@@ -174,7 +176,11 @@ func spawn_next_zombie():
 	var spawn_point = spawn_points[randi() % spawn_points.size()]
 
 	var zombie = zombie_scene.instantiate()
-	get_tree().current_scene.add_child(zombie)
+	var scene = get_tree().current_scene
+	if not scene:
+		zombie.queue_free()
+		return
+	scene.add_child(zombie)
 	zombie.global_position = spawn_point.global_position
 
 	# Apply class data

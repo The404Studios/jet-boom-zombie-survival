@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://main_menu001"]
+[gd_scene load_steps=10 format=3 uid="uid://main_menu001"]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu_controller.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://stash_panel001" path="res://scenes/ui/stash_panel.tscn" id="2"]
@@ -6,6 +6,9 @@
 [ext_resource type="PackedScene" uid="uid://merchant_panel001" path="res://scenes/ui/merchant_panel.tscn" id="4"]
 [ext_resource type="PackedScene" uid="uid://trading_panel001" path="res://scenes/ui/trading_panel.tscn" id="5"]
 [ext_resource type="PackedScene" uid="uid://lobby_panel001" path="res://scenes/ui/lobby_panel.tscn" id="6"]
+[ext_resource type="PackedScene" uid="uid://play_mode_panel001" path="res://scenes/ui/play_mode_panel.tscn" id="7"]
+[ext_resource type="PackedScene" uid="uid://char_select001" path="res://scenes/ui/character_select_panel.tscn" id="8"]
+[ext_resource type="PackedScene" uid="uid://menu_3d_bg001" path="res://scenes/ui/main_menu_3d_background.tscn" id="9"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -16,12 +19,29 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background3D" type="SubViewportContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.08, 0.08, 0.1, 1)
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="Background3D"]
+transparent_bg = false
+handle_input_locally = false
+size = Vector2i(1920, 1080)
+render_target_update_mode = 4
+
+[node name="Scene3D" parent="Background3D/SubViewport" instance=ExtResource("9")]
+
+[node name="BackgroundOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.3)
 
 [node name="TopTabs" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -172,6 +192,26 @@ text = "version - x.xx"
 [node name="TradingPanel" parent="." instance=ExtResource("5")]
 
 [node name="LobbyPanel" parent="." instance=ExtResource("6")]
+
+[node name="PlayModePanel" parent="." instance=ExtResource("7")]
+visible = false
+
+[node name="CharacterSelectPanel" parent="." instance=ExtResource("8")]
+visible = false
+
+[node name="GameTitle" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 100.0
+offset_right = 300.0
+offset_bottom = 180.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "ZOMBIE SURVIVAL"
+horizontal_alignment = 1
 
 [node name="LeaderboardPanel" type="Control" parent="."]
 visible = false

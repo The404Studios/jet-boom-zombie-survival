@@ -93,7 +93,8 @@ func open_shop(player: Player):
 	# This would open a shop UI for the player
 	if shop_ui:
 		shop_ui.visible = true
-		shop_ui.setup_shop(shop_items, player)
+		if shop_ui.has_method("setup_shop"):
+			shop_ui.setup_shop(shop_items, player)
 
 func extract(player: Player):
 	# Transfer player inventory to stash

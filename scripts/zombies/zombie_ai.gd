@@ -17,19 +17,52 @@ var is_dead: bool = false
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
-@onready var animation_player: AnimationPlayer = $AnimationPlayer if has_node("AnimationPlayer") else null
 @onready var model: Node3D = $Model if has_node("Model") else null
+var animation_player: AnimationPlayer = null
 
-signal zombie_died(zombie: Zombie)
+# Points/XP awarded on death
+@export var kill_points: int = 50
+@export var kill_experience: int = 10
+
+signal zombie_died(zombie: Zombie, points: int, experience: int)
 
 func _ready():
 	current_health = max_health
 	navigation_agent.path_desired_distance = 0.5
 	navigation_agent.target_desired_distance = attack_range
 
+	# Find animation player in model or as child
+	_find_animation_player()
+
 	# Find player
 	await get_tree().create_timer(0.1).timeout
+	if not is_instance_valid(self):
+		return
 	find_target()
+
+func _find_animation_player():
+	# Check direct child first
+	if has_node("AnimationPlayer"):
+		animation_player = $AnimationPlayer
+		return
+
+	# Search in model
+	if model:
+		animation_player = _search_for_animation_player(model)
+
+	if animation_player:
+		print("[Zombie] Found AnimationPlayer: ", animation_player.name)
+
+func _search_for_animation_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node
+
+	for child in node.get_children():
+		var result = _search_for_animation_player(child)
+		if result:
+			return result
+
+	return null
 
 func _physics_process(delta):
 	if is_dead:
@@ -144,7 +177,7 @@ func die():
 		return
 
 	is_dead = true
-	zombie_died.emit(self)
+	zombie_died.emit(self, kill_points, kill_experience)
 
 	# Play death animation
 	if animation_player and animation_player.has_animation("death"):
@@ -159,7 +192,8 @@ func die():
 
 	# Remove after a delay
 	await get_tree().create_timer(5.0).timeout
-	queue_free()
+	if is_instance_valid(self):
+		queue_free()
 
 func drop_loot():
 	if loot_items.size() > 0:

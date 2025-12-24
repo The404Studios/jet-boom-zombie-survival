@@ -36,10 +36,10 @@ var buff_radius: float = 10.0
 var buff_amount: float = 0.2
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
-@onready var animation_player: AnimationPlayer = $AnimationPlayer if has_node("AnimationPlayer") else null
 @onready var model: Node3D = $Model if has_node("Model") else null
 @onready var status_effects: StatusEffectSystem = $StatusEffectSystem if has_node("StatusEffectSystem") else null
 @onready var mesh_instance: MeshInstance3D = $Model/MeshInstance3D if has_node("Model/MeshInstance3D") else null
+var animation_player: AnimationPlayer = null
 
 signal zombie_died(zombie: ZombieController, points: int, experience: int)
 signal zombie_damaged(zombie: ZombieController, damage: float)
@@ -52,6 +52,9 @@ func _ready():
 		status_effects = StatusEffectSystem.new()
 		add_child(status_effects)
 
+	# Find animation player (may be in model)
+	_find_animation_player()
+
 	navigation_agent.path_desired_distance = 0.5
 	navigation_agent.target_desired_distance = attack_range
 
@@ -59,11 +62,34 @@ func _ready():
 	apply_visual_tint()
 
 	await get_tree().create_timer(0.1).timeout
+	if not is_instance_valid(self):
+		return
 	find_target()
 
 	# Buff nearby zombies if screamer
 	if buff_nearby:
 		start_buff_loop()
+
+func _find_animation_player():
+	# Check direct child first
+	if has_node("AnimationPlayer"):
+		animation_player = $AnimationPlayer
+		return
+
+	# Search in model
+	if model:
+		animation_player = _search_for_animation_player(model)
+
+func _search_for_animation_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node
+
+	for child in node.get_children():
+		var result = _search_for_animation_player(child)
+		if result:
+			return result
+
+	return null
 
 func setup_from_class(class_data: ZombieClassData, wave: int):
 	zombie_class_data = class_data

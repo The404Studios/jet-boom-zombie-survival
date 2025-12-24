@@ -56,6 +56,28 @@ func _ready():
 		if steam_manager.has_signal("lobby_member_left"):
 			steam_manager.lobby_member_left.connect(_on_steam_lobby_member_left)
 
+func _exit_tree():
+	# Disconnect multiplayer signals to prevent memory leaks
+	if multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.disconnect(_on_peer_connected)
+	if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+		multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+	if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+		multiplayer.connected_to_server.disconnect(_on_connected_to_server)
+	if multiplayer.connection_failed.is_connected(_on_connection_failed):
+		multiplayer.connection_failed.disconnect(_on_connection_failed)
+	if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.disconnect(_on_server_disconnected)
+
+	# Disconnect Steam signals
+	if steam_manager:
+		if steam_manager.has_signal("lobby_joined") and steam_manager.lobby_joined.is_connected(_on_steam_lobby_joined):
+			steam_manager.lobby_joined.disconnect(_on_steam_lobby_joined)
+		if steam_manager.has_signal("lobby_member_joined") and steam_manager.lobby_member_joined.is_connected(_on_steam_lobby_member_joined):
+			steam_manager.lobby_member_joined.disconnect(_on_steam_lobby_member_joined)
+		if steam_manager.has_signal("lobby_member_left") and steam_manager.lobby_member_left.is_connected(_on_steam_lobby_member_left):
+			steam_manager.lobby_member_left.disconnect(_on_steam_lobby_member_left)
+
 # ============================================
 # STEAM P2P HOSTING
 # ============================================
@@ -335,7 +357,11 @@ func spawn_player(peer_id: int, _player_info: Dictionary):
 		var spawn = spawn_points[randi() % spawn_points.size()]
 		player.global_position = spawn.global_position
 
-	get_tree().current_scene.add_child(player)
+	var scene = get_tree().current_scene
+	if not scene:
+		player.queue_free()
+		return
+	scene.add_child(player)
 	player_nodes[peer_id] = player
 
 	print("Spawned player node for peer %d" % peer_id)
@@ -378,7 +404,11 @@ func spawn_zombie_networked(zombie_class_name: String, position: Vector3, zombie
 	zombie.name = "Zombie_%d" % zombie_id
 	zombie.global_position = position
 
-	get_tree().current_scene.add_child(zombie)
+	var scene = get_tree().current_scene
+	if not scene:
+		zombie.queue_free()
+		return
+	scene.add_child(zombie)
 
 @rpc("any_peer", "call_local")
 func damage_zombie(zombie_path: NodePath, damage: float, _is_headshot: bool):

@@ -28,7 +28,7 @@ var next_peer_id: int = 2  # Start at 2 (1 is always server)
 var incoming_packets: Array = []
 var target_peer: int = 0
 var transfer_channel: int = 0
-var transfer_mode: int = MultiplayerPeer.TRANSFER_MODE_RELIABLE
+var transfer_mode: MultiplayerPeer.TransferMode = MultiplayerPeer.TRANSFER_MODE_RELIABLE
 
 # Send channels (Steam networking uses channels 0-31)
 const CHANNEL_RELIABLE: int = 0
@@ -180,18 +180,19 @@ func _send_game_packet(target_steam_id: int, data: PackedByteArray, channel: int
 # MULTIPLAYER PEER EXTENSION OVERRIDES
 # ============================================
 
-func _get_packet_script() -> PackedByteArray:
+func _get_packet_script(r_buffer: PackedByteArray) -> Error:
 	if incoming_packets.is_empty():
-		return PackedByteArray()
+		return ERR_UNAVAILABLE
 
 	var packet_data = incoming_packets.pop_front()
-	return packet_data.data
+	r_buffer.append_array(packet_data.data)
+	return OK
 
 func _get_packet_channel() -> int:
 	return transfer_channel
 
-func _get_packet_mode() -> int:
-	return transfer_mode
+func _get_packet_mode() -> MultiplayerPeer.TransferMode:
+	return transfer_mode as MultiplayerPeer.TransferMode
 
 func _get_packet_peer() -> int:
 	if incoming_packets.is_empty():
@@ -238,7 +239,7 @@ func _get_unique_id() -> int:
 
 	return 0
 
-func _get_connection_status() -> int:
+func _get_connection_status() -> MultiplayerPeer.ConnectionStatus:
 	match connection_state:
 		ConnectionState.NONE:
 			return MultiplayerPeer.CONNECTION_DISCONNECTED
@@ -257,11 +258,11 @@ func _set_transfer_channel(p_channel: int):
 func _get_transfer_channel() -> int:
 	return transfer_channel
 
-func _set_transfer_mode(p_mode: int):
+func _set_transfer_mode(p_mode: MultiplayerPeer.TransferMode):
 	transfer_mode = p_mode
 
-func _get_transfer_mode() -> int:
-	return transfer_mode
+func _get_transfer_mode() -> MultiplayerPeer.TransferMode:
+	return transfer_mode as MultiplayerPeer.TransferMode
 
 func _is_server() -> bool:
 	return is_server

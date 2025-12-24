@@ -24,6 +24,9 @@ signal leaderboard_pressed
 @onready var settings_panel: Control = $SettingsPanel
 @onready var trading_panel: Control = $TradingPanel
 @onready var lobby_panel: Control = $LobbyPanel
+@onready var play_mode_panel: Control = $PlayModePanel
+@onready var character_select_panel: Control = $CharacterSelectPanel
+@onready var game_title: Label = $GameTitle
 
 # Steam integration
 var steam_username: String = "Survivor"
@@ -100,13 +103,66 @@ func _update_player_info():
 
 func _on_play_pressed():
 	play_pressed.emit()
-	# Open lobby panel for multiplayer
-	_show_panel(lobby_panel)
+	# Open play mode selection panel
+	_show_panel(play_mode_panel)
 
-	# Connect lobby panel signals if not already connected
-	if lobby_panel and not lobby_panel.game_started.is_connected(_on_lobby_game_started):
-		lobby_panel.game_started.connect(_on_lobby_game_started)
-		lobby_panel.panel_closed.connect(_on_lobby_closed)
+	# Connect play mode panel signals if not already connected
+	if play_mode_panel:
+		if play_mode_panel.has_signal("singleplayer_selected") and not play_mode_panel.singleplayer_selected.is_connected(_on_singleplayer_selected):
+			play_mode_panel.singleplayer_selected.connect(_on_singleplayer_selected)
+		if play_mode_panel.has_signal("multiplayer_selected") and not play_mode_panel.multiplayer_selected.is_connected(_on_multiplayer_selected):
+			play_mode_panel.multiplayer_selected.connect(_on_multiplayer_selected)
+		if play_mode_panel.has_signal("panel_closed") and not play_mode_panel.panel_closed.is_connected(_on_play_mode_closed):
+			play_mode_panel.panel_closed.connect(_on_play_mode_closed)
+
+func _on_singleplayer_selected():
+	# Close play mode panel and open character selection
+	_close_panel(play_mode_panel)
+	_show_character_select()
+
+func _on_multiplayer_selected():
+	# Close play mode panel and open character selection first, then lobby
+	_close_panel(play_mode_panel)
+	_show_character_select(true)  # true = multiplayer mode
+
+func _show_character_select(is_multiplayer: bool = false):
+	_show_panel(character_select_panel)
+
+	# Connect character select signals if not already connected
+	if character_select_panel:
+		if character_select_panel.has_signal("continue_pressed"):
+			if not character_select_panel.continue_pressed.is_connected(_on_character_selected):
+				# Store multiplayer mode in meta for later
+				character_select_panel.set_meta("is_multiplayer", is_multiplayer)
+				character_select_panel.continue_pressed.connect(_on_character_selected)
+		if character_select_panel.has_signal("panel_closed"):
+			if not character_select_panel.panel_closed.is_connected(_on_character_select_closed):
+				character_select_panel.panel_closed.connect(_on_character_select_closed)
+
+func _on_character_selected():
+	var is_multiplayer = false
+	if character_select_panel and character_select_panel.has_meta("is_multiplayer"):
+		is_multiplayer = character_select_panel.get_meta("is_multiplayer")
+
+	_close_panel(character_select_panel)
+
+	if is_multiplayer:
+		# Go to lobby for multiplayer
+		_show_panel(lobby_panel)
+		if lobby_panel:
+			if lobby_panel.has_signal("game_started") and not lobby_panel.game_started.is_connected(_on_lobby_game_started):
+				lobby_panel.game_started.connect(_on_lobby_game_started)
+			if lobby_panel.has_signal("panel_closed") and not lobby_panel.panel_closed.is_connected(_on_lobby_closed):
+				lobby_panel.panel_closed.connect(_on_lobby_closed)
+	else:
+		# Start singleplayer game directly
+		start_solo_game()
+
+func _on_character_select_closed():
+	_close_panel(character_select_panel)
+
+func _on_play_mode_closed():
+	_close_panel(play_mode_panel)
 
 func _on_lobby_game_started():
 	# Game is starting from lobby
@@ -183,6 +239,8 @@ func _show_panel(panel: Control):
 	# Hide main menu elements
 	main_panel.visible = false
 	top_tabs.visible = false
+	if game_title:
+		game_title.visible = false
 
 	# Show the panel
 	if panel:
@@ -196,9 +254,11 @@ func _close_panel(panel: Control):
 	# Show main menu elements
 	main_panel.visible = true
 	top_tabs.visible = true
+	if game_title:
+		game_title.visible = true
 
 func _hide_all_panels():
-	var all_panels = [stash_panel, market_panel, merchant_panel, leaderboard_panel, settings_panel, trading_panel, lobby_panel]
+	var all_panels = [stash_panel, market_panel, merchant_panel, leaderboard_panel, settings_panel, trading_panel, lobby_panel, play_mode_panel, character_select_panel]
 	for panel in all_panels:
 		if panel:
 			panel.visible = false
@@ -239,3 +299,7 @@ func _input(event):
 			_close_panel(trading_panel)
 		elif lobby_panel and lobby_panel.visible:
 			_close_panel(lobby_panel)
+		elif play_mode_panel and play_mode_panel.visible:
+			_close_panel(play_mode_panel)
+		elif character_select_panel and character_select_panel.visible:
+			_close_panel(character_select_panel)

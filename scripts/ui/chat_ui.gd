@@ -15,12 +15,15 @@ var is_chat_visible: bool = true
 var message_fade_time: float = 10.0
 var max_visible_messages: int = 50
 
+# Cached references for cleanup
+var _chat_system: Node = null
+
 func _ready():
 	# Connect to chat system
 	if has_node("/root/ChatSystem"):
-		var chat_system = get_node("/root/ChatSystem")
-		chat_system.message_received.connect(_on_message_received)
-		chat_system.system_message.connect(_on_system_message)
+		_chat_system = get_node("/root/ChatSystem")
+		_chat_system.message_received.connect(_on_message_received)
+		_chat_system.system_message.connect(_on_system_message)
 
 	# Connect UI signals
 	send_button.pressed.connect(_on_send_button_pressed)
@@ -31,6 +34,19 @@ func _ready():
 
 	# Hide input by default
 	input_field.visible = false
+
+func _exit_tree():
+	# Disconnect chat system signals
+	if _chat_system:
+		if _chat_system.message_received.is_connected(_on_message_received):
+			_chat_system.message_received.disconnect(_on_message_received)
+		if _chat_system.system_message.is_connected(_on_system_message):
+			_chat_system.system_message.disconnect(_on_system_message)
+	# Disconnect UI signals
+	if send_button and send_button.pressed.is_connected(_on_send_button_pressed):
+		send_button.pressed.disconnect(_on_send_button_pressed)
+	if input_field and input_field.text_submitted.is_connected(_on_text_submitted):
+		input_field.text_submitted.disconnect(_on_text_submitted)
 
 func _input(event):
 	if event.is_action_pressed("ui_chat"):

@@ -14,11 +14,25 @@ var chat_history: Array = []
 var message_timestamps: Dictionary = {} # peer_id -> Array of timestamps
 var player_muted: Dictionary = {} # peer_id -> bool
 
+# Cached reference
+var _network_manager: Node = null
+
 func _ready():
+	# Cache network manager reference
+	_network_manager = get_node_or_null("/root/NetworkManager")
+
 	# Connect to network signals
-	if NetworkManager:
-		NetworkManager.player_connected.connect(_on_player_connected)
-		NetworkManager.player_disconnected.connect(_on_player_disconnected)
+	if _network_manager:
+		_network_manager.player_connected.connect(_on_player_connected)
+		_network_manager.player_disconnected.connect(_on_player_disconnected)
+
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if _network_manager:
+		if _network_manager.player_connected.is_connected(_on_player_connected):
+			_network_manager.player_connected.disconnect(_on_player_connected)
+		if _network_manager.player_disconnected.is_connected(_on_player_disconnected):
+			_network_manager.player_disconnected.disconnect(_on_player_disconnected)
 
 func _on_player_connected(_peer_id: int, player_data: Dictionary):
 	var msg = "%s joined the game" % player_data.get("name", "Player")
@@ -27,8 +41,8 @@ func _on_player_connected(_peer_id: int, player_data: Dictionary):
 
 func _on_player_disconnected(peer_id: int):
 	var player_name = "Player"
-	if NetworkManager and NetworkManager.players.has(peer_id):
-		player_name = NetworkManager.players[peer_id].get("name", "Player")
+	if _network_manager and _network_manager.players.has(peer_id):
+		player_name = _network_manager.players[peer_id].get("name", "Player")
 	var msg = "%s left the game" % player_name
 	emit_system_message(msg)
 	message_timestamps.erase(peer_id)
@@ -50,8 +64,8 @@ func send_message(message: String, is_team: bool = false):
 
 	# Get player name
 	var sender_name = "Player"
-	if NetworkManager and NetworkManager.players.has(multiplayer.get_unique_id()):
-		sender_name = NetworkManager.players[multiplayer.get_unique_id()].get("name", "Player")
+	if _network_manager and _network_manager.players.has(multiplayer.get_unique_id()):
+		sender_name = _network_manager.players[multiplayer.get_unique_id()].get("name", "Player")
 
 	# Send via RPC (only if multiplayer is active)
 	if not multiplayer.has_multiplayer_peer():
@@ -85,8 +99,8 @@ func _send_message_to_server(message: String, is_team: bool):
 		return
 
 	var sender_name = "Player"
-	if NetworkManager and NetworkManager.players.has(sender_id):
-		sender_name = NetworkManager.players[sender_id].get("name", "Player")
+	if _network_manager and _network_manager.players.has(sender_id):
+		sender_name = _network_manager.players[sender_id].get("name", "Player")
 
 	_broadcast_message(sender_id, sender_name, message, is_team)
 
@@ -98,7 +112,9 @@ func _broadcast_message(sender_id: int, sender_name: String, message: String, is
 	if is_team:
 		# Filter by team - only send to teammates
 		var sender_team = _get_player_team(sender_id)
-		for peer_id in NetworkManager.players.keys():
+		if not _network_manager:
+			return
+		for peer_id in _network_manager.players.keys():
 			var peer_team = _get_player_team(peer_id)
 			if peer_team == sender_team:
 				_receive_message.rpc_id(peer_id, sender_name, message, true)
@@ -111,10 +127,10 @@ func _broadcast_message(sender_id: int, sender_name: String, message: String, is
 
 func _get_player_team(peer_id: int) -> int:
 	"""Get player's team ID. Returns 0 for no team/solo, 1+ for team IDs"""
-	if not NetworkManager or not NetworkManager.players.has(peer_id):
+	if not _network_manager or not _network_manager.players.has(peer_id):
 		return 0
 
-	var player_data = NetworkManager.players[peer_id]
+	var player_data = _network_manager.players[peer_id]
 	return player_data.get("team", 0)
 
 @rpc("authority", "call_local")
@@ -181,8 +197,8 @@ func mute_player(peer_id: int, muted: bool = true):
 	player_muted[peer_id] = muted
 
 	var player_name = "Player"
-	if NetworkManager and NetworkManager.players.has(peer_id):
-		player_name = NetworkManager.players[peer_id].get("name", "Player")
+	if _network_manager and _network_manager.players.has(peer_id):
+		player_name = _network_manager.players[peer_id].get("name", "Player")
 
 	if muted:
 		emit_system_message("%s has been muted" % player_name)

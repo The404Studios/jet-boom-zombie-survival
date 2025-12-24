@@ -182,9 +182,9 @@ func add_playtime(seconds: float):
 	account_data.playtime_seconds += int(seconds)
 
 func get_playtime_formatted() -> String:
-	var total_seconds = account_data.playtime_seconds
-	var hours = total_seconds / 3600
-	var minutes = (total_seconds % 3600) / 60
+	var total_seconds: int = account_data.playtime_seconds
+	var hours: int = total_seconds / 3600
+	var minutes: int = (total_seconds % 3600) / 60
 	return "%dh %dm" % [hours, minutes]
 
 func unlock_item(item_id: String) -> bool:

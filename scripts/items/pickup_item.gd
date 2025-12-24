@@ -12,23 +12,40 @@ extends Area3D
 var is_picked_up: bool = false
 var respawn_time: float = 30.0
 var rotation_speed: float = 1.0
+var base_y_position: float = 0.0
+var bob_tween: Tween = null
 
 func _ready():
 	body_entered.connect(_on_body_entered)
+	base_y_position = position.y
 
-	# Start rotation animation
+	# Start animations
 	_start_rotation_animation()
+	_start_bob_animation()
 
 func _process(delta):
 	# Rotate pickup
 	rotate_y(rotation_speed * delta)
 
-	# Bob up and down
-	position.y += sin(Time.get_ticks_msec() / 500.0) * 0.001
-
 func _start_rotation_animation():
 	"""Simple rotation - handled in _process"""
 	rotation_speed = randf_range(0.8, 1.2)  # Randomize rotation speed slightly
+
+func _start_bob_animation():
+	"""Start smooth bobbing animation using Tween"""
+	if bob_tween and bob_tween.is_valid():
+		bob_tween.kill()
+
+	bob_tween = create_tween()
+	bob_tween.set_loops()  # Infinite loop
+	bob_tween.set_trans(Tween.TRANS_SINE)
+	bob_tween.set_ease(Tween.EASE_IN_OUT)
+	bob_tween.tween_property(self, "position:y", base_y_position + 0.15, 0.8)
+	bob_tween.tween_property(self, "position:y", base_y_position - 0.05, 0.8)
+
+func _exit_tree():
+	if bob_tween and bob_tween.is_valid():
+		bob_tween.kill()
 
 func _on_body_entered(body: Node3D):
 	if is_picked_up:
