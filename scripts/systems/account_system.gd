@@ -1,5 +1,6 @@
 extends Node
-class_name AccountSystem
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: AccountSystem (the autoload name)
 
 signal account_loaded(account_data: Dictionary)
 signal account_created(username: String)
