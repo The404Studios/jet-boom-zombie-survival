@@ -69,7 +69,7 @@ func _start_repair(_player: Node):
 
 	# Calculate how many nails needed to fully repair
 	var health_missing = max_health - current_health
-	var nails_needed = ceili(health_missing / nail_health)
+	var nails_needed = int(ceil(health_missing / nail_health))
 
 	for i in range(nails_needed):
 		await get_tree().create_timer(0.5).timeout
