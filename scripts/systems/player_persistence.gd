@@ -1,6 +1,7 @@
 extends Node
-# Note: Do not use class_name here - this script is an autoload singleton
-# Access via: PlayerPersistence (the autoload name)
+class_name PlayerPersistence
+# This is an autoload singleton accessible via: PlayerPersistence
+# The class_name is needed for type annotations in other scripts
 
 const SAVE_FILE_PATH = "user://player_data.save"
 const STASH_FILE_PATH = "user://stash_data.save"
