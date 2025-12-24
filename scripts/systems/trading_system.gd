@@ -129,7 +129,6 @@ func add_item_to_trade(trade_id: int, player_id: int, item: Resource) -> bool:
 	item_added_to_trade.emit(trade_id, player_id, item)
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		var trade = active_trades[trade_id]
 		_sync_trade_items.rpc(trade_id, trade.player1_items.size(), trade.player2_items.size(),
 			trade.player1_currency, trade.player2_currency)
 
@@ -161,9 +160,8 @@ func remove_item_from_trade(trade_id: int, player_id: int, item_index: int) -> b
 		item_removed_from_trade.emit(trade_id, player_id, item)
 
 		if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-			var trade_data = active_trades[trade_id]
-			_sync_trade_items.rpc(trade_id, trade_data.player1_items.size(), trade_data.player2_items.size(),
-				trade_data.player1_currency, trade_data.player2_currency)
+			_sync_trade_items.rpc(trade_id, trade.player1_items.size(), trade.player2_items.size(),
+				trade.player1_currency, trade.player2_currency)
 
 		return true
 
@@ -187,9 +185,8 @@ func set_currency_offer(trade_id: int, player_id: int, amount: int) -> bool:
 		return false
 
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		var trade_data = active_trades[trade_id]
-		_sync_trade_items.rpc(trade_id, trade_data.player1_items.size(), trade_data.player2_items.size(),
-			trade_data.player1_currency, trade_data.player2_currency)
+		_sync_trade_items.rpc(trade_id, trade.player1_items.size(), trade.player2_items.size(),
+			trade.player1_currency, trade.player2_currency)
 
 	return true
 

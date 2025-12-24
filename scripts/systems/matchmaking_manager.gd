@@ -18,8 +18,8 @@ var current_match_state: MatchState = MatchState.WAITING_FOR_PLAYERS
 var is_searching: bool = false
 var spawn_point_index: int = 0
 
-@onready var steam_manager: Node = get_node("/root/SteamManager") if has_node("/root/SteamManager") else null
-@onready var network_manager: Node = get_node("/root/NetworkManager") if has_node("/root/NetworkManager") else null
+@onready var steam_manager: Node = get_node_or_null("/root/SteamManager")
+@onready var network_manager: Node = get_node_or_null("/root/NetworkManager")
 
 func _ready():
 	# Connect to network signals

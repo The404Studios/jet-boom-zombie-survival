@@ -106,7 +106,7 @@ func emit_player_kill(player: Node, peer_id: int, killer: Node, killer_id: int):
 		# Emit score change for killer
 		pass
 
-func emit_wave_event(event_type: String, wave_number: int, extra_data: Dictionary = {}):
+func emit_wave_event(event_type: String, wave_number: int, _extra_data: Dictionary = {}):
 	"""Convenience method for wave events"""
 	match event_type:
 		"started":
@@ -116,7 +116,7 @@ func emit_wave_event(event_type: String, wave_number: int, extra_data: Dictionar
 		"failed":
 			wave_failed.emit(wave_number)
 
-func emit_network_event(event_type: String, data: Dictionary = {}):
+func emit_network_event(event_type: String, _data: Dictionary = {}):
 	"""Convenience method for network events"""
 	match event_type:
 		"connected":
