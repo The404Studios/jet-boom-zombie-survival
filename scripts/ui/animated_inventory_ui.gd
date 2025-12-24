@@ -57,8 +57,8 @@ func create_inventory_slot(index: int) -> Control:
 
 	var count_label = Label.new()
 	count_label.name = "Count"
-	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	count_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT as HorizontalAlignment
+	count_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM as VerticalAlignment
 	count_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 	slot.add_child(count_label)
 
@@ -83,7 +83,7 @@ func setup_equipment_slots():
 	var title = Label.new()
 	title.text = "Equipment"
 	title.add_theme_font_size_override("font_size", 16)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER as HorizontalAlignment
 	vbox.add_child(title)
 
 	# Equipment slots with labels
@@ -204,7 +204,7 @@ func setup_stats_display():
 	var title = Label.new()
 	title.text = "Character Stats"
 	title.add_theme_font_size_override("font_size", 16)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER as HorizontalAlignment
 	vbox.add_child(title)
 
 	vbox.add_child(HSeparator.new())
@@ -486,7 +486,7 @@ func update_tooltip_content(item: ItemDataExtended):
 		name_label.text = "[b][color=#%s]%s[/color][/b]" % [color_hex, item.item_name]
 
 	if type_label:
-		var type_name = ItemDataExtended.ItemType.keys()[item.item_type].capitalize().replace("_", " ")
+		var type_name = _get_item_type_name(item.item_type)
 		type_label.text = "%s %s" % [item.get_rarity_name(), type_name]
 		type_label.add_theme_color_override("font_color", item.get_rarity_color())
 
@@ -520,3 +520,31 @@ func hide_tooltip():
 func _input(event):
 	if event.is_action_pressed("inventory"):
 		toggle()
+
+func _get_item_type_name(item_type: int) -> String:
+	"""Convert ItemType enum value to display name"""
+	match item_type:
+		ItemDataExtended.ItemType.WEAPON:
+			return "Weapon"
+		ItemDataExtended.ItemType.AMMO:
+			return "Ammo"
+		ItemDataExtended.ItemType.HELMET:
+			return "Helmet"
+		ItemDataExtended.ItemType.CHEST_ARMOR:
+			return "Chest Armor"
+		ItemDataExtended.ItemType.GLOVES:
+			return "Gloves"
+		ItemDataExtended.ItemType.BOOTS:
+			return "Boots"
+		ItemDataExtended.ItemType.RING:
+			return "Ring"
+		ItemDataExtended.ItemType.AMULET:
+			return "Amulet"
+		ItemDataExtended.ItemType.CONSUMABLE:
+			return "Consumable"
+		ItemDataExtended.ItemType.MATERIAL:
+			return "Material"
+		ItemDataExtended.ItemType.AUGMENT:
+			return "Augment"
+		_:
+			return "Unknown"

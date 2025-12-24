@@ -112,7 +112,9 @@ func _broadcast_message(sender_id: int, sender_name: String, message: String, is
 	if is_team:
 		# Filter by team - only send to teammates
 		var sender_team = _get_player_team(sender_id)
-		for peer_id in _network_manager.players.keys() if _network_manager else []:
+		if not _network_manager:
+			return
+		for peer_id in _network_manager.players.keys():
 			var peer_team = _get_player_team(peer_id)
 			if peer_team == sender_team:
 				_receive_message.rpc_id(peer_id, sender_name, message, true)
