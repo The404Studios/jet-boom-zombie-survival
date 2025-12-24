@@ -40,23 +40,29 @@ func _create_gore_scenes():
 
 func spawn_blood_effect(position: Vector3, normal: Vector3, amount: int = 1):
 	"""Spawn blood particles at impact point"""
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_blood_effect_local(position, normal, amount)
+		return
+
 	if multiplayer.is_server():
 		_spawn_blood_effect_networked.rpc(position, normal, amount)
 	else:
 		_spawn_blood_effect_networked.rpc_id(1, position, normal, amount)
 
-@rpc("any_peer", "call_local", "reliable")
-func _spawn_blood_effect_networked(position: Vector3, normal: Vector3, amount: int):
-	# Create blood particle burst (fire and forget - don't await)
+func _spawn_blood_effect_local(position: Vector3, normal: Vector3, amount: int):
+	# Create blood particle burst
 	_create_blood_particles(position, normal, amount)
-
 	# Add blood decal
 	_create_blood_decal(position, normal)
-
 	# Play blood sound
 	if has_node("/root/AudioManager"):
 		var audio = get_node("/root/AudioManager")
 		audio.play_sound_3d("impact_flesh", position, 0.7)
+
+@rpc("any_peer", "call_local", "reliable")
+func _spawn_blood_effect_networked(position: Vector3, normal: Vector3, amount: int):
+	_spawn_blood_effect_local(position, normal, amount)
 
 func _create_blood_particles(position: Vector3, normal: Vector3, amount: int) -> Node:
 	var particles = GPUParticles3D.new()
@@ -179,15 +185,23 @@ func _fade_decal(decal: Decal):
 
 func spawn_gibs(position: Vector3, force: Vector3, count: int = 5):
 	"""Spawn flying gibs from zombie death"""
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_gibs_local(position, force, count)
+		return
+
 	if multiplayer.is_server():
 		_spawn_gibs_networked.rpc(position, force, count)
 	else:
 		_spawn_gibs_networked.rpc_id(1, position, force, count)
 
-@rpc("any_peer", "call_local", "reliable")
-func _spawn_gibs_networked(position: Vector3, force: Vector3, count: int):
+func _spawn_gibs_local(position: Vector3, force: Vector3, count: int):
 	for i in range(count):
 		_create_single_gib(position, force)
+
+@rpc("any_peer", "call_local", "reliable")
+func _spawn_gibs_networked(position: Vector3, force: Vector3, count: int):
+	_spawn_gibs_local(position, force, count)
 
 func _create_single_gib(position: Vector3, base_force: Vector3) -> RigidBody3D:
 	var gib = RigidBody3D.new()
@@ -283,13 +297,17 @@ func _cleanup_gib(gib: RigidBody3D):
 
 func spawn_dismemberment_effect(position: Vector3, body_part: String):
 	"""Spawn special effect for dismemberment (headshot, limb loss)"""
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_dismemberment_local(position, body_part)
+		return
+
 	if multiplayer.is_server():
 		_spawn_dismemberment_networked.rpc(position, body_part)
 	else:
 		_spawn_dismemberment_networked.rpc_id(1, position, body_part)
 
-@rpc("any_peer", "call_local", "reliable")
-func _spawn_dismemberment_networked(position: Vector3, body_part: String):
+func _spawn_dismemberment_local(position: Vector3, body_part: String):
 	# Extra blood for dismemberment
 	spawn_blood_effect(position, Vector3.UP, 3)
 
@@ -299,6 +317,10 @@ func _spawn_dismemberment_networked(position: Vector3, body_part: String):
 			_create_head_gib(position)
 		"arm", "leg":
 			_create_limb_gib(position)
+
+@rpc("any_peer", "call_local", "reliable")
+func _spawn_dismemberment_networked(position: Vector3, body_part: String):
+	_spawn_dismemberment_local(position, body_part)
 
 func _create_head_gib(position: Vector3):
 	var gib = RigidBody3D.new()

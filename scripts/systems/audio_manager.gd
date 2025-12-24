@@ -197,13 +197,17 @@ func play_ui_sound(sound_type: String):
 
 func play_sound_3d(sound_name: String, position: Vector3, volume: float = 1.0, pitch: float = 1.0):
 	# Network replicate for multiplayer
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - play directly
+		_play_sound_3d_local(sound_name, position, volume, pitch)
+		return
+
 	if multiplayer.is_server():
 		_play_sound_3d_networked.rpc(sound_name, position, volume, pitch)
 	else:
 		_play_sound_3d_networked.rpc_id(1, sound_name, position, volume, pitch)
 
-@rpc("any_peer", "call_local", "reliable")
-func _play_sound_3d_networked(sound_name: String, position: Vector3, volume: float, pitch: float):
+func _play_sound_3d_local(sound_name: String, position: Vector3, volume: float, pitch: float):
 	var sound = _get_sound_from_library(sound_name)
 	if not sound:
 		return
@@ -214,6 +218,10 @@ func _play_sound_3d_networked(sound_name: String, position: Vector3, volume: flo
 	player.volume_db = linear_to_db(sfx_volume * volume)
 	player.pitch_scale = pitch
 	player.play()
+
+@rpc("any_peer", "call_local", "reliable")
+func _play_sound_3d_networked(sound_name: String, position: Vector3, volume: float, pitch: float):
+	_play_sound_3d_local(sound_name, position, volume, pitch)
 
 func play_gunshot(weapon_type: String, position: Vector3):
 	# Add random pitch variation

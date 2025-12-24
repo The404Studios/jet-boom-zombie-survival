@@ -53,7 +53,21 @@ func send_message(message: String, is_team: bool = false):
 	if NetworkManager and NetworkManager.players.has(multiplayer.get_unique_id()):
 		sender_name = NetworkManager.players[multiplayer.get_unique_id()].get("name", "Player")
 
-	# Send via RPC
+	# Send via RPC (only if multiplayer is active)
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - add to history and emit directly
+		var chat_entry = {
+			"sender": sender_name,
+			"message": message,
+			"is_team": is_team,
+			"timestamp": Time.get_unix_time_from_system()
+		}
+		chat_history.append(chat_entry)
+		if chat_history.size() > CHAT_HISTORY_SIZE:
+			chat_history.pop_front()
+		message_received.emit(sender_name, message, is_team)
+		return
+
 	if multiplayer.is_server():
 		_broadcast_message(multiplayer.get_unique_id(), sender_name, message, is_team)
 	else:

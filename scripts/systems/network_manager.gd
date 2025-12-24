@@ -309,7 +309,7 @@ func sync_player_info(player_info: Dictionary):
 
 	# Send our info back if we're server
 	if is_server:
-		rpc_id(peer_id, "receive_all_players", players)
+		receive_all_players.rpc_id(peer_id, players)
 
 @rpc("authority", "reliable")
 func receive_all_players(all_players: Dictionary):
@@ -465,16 +465,16 @@ func _on_peer_connected(peer_id: int):
 		await get_tree().process_frame
 
 		if players.size() > 0:
-			rpc_id(peer_id, "receive_all_players", players)
+			receive_all_players.rpc_id(peer_id, players)
 
 		var wave_manager = get_node_or_null("/root/Main/WaveManager")
 		if wave_manager:
 			var wave = wave_manager.current_wave if "current_wave" in wave_manager else 1
 			var zombies = wave_manager.zombies_alive if "zombies_alive" in wave_manager else 0
 			var intermission = wave_manager.is_intermission if "is_intermission" in wave_manager else false
-			rpc_id(peer_id, "sync_wave_state", wave, zombies, intermission)
+			sync_wave_state.rpc_id(peer_id, wave, zombies, intermission)
 	else:
-		rpc_id(1, "sync_player_info", get_local_player_info())
+		sync_player_info.rpc_id(1, get_local_player_info())
 
 func _on_peer_disconnected(peer_id: int):
 	print("Peer disconnected: %d" % peer_id)
@@ -492,7 +492,7 @@ func _on_connected_to_server():
 	print("Connected to server!")
 	local_player_id = multiplayer.get_unique_id()
 
-	rpc_id(1, "sync_player_info", get_local_player_info())
+	sync_player_info.rpc_id(1, get_local_player_info())
 
 	connected_to_server.emit()
 

@@ -192,7 +192,7 @@ func spawn_player(peer_id: int, player_info: Dictionary):
 	if network_manager:
 		network_manager.player_nodes[peer_id] = player
 
-	print("Spawned player %d at %v" % [peer_id, spawn_position])
+	print("Spawned player %d at %s" % [peer_id, spawn_position])
 
 func _get_spawn_position() -> Vector3:
 	"""Get spawn position (near sigil or at spawn points)"""
