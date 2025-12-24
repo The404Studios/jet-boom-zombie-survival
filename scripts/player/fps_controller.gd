@@ -293,7 +293,7 @@ func _fire_weapon():
 
 		# Executioner skill - bonus damage to low health enemies
 		if skill_tree and skill_tree.has_skill("executioner") and collider:
-			if "current_health" in collider and "max_health" in collider:
+			if "current_health" in collider and "max_health" in collider and collider.max_health > 0:
 				if collider.current_health / collider.max_health < 0.3:
 					damage *= 1.5  # 50% bonus damage
 
@@ -468,7 +468,7 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 		final_damage *= (1.0 - damage_reduction / 100.0)
 
 		# Last Stand skill check
-		if skill_tree.has_skill("last_stand") and current_health / max_health < 0.25:
+		if skill_tree.has_skill("last_stand") and max_health > 0 and current_health / max_health < 0.25:
 			final_damage *= 0.7  # 30% damage reduction
 
 	# Apply armor reduction
