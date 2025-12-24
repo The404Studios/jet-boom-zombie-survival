@@ -433,7 +433,7 @@ func _on_item_purchased(item: ItemDataExtended, cost: int):
 
 func spawn_coin_particles(amount: int):
 	# Spawn floating coin icons
-	var num_coins = mini(amount / 10, 10)  # Max 10 coin particles
+	var num_coins = mini(amount // 10, 10)  # Max 10 coin particles
 
 	for i in range(num_coins):
 		var coin = Label.new()

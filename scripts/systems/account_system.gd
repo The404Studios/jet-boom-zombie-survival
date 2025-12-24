@@ -55,7 +55,7 @@ func _ready():
 func _try_steam_connection():
 	steam_manager = get_node_or_null("/root/SteamManager")
 
-	if steam_manager and steam_manager.is_steam_running:
+	if steam_manager and steam_manager.is_initialized():
 		account_data.steam_id = steam_manager.steam_id
 		account_data.username = steam_manager.steam_username
 		steam_connected.emit(steam_manager.steam_id, steam_manager.steam_username)
@@ -86,7 +86,7 @@ func _load_account():
 
 	# No save file - check if we have Steam username
 	if account_data.username.is_empty():
-		if steam_manager and steam_manager.is_steam_running:
+		if steam_manager and steam_manager.is_initialized():
 			account_data.username = steam_manager.steam_username
 		else:
 			# Will prompt for username

@@ -27,7 +27,7 @@ func set_item_data(data: ItemData):
 func get_item_data() -> ItemData:
 	return item_data
 
-func _on_body_entered(body):
+func _on_body_entered(body: Node3D):
 	if body is Player:
 		interact(body)
 
