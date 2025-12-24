@@ -240,9 +240,9 @@ func play_sfx(sound_name: String, volume: float = 1.0, pitch: float = 1.0):
 		player.pitch_scale = pitch
 		player.play()
 
-func _get_next_2d_player() -> AudioStreamPlayer:
-	"""Get available 2D audio player from pool"""
-	# Create a simple player if needed
+func _get_available_2d_player() -> AudioStreamPlayer:
+	"""Get available 2D audio player from pool (fallback method)"""
+	# Try to find a non-playing player first
 	for child in get_children():
 		if child is AudioStreamPlayer and not child.playing:
 			return child
