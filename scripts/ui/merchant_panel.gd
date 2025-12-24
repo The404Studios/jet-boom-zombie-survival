@@ -10,7 +10,7 @@ signal craft_started(recipe: Dictionary)
 @onready var currency_label: Label = $TopBar/Currency
 @onready var selling_grid: GridContainer = $LeftPanel/SellingSection/Grid
 @onready var crafting_grid: GridContainer = $LeftPanel/CraftingSection/Grid
-@onready var stash_grid: GridContainer = $RightPanel/StashGrid
+@onready var stash_grid: GridContainer = $RightPanel/ScrollContainer/StashGrid
 
 # Merchant data
 var merchant_reputation: int = 0

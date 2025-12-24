@@ -8,9 +8,9 @@ signal panel_closed
 
 # UI References
 @onready var lobby_status_label: Label = $LobbyStatus
-@onready var player_list: VBoxContainer = $PlayerList/List
-@onready var lobby_browser: VBoxContainer = $LobbyBrowser/List
-@onready var friend_list: VBoxContainer = $FriendList/List
+@onready var player_list: VBoxContainer = $LobbyRoomPanel/PlayerList/List
+@onready var lobby_browser: VBoxContainer = $LobbyBrowserPanel/LobbyBrowser/List
+@onready var friend_list: VBoxContainer = $FriendPanel/FriendList/List
 
 # Buttons
 @onready var host_button: Button = $Buttons/HostButton
