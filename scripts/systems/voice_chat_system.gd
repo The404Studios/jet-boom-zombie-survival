@@ -38,12 +38,33 @@ func _ready():
 			_initialize_steam_voice()
 
 	# Connect to network signals
-	if NetworkManager:
-		NetworkManager.player_connected.connect(_on_player_connected)
-		NetworkManager.player_disconnected.connect(_on_player_disconnected)
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	if network_manager:
+		network_manager.player_connected.connect(_on_player_connected)
+		network_manager.player_disconnected.connect(_on_player_disconnected)
 
 	# Load settings
 	_load_voice_settings()
+
+func _exit_tree():
+	# Stop voice recording
+	if steam:
+		steam.stopVoiceRecording()
+
+	# Disconnect signals to prevent memory leaks
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	if network_manager:
+		if network_manager.player_connected.is_connected(_on_player_connected):
+			network_manager.player_connected.disconnect(_on_player_connected)
+		if network_manager.player_disconnected.is_connected(_on_player_disconnected):
+			network_manager.player_disconnected.disconnect(_on_player_disconnected)
+
+	# Clean up voice players
+	for player in voice_players.values():
+		if is_instance_valid(player):
+			player.queue_free()
+	voice_players.clear()
+	voice_buffers.clear()
 
 func _initialize_steam_voice():
 	if not steam:
@@ -140,7 +161,11 @@ func _broadcast_voice_data(sender_id: int, voice_data: PackedByteArray):
 	# Get sender position for proximity check
 	var sender_pos = _get_player_position(sender_id)
 
-	for peer_id in NetworkManager.players.keys():
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	if not network_manager:
+		return
+
+	for peer_id in network_manager.players.keys():
 		if peer_id == sender_id:
 			continue
 

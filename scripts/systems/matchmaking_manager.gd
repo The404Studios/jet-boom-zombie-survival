@@ -33,6 +33,22 @@ func _ready():
 		steam_manager.lobby_joined.connect(_on_lobby_joined)
 		steam_manager.lobby_list_received.connect(_on_lobby_list_received)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if network_manager:
+		if network_manager.player_connected.is_connected(_on_player_connected):
+			network_manager.player_connected.disconnect(_on_player_connected)
+		if network_manager.player_disconnected.is_connected(_on_player_disconnected):
+			network_manager.player_disconnected.disconnect(_on_player_disconnected)
+
+	if steam_manager:
+		if steam_manager.lobby_created.is_connected(_on_lobby_created):
+			steam_manager.lobby_created.disconnect(_on_lobby_created)
+		if steam_manager.lobby_joined.is_connected(_on_lobby_joined):
+			steam_manager.lobby_joined.disconnect(_on_lobby_joined)
+		if steam_manager.lobby_list_received.is_connected(_on_lobby_list_received):
+			steam_manager.lobby_list_received.disconnect(_on_lobby_list_received)
+
 # ============================================
 # MATCHMAKING
 # ============================================

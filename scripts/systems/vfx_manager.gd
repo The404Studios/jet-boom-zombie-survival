@@ -10,9 +10,27 @@ const POOL_SIZE: int = 50
 var effect_pool: Array = []
 var pool_index: int = 0
 
+# Cached textures and materials
+var _bullet_hole_texture: ImageTexture = null
+var _cached_muzzle_material: ParticleProcessMaterial = null
+var _cached_impact_materials: Dictionary = {}  # surface_type -> ParticleProcessMaterial
+
 func _ready():
 	# Create effect pool
 	_create_effect_pool()
+	# Pre-create cached resources
+	_create_cached_resources()
+
+func _create_cached_resources():
+	# Pre-generate bullet hole texture
+	_bullet_hole_texture = _generate_bullet_hole_texture()
+
+	# Pre-create common materials
+	_cached_muzzle_material = _create_muzzle_flash_material()
+
+	# Pre-create impact materials for common surface types
+	for surface_type in ["default", "metal", "wood", "concrete"]:
+		_cached_impact_materials[surface_type] = _create_impact_material(surface_type)
 
 func _create_effect_pool():
 	for i in POOL_SIZE:
@@ -117,54 +135,33 @@ func spawn_impact_effect(position: Vector3, normal: Vector3, surface_type: Strin
 func _spawn_impact_local(position: Vector3, normal: Vector3, surface_type: String):
 	var particles = _get_next_particle()
 
-	# Configure based on surface
-	var color = Color.WHITE
-	var amount = 15
+	# Flesh handled by GoreSystem
+	if surface_type == "flesh":
+		return
 
+	# Get amount based on surface
+	var amount = 15
 	match surface_type:
-		"flesh":
-			# Blood splatter handled by GoreSystem
-			return
 		"metal":
-			color = Color(0.8, 0.8, 0.9, 1.0)
 			amount = 20
 		"wood":
-			color = Color(0.6, 0.4, 0.2, 1.0)
 			amount = 12
 		"concrete":
-			color = Color(0.7, 0.7, 0.7, 1.0)
 			amount = 18
-		_:
-			color = Color(0.8, 0.8, 0.8, 1.0)
 
 	particles.amount = amount
 	particles.lifetime = 0.5
 	particles.global_position = position
 
-	# Create material
-	var material = ParticleProcessMaterial.new()
+	# Use cached material if available, otherwise create one
+	var material: ParticleProcessMaterial
+	if _cached_impact_materials.has(surface_type):
+		material = _cached_impact_materials[surface_type].duplicate()
+	else:
+		material = _create_impact_material(surface_type)
 
-	# Emission
-	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
-	material.emission_sphere_radius = 0.02
-
-	# Direction - away from surface
+	# Update direction for this specific impact
 	material.direction = normal
-	material.spread = 45.0
-
-	# Velocity
-	material.initial_velocity_min = 1.0
-	material.initial_velocity_max = 3.0
-
-	# Gravity
-	material.gravity = Vector3(0, -9.8, 0)
-
-	# Color
-	material.color = color
-
-	# Scale
-	material.scale_min = 0.02
-	material.scale_max = 0.08
 
 	particles.process_material = material
 	particles.restart()
@@ -222,10 +219,11 @@ func _create_impact_decal(position: Vector3, normal: Vector3, surface_type: Stri
 	if is_instance_valid(decal):
 		decal.queue_free()
 
-func _create_bullet_hole_texture() -> ImageTexture:
+func _generate_bullet_hole_texture() -> ImageTexture:
+	"""Generate bullet hole texture once at startup"""
 	var image = Image.create(32, 32, false, Image.FORMAT_RGBA8)
 
-	# Draw bullet hole
+	# Draw bullet hole with deterministic pattern
 	for y in range(32):
 		for x in range(32):
 			var dx = x - 16
@@ -238,13 +236,92 @@ func _create_bullet_hole_texture() -> ImageTexture:
 			elif dist < 8.0:
 				alpha = (8.0 - dist) / 2.0
 
-			# Add some randomness
-			if randf() > 0.8:
-				alpha *= randf_range(0.5, 1.0)
+			# Add some noise pattern based on position
+			var noise_val = sin(float(x) * 0.5) * cos(float(y) * 0.5)
+			if noise_val > 0.3:
+				alpha *= 0.7
 
 			image.set_pixel(x, y, Color(0, 0, 0, alpha))
 
 	return ImageTexture.create_from_image(image)
+
+func _create_bullet_hole_texture() -> ImageTexture:
+	"""Return cached bullet hole texture"""
+	if _bullet_hole_texture:
+		return _bullet_hole_texture
+	_bullet_hole_texture = _generate_bullet_hole_texture()
+	return _bullet_hole_texture
+
+func _create_muzzle_flash_material() -> ParticleProcessMaterial:
+	"""Create reusable muzzle flash material template"""
+	var material = ParticleProcessMaterial.new()
+
+	# Emission
+	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	material.emission_sphere_radius = 0.05
+
+	# Default direction (will be overridden per-use)
+	material.direction = Vector3.FORWARD
+	material.spread = 20.0
+
+	# Velocity
+	material.initial_velocity_min = 0.5
+	material.initial_velocity_max = 2.0
+
+	# Color gradient - bright yellow/orange flash
+	var gradient = Gradient.new()
+	gradient.add_point(0.0, Color(1.0, 1.0, 0.8, 1.0))
+	gradient.add_point(0.5, Color(1.0, 0.5, 0.0, 0.8))
+	gradient.add_point(1.0, Color(0.3, 0.1, 0.0, 0.0))
+
+	var gradient_texture = GradientTexture1D.new()
+	gradient_texture.gradient = gradient
+	material.color_ramp = gradient_texture
+
+	# Default scale
+	material.scale_min = 0.1
+	material.scale_max = 0.3
+
+	return material
+
+func _create_impact_material(surface_type: String) -> ParticleProcessMaterial:
+	"""Create impact material for specific surface type"""
+	var material = ParticleProcessMaterial.new()
+
+	# Emission
+	material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+	material.emission_sphere_radius = 0.02
+
+	# Direction (will be overridden)
+	material.direction = Vector3.UP
+	material.spread = 45.0
+
+	# Velocity
+	material.initial_velocity_min = 1.0
+	material.initial_velocity_max = 3.0
+
+	# Gravity
+	material.gravity = Vector3(0, -9.8, 0)
+
+	# Color based on surface
+	var color = Color.WHITE
+	match surface_type:
+		"metal":
+			color = Color(0.8, 0.8, 0.9, 1.0)
+		"wood":
+			color = Color(0.6, 0.4, 0.2, 1.0)
+		"concrete":
+			color = Color(0.7, 0.7, 0.7, 1.0)
+		_:
+			color = Color(0.8, 0.8, 0.8, 1.0)
+
+	material.color = color
+
+	# Scale
+	material.scale_min = 0.02
+	material.scale_max = 0.08
+
+	return material
 
 # ============================================
 # EXPLOSION (Network Replicated)
