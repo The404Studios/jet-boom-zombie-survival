@@ -27,13 +27,17 @@ func _create_effect_pool():
 # ============================================
 
 func spawn_muzzle_flash(position: Vector3, direction: Vector3, weapon_type: String = "default"):
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_muzzle_flash_local(position, direction, weapon_type)
+		return
+
 	if multiplayer.is_server():
 		_spawn_muzzle_flash_networked.rpc(position, direction, weapon_type)
 	else:
 		_spawn_muzzle_flash_networked.rpc_id(1, position, direction, weapon_type)
 
-@rpc("any_peer", "call_local", "reliable")
-func _spawn_muzzle_flash_networked(position: Vector3, direction: Vector3, weapon_type: String):
+func _spawn_muzzle_flash_local(position: Vector3, direction: Vector3, weapon_type: String):
 	var particles = _get_next_particle()
 
 	# Configure based on weapon type
@@ -91,18 +95,26 @@ func _spawn_muzzle_flash_networked(position: Vector3, direction: Vector3, weapon
 	particles.process_material = material
 	particles.restart()
 
+@rpc("any_peer", "call_local", "reliable")
+func _spawn_muzzle_flash_networked(position: Vector3, direction: Vector3, weapon_type: String):
+	_spawn_muzzle_flash_local(position, direction, weapon_type)
+
 # ============================================
 # BULLET IMPACT (Network Replicated)
 # ============================================
 
 func spawn_impact_effect(position: Vector3, normal: Vector3, surface_type: String = "default"):
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_impact_local(position, normal, surface_type)
+		return
+
 	if multiplayer.is_server():
 		_spawn_impact_networked.rpc(position, normal, surface_type)
 	else:
 		_spawn_impact_networked.rpc_id(1, position, normal, surface_type)
 
-@rpc("any_peer", "call_local", "reliable")
-func _spawn_impact_networked(position: Vector3, normal: Vector3, surface_type: String):
+func _spawn_impact_local(position: Vector3, normal: Vector3, surface_type: String):
 	var particles = _get_next_particle()
 
 	# Configure based on surface
@@ -164,6 +176,10 @@ func _spawn_impact_networked(position: Vector3, normal: Vector3, surface_type: S
 	if has_node("/root/AudioManager"):
 		var audio = get_node("/root/AudioManager")
 		audio.play_impact(surface_type, position)
+
+@rpc("any_peer", "call_local", "reliable")
+func _spawn_impact_networked(position: Vector3, normal: Vector3, surface_type: String):
+	_spawn_impact_local(position, normal, surface_type)
 
 func _create_impact_decal(position: Vector3, normal: Vector3, surface_type: String):
 	var decal = Decal.new()
@@ -235,13 +251,17 @@ func _create_bullet_hole_texture() -> ImageTexture:
 # ============================================
 
 func spawn_explosion(position: Vector3, radius: float = 5.0):
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_explosion_local(position, radius)
+		return
+
 	if multiplayer.is_server():
 		_spawn_explosion_networked.rpc(position, radius)
 	else:
 		_spawn_explosion_networked.rpc_id(1, position, radius)
 
-@rpc("any_peer", "call_local", "reliable")
-func _spawn_explosion_networked(position: Vector3, radius: float):
+func _spawn_explosion_local(position: Vector3, radius: float):
 	# Main explosion particles
 	var explosion = GPUParticles3D.new()
 	explosion.global_position = position
@@ -289,6 +309,10 @@ func _spawn_explosion_networked(position: Vector3, radius: float):
 	if is_instance_valid(explosion):
 		explosion.queue_free()
 
+@rpc("any_peer", "call_local", "reliable")
+func _spawn_explosion_networked(position: Vector3, radius: float):
+	_spawn_explosion_local(position, radius)
+
 func _create_shockwave(position: Vector3, radius: float):
 	# Simple expanding ring effect
 	var ring = MeshInstance3D.new()
@@ -328,13 +352,17 @@ func _create_shockwave(position: Vector3, radius: float):
 # ============================================
 
 func spawn_shell_casing(position: Vector3, direction: Vector3):
+	if not multiplayer.has_multiplayer_peer():
+		# Single-player - spawn directly
+		_spawn_shell_local(position, direction)
+		return
+
 	if multiplayer.is_server():
 		_spawn_shell_networked.rpc(position, direction)
 	else:
 		_spawn_shell_networked.rpc_id(1, position, direction)
 
-@rpc("any_peer", "call_local", "unreliable")
-func _spawn_shell_networked(position: Vector3, direction: Vector3):
+func _spawn_shell_local(position: Vector3, direction: Vector3):
 	var shell = RigidBody3D.new()
 	shell.global_position = position
 
@@ -377,6 +405,10 @@ func _spawn_shell_networked(position: Vector3, direction: Vector3):
 	await get_tree().create_timer(5.0).timeout
 	if is_instance_valid(shell):
 		shell.queue_free()
+
+@rpc("any_peer", "call_local", "unreliable")
+func _spawn_shell_networked(position: Vector3, direction: Vector3):
+	_spawn_shell_local(position, direction)
 
 # ============================================
 # HELPER FUNCTIONS

@@ -117,6 +117,10 @@ func _capture_and_send_voice():
 			_send_voice_data(voice_data)
 
 func _send_voice_data(voice_data: PackedByteArray):
+	# Skip if multiplayer not active
+	if not multiplayer.has_multiplayer_peer():
+		return
+
 	if not multiplayer.is_server():
 		# Client sends to server
 		_receive_voice_data.rpc_id(1, voice_data)
