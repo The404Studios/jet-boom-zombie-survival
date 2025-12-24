@@ -33,6 +33,7 @@ GameManager="*res://scripts/systems/game_manager.gd"
 MatchmakingManager="*res://scripts/systems/matchmaking_manager.gd"
 AccountSystem="*res://scripts/systems/account_system.gd"
 TradingSystem="*res://scripts/systems/trading_system.gd"
+PlayerPersistence="*res://scripts/systems/player_persistence.gd"
 
 [display]
 

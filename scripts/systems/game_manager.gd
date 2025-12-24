@@ -15,7 +15,7 @@ var wave_timer: float = 0.0
 
 signal wave_started(wave_number: int)
 signal wave_completed(wave_number: int)
-signal zombie_spawned(zombie: Zombie)
+signal zombie_spawned(zombie: Node)
 signal game_started
 signal game_over(victory: bool)
 

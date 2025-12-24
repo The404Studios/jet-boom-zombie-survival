@@ -257,18 +257,18 @@ func _on_member_joined(member_id: int, member_name: String):
 	_update_status(member_name + " joined the lobby")
 	_refresh_player_list()
 
-func _on_member_left(member_id: int):
+func _on_member_left(_member_id: int):
 	_update_status("A player left the lobby")
 	_refresh_player_list()
 
-func _on_invite_received(inviter_id: int, inviter_name: String, lobby_id: int):
+func _on_invite_received(_inviter_id: int, inviter_name: String, lobby_id: int):
 	# Show invite notification
 	_show_invite_popup(inviter_name, lobby_id)
 
-func _on_player_connected(peer_id: int, player_info: Dictionary):
+func _on_player_connected(_peer_id: int, _player_info: Dictionary):
 	_refresh_player_list()
 
-func _on_player_disconnected(peer_id: int):
+func _on_player_disconnected(_peer_id: int):
 	_refresh_player_list()
 
 func _on_game_starting():

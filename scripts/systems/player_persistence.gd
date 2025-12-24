@@ -26,15 +26,17 @@ var player_data = {
 	},
 	"stash": [],
 	"equipped": {
-		"helmet": null,
+		"head": null,
 		"chest": null,
-		"gloves": null,
-		"boots": null,
-		"ring_1": null,
-		"ring_2": null,
-		"amulet": null,
-		"primary": null,
-		"secondary": null
+		"hands": null,
+		"legs": null,
+		"feet": null,
+		"back": null,
+		"ring_left": null,
+		"ring_right": null,
+		"pendant": null,
+		"weapon_main": null,
+		"weapon_off": null
 	},
 	"unlocks": {
 		"weapons": [],
@@ -124,15 +126,17 @@ func apply_to_equipment(equipment: EquipmentSystem):
 
 func serialize_equipment(equipment: EquipmentSystem) -> Dictionary:
 	return {
-		"helmet": serialize_item(equipment.helmet),
-		"chest": serialize_item(equipment.chest_armor),
-		"gloves": serialize_item(equipment.gloves),
-		"boots": serialize_item(equipment.boots),
-		"ring_1": serialize_item(equipment.ring_1),
-		"ring_2": serialize_item(equipment.ring_2),
-		"amulet": serialize_item(equipment.amulet),
-		"primary": serialize_item(equipment.primary_weapon),
-		"secondary": serialize_item(equipment.secondary_weapon)
+		"head": serialize_item(equipment.head),
+		"chest": serialize_item(equipment.chest),
+		"hands": serialize_item(equipment.hands),
+		"legs": serialize_item(equipment.legs),
+		"feet": serialize_item(equipment.feet),
+		"back": serialize_item(equipment.back),
+		"ring_left": serialize_item(equipment.ring_left),
+		"ring_right": serialize_item(equipment.ring_right),
+		"pendant": serialize_item(equipment.pendant),
+		"weapon_main": serialize_item(equipment.weapon_main),
+		"weapon_off": serialize_item(equipment.weapon_off)
 	}
 
 func serialize_inventory(inventory: Array) -> Array:
