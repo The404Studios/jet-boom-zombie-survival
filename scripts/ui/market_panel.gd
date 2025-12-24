@@ -16,7 +16,7 @@ signal trade_requested(player_id: int)
 @onready var reset_button: Button = $FilterBar/ResetButton
 
 # Market grid
-@onready var market_grid: GridContainer = $MarketGrid
+@onready var market_grid: GridContainer = $MarketContainer/ScrollContainer/MarketGrid
 
 # Listing data
 var market_listings: Array = []

@@ -25,12 +25,12 @@ var inventory_system: Node = null
 var player_conditions: PlayerConditions = null
 
 # UI References
-@onready var tab_bar: HBoxContainer = $TabBar
-@onready var content_container: Control = $ContentContainer
-@onready var character_panel: Control = $ContentContainer/CharacterPanel
-@onready var skills_panel: Control = $ContentContainer/SkillsPanel
-@onready var inventory_panel: Control = $ContentContainer/InventoryPanel
-@onready var equipment_panel: Control = $ContentContainer/EquipmentPanel
+@onready var tab_bar: HBoxContainer = $Background/MarginContainer/VBox/TabBar
+@onready var content_container: Control = $Background/MarginContainer/VBox/ContentContainer
+@onready var character_panel: Control = $Background/MarginContainer/VBox/ContentContainer/CharacterPanel
+@onready var skills_panel: Control = $Background/MarginContainer/VBox/ContentContainer/SkillsPanel
+@onready var inventory_panel: Control = $Background/MarginContainer/VBox/ContentContainer/InventoryPanel
+@onready var equipment_panel: Control = $Background/MarginContainer/VBox/ContentContainer/EquipmentPanel
 
 func _ready():
 	visible = false
