@@ -193,9 +193,9 @@ func spend_attribute_point(attribute_name: String) -> bool:
 # ATTRIBUTE QUERIES
 # ============================================
 
-func get_attribute(name: String) -> int:
+func get_attribute(attr_name: String) -> int:
 	"""Get attribute value by name"""
-	match name.to_lower():
+	match attr_name.to_lower():
 		"strength", "str":
 			return strength
 		"agility", "agi":

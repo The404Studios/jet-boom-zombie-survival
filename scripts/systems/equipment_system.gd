@@ -191,7 +191,6 @@ func _get_slot_for_item(item: Resource) -> String:
 
 	# Check item_type enum
 	if "item_type" in item:
-		var type_name = ""
 		if item.item_type is int:
 			# Handle ItemDataExtended enum
 			match item.item_type:
@@ -275,15 +274,15 @@ func _apply_set_bonuses():
 			set_counts[item.equipment_set] += 1
 
 	# Apply set bonuses based on piece count
-	for set_name in set_counts:
-		var count = set_counts[set_name]
-		var set_bonuses = _get_set_bonuses(set_name, count)
+	for equip_set_name in set_counts:
+		var count = set_counts[equip_set_name]
+		var set_bonuses = _get_set_bonuses(equip_set_name, count)
 
 		for stat in set_bonuses:
 			if total_stat_bonuses.has(stat):
 				total_stat_bonuses[stat] += set_bonuses[stat]
 
-func _get_set_bonuses(set_name: String, piece_count: int) -> Dictionary:
+func _get_set_bonuses(equip_set_name: String, piece_count: int) -> Dictionary:
 	"""Get bonuses for a specific set based on piece count"""
 	var sets = {
 		"Zombie Hunter": {
@@ -310,8 +309,8 @@ func _get_set_bonuses(set_name: String, piece_count: int) -> Dictionary:
 
 	var bonuses = {}
 
-	if sets.has(set_name):
-		var set_data = sets[set_name]
+	if sets.has(equip_set_name):
+		var set_data = sets[equip_set_name]
 		for threshold in set_data:
 			if piece_count >= threshold:
 				var tier_bonuses = set_data[threshold]

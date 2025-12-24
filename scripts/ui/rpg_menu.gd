@@ -312,7 +312,7 @@ func _refresh_equipment_panel():
 				slot_button.text = EquipmentSystem.get_slot_display_name(slot_name)
 
 	# Update total stats display
-	var bonuses = equipment_system.get_total_bonuses()
+	var _bonuses = equipment_system.get_total_bonuses()
 	_set_label(equipment_panel, "TotalArmorValue", "%.0f" % equipment_system.get_total_armor())
 
 	# Display active conditions

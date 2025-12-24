@@ -501,7 +501,7 @@ func add_experience(amount: int):
 		character_attributes.add_experience(amount)
 	experience_gained.emit(amount)
 
-func add_points(amount: int):
+func add_points(_amount: int):
 	"""Add points (for kills, etc.)"""
 	# Points are tracked by arena manager
 	pass
