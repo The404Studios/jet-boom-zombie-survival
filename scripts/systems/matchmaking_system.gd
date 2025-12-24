@@ -1,5 +1,6 @@
 extends Node
-class_name MatchmakingSystem
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: MatchmakingSystem (the autoload name)
 
 signal matchmaking_started
 signal matchmaking_stopped

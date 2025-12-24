@@ -1,5 +1,6 @@
 extends Node
-class_name GameManager
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: GameManager (the autoload name)
 
 @export var zombie_spawn_points: Array[Node3D] = []
 @export var zombie_scene: PackedScene

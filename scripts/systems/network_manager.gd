@@ -549,17 +549,17 @@ func is_using_steam() -> bool:
 func get_local_peer_id() -> int:
 	return local_player_id
 
-func set_player_ready(peer_id: int, ready: bool):
+func set_player_ready(peer_id: int, is_ready: bool):
 	if players.has(peer_id):
-		players[peer_id].ready = ready
+		players[peer_id].ready = is_ready
 
 		if is_server:
-			_sync_player_ready.rpc(peer_id, ready)
+			_sync_player_ready.rpc(peer_id, is_ready)
 
 @rpc("authority", "call_local", "reliable")
-func _sync_player_ready(peer_id: int, ready: bool):
+func _sync_player_ready(peer_id: int, is_ready: bool):
 	if players.has(peer_id):
-		players[peer_id].ready = ready
+		players[peer_id].ready = is_ready
 
 func are_all_players_ready() -> bool:
 	for peer_id in players:

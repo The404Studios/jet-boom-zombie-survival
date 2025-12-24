@@ -1,5 +1,6 @@
 extends Node
-class_name TradingSystem
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: TradingSystem (the autoload name)
 
 signal trade_requested(from_player: int, to_player: int)
 signal trade_accepted(trade_id: int)
