@@ -26,7 +26,7 @@ func setup_for_wave(wave: int):
 	current_health = max_health
 	_update_visual()
 
-func take_damage(amount: float, attacker: Node = null):
+func take_damage(amount: float, _attacker: Node = null):
 	"""Take damage from zombie"""
 	current_health -= amount
 	current_health = max(current_health, 0)

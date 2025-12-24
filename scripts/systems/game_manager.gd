@@ -62,7 +62,7 @@ func spawn_zombie():
 	zombies_alive += 1
 	zombie_spawned.emit(zombie)
 
-func _on_zombie_died(zombie: Zombie):
+func _on_zombie_died(_zombie: Zombie):
 	zombies_alive -= 1
 	zombies_killed += 1
 

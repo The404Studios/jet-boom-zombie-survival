@@ -23,6 +23,7 @@ signal leaderboard_pressed
 @onready var leaderboard_panel: Control = $LeaderboardPanel
 @onready var settings_panel: Control = $SettingsPanel
 @onready var trading_panel: Control = $TradingPanel
+@onready var lobby_panel: Control = $LobbyPanel
 
 # Steam integration
 var steam_username: String = "Survivor"
@@ -99,7 +100,24 @@ func _update_player_info():
 
 func _on_play_pressed():
 	play_pressed.emit()
-	# Load the game scene
+	# Open lobby panel for multiplayer
+	_show_panel(lobby_panel)
+
+	# Connect lobby panel signals if not already connected
+	if lobby_panel and not lobby_panel.game_started.is_connected(_on_lobby_game_started):
+		lobby_panel.game_started.connect(_on_lobby_game_started)
+		lobby_panel.panel_closed.connect(_on_lobby_closed)
+
+func _on_lobby_game_started():
+	# Game is starting from lobby
+	pass
+
+func _on_lobby_closed():
+	# Return to main menu
+	_close_panel(lobby_panel)
+
+func start_solo_game():
+	# Start a solo game (no multiplayer)
 	get_tree().change_scene_to_file("res://scenes/levels/arena_01.tscn")
 
 func _on_stash_pressed():
@@ -180,7 +198,7 @@ func _close_panel(panel: Control):
 	top_tabs.visible = true
 
 func _hide_all_panels():
-	var all_panels = [stash_panel, market_panel, merchant_panel, leaderboard_panel, settings_panel, trading_panel]
+	var all_panels = [stash_panel, market_panel, merchant_panel, leaderboard_panel, settings_panel, trading_panel, lobby_panel]
 	for panel in all_panels:
 		if panel:
 			panel.visible = false
@@ -219,3 +237,5 @@ func _input(event):
 			_close_panel(settings_panel)
 		elif trading_panel and trading_panel.visible:
 			_close_panel(trading_panel)
+		elif lobby_panel and lobby_panel.visible:
+			_close_panel(lobby_panel)

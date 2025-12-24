@@ -1,12 +1,22 @@
-[gd_scene load_steps=5 format=3 uid="uid://player_fps001"]
+[gd_scene load_steps=12 format=3 uid="uid://player_fps001"]
 
 [ext_resource type="Script" path="res://scripts/player/fps_controller.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://viewmodel_fps001" path="res://scenes/player/viewmodel.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/player/foot_ik_controller.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/systems/character_attributes.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/systems/skill_tree.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/systems/equipment_system.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/systems/player_conditions.gd" id="7"]
+[ext_resource type="Script" path="res://scripts/systems/inventory_system.gd" id="8"]
+[ext_resource type="PackedScene" uid="uid://rpg_menu001" path="res://scenes/ui/rpg_menu.tscn" id="9"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.4
 height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="BootMaterial"]
+albedo_color = Color(0.15, 0.12, 0.1, 1.0)
+roughness = 0.7
 
 [node name="PlayerFPS" type="CharacterBody3D" groups=["player"]]
 collision_layer = 2
@@ -26,6 +36,16 @@ fov = 90.0
 [node name="FootIK" type="Node3D" parent="Camera3D"]
 script = ExtResource("3")
 
+[node name="LeftFoot" type="MeshInstance3D" parent="Camera3D/FootIK"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, -1.55, 0.1)
+mesh = BoxMesh.new()
+surface_material_override/0 = SubResource("BootMaterial")
+
+[node name="RightFoot" type="MeshInstance3D" parent="Camera3D/FootIK"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -1.55, 0.1)
+mesh = BoxMesh.new()
+surface_material_override/0 = SubResource("BootMaterial")
+
 [node name="RayCast3D" type="RayCast3D" parent="Camera3D"]
 target_position = Vector3(0, 0, -100)
 collision_mask = 5
@@ -35,3 +55,22 @@ collide_with_areas = true
 target_position = Vector3(0, 0, -2)
 collision_mask = 4
 collide_with_areas = true
+
+[node name="CharacterAttributes" type="Node" parent="."]
+script = ExtResource("4")
+
+[node name="SkillTree" type="Node" parent="."]
+script = ExtResource("5")
+
+[node name="EquipmentSystem" type="Node" parent="."]
+script = ExtResource("6")
+
+[node name="PlayerConditions" type="Node" parent="."]
+script = ExtResource("7")
+
+[node name="InventorySystem" type="Node" parent="."]
+script = ExtResource("8")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="RPGMenu" parent="UI" instance=ExtResource("9")]
