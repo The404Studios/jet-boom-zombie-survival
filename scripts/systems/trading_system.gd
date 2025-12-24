@@ -6,8 +6,8 @@ signal trade_accepted(trade_id: int)
 signal trade_declined(trade_id: int)
 signal trade_completed(trade_id: int)
 signal trade_cancelled(trade_id: int)
-signal item_added_to_trade(trade_id: int, player_id: int, item: ItemDataExtended)
-signal item_removed_from_trade(trade_id: int, player_id: int, item: ItemDataExtended)
+signal item_added_to_trade(trade_id: int, player_id: int, item: Resource)
+signal item_removed_from_trade(trade_id: int, player_id: int, item: Resource)
 signal player_ready_changed(trade_id: int, player_id: int, is_ready: bool)
 
 class TradeSession:
@@ -108,7 +108,7 @@ func decline_trade(trade_id: int) -> bool:
 func _decline_trade_rpc(trade_id: int):
 	trade_declined.emit(trade_id)
 
-func add_item_to_trade(trade_id: int, player_id: int, item: ItemDataExtended) -> bool:
+func add_item_to_trade(trade_id: int, player_id: int, item: Resource) -> bool:
 	if not active_trades.has(trade_id):
 		return false
 
@@ -137,7 +137,7 @@ func remove_item_from_trade(trade_id: int, player_id: int, item_index: int) -> b
 		return false
 
 	var trade = active_trades[trade_id]
-	var item: ItemDataExtended = null
+	var item: Resource = null
 
 	# Reset ready status when items change
 	trade.player1_ready = false
