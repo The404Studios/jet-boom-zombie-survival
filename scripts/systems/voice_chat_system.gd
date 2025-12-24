@@ -32,8 +32,8 @@ var voice_buffers: Dictionary = {} # peer_id -> PackedByteArray
 
 func _ready():
 	# Initialize Steam Voice if available
-	if has_node("/root/SteamManager"):
-		steam = get_node("/root/SteamManager").steam
+	if Engine.has_singleton("Steam"):
+		steam = Engine.get_singleton("Steam")
 		if steam:
 			_initialize_steam_voice()
 
