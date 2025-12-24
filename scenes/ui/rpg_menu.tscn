@@ -1,0 +1,475 @@
+[gd_scene load_steps=3 format=3 uid="uid://rpg_menu001"]
+
+[ext_resource type="Script" path="res://scripts/ui/rpg_menu.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
+bg_color = Color(0.1, 0.1, 0.15, 0.95)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[node name="RPGMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
+
+[node name="MarginContainer" type="MarginContainer" parent="Background"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Background/MarginContainer"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Background/MarginContainer/VBox"]
+layout_mode = 2
+text = "CHARACTER MENU"
+horizontal_alignment = 1
+
+[node name="TabBar" type="HBoxContainer" parent="Background/MarginContainer/VBox"]
+layout_mode = 2
+
+[node name="CharacterTab" type="Button" parent="Background/MarginContainer/VBox/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Character"
+
+[node name="SkillsTab" type="Button" parent="Background/MarginContainer/VBox/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Skills"
+
+[node name="InventoryTab" type="Button" parent="Background/MarginContainer/VBox/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Inventory"
+
+[node name="EquipmentTab" type="Button" parent="Background/MarginContainer/VBox/TabBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Equipment"
+
+[node name="ContentContainer" type="Control" parent="Background/MarginContainer/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CharacterPanel" type="VBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="LevelSection" type="HBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+
+[node name="LevelLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/LevelSection"]
+layout_mode = 2
+text = "Level:"
+
+[node name="LevelValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/LevelSection"]
+layout_mode = 2
+text = "1"
+
+[node name="Spacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/LevelSection"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ExpLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/LevelSection"]
+layout_mode = 2
+text = "Experience:"
+
+[node name="ExpValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/LevelSection"]
+layout_mode = 2
+text = "0 / 100"
+
+[node name="ExperienceBar" type="ProgressBar" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+max_value = 100.0
+value = 0.0
+
+[node name="PointsSection" type="HBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+
+[node name="PointsLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/PointsSection"]
+layout_mode = 2
+text = "Attribute Points:"
+
+[node name="PointsValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/PointsSection"]
+layout_mode = 2
+text = "0"
+
+[node name="HSeparator" type="HSeparator" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+
+[node name="AttributesGrid" type="GridContainer" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+columns = 4
+
+[node name="StrLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "Strength"
+
+[node name="StrengthValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "10"
+
+[node name="StrengthPlus" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "+"
+
+[node name="StrSpacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AgiLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "Agility"
+
+[node name="AgilityValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "10"
+
+[node name="AgilityPlus" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "+"
+
+[node name="AgiSpacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VitLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "Vitality"
+
+[node name="VitalityValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "10"
+
+[node name="VitalityPlus" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "+"
+
+[node name="VitSpacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="IntLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "Intelligence"
+
+[node name="IntelligenceValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "10"
+
+[node name="IntelligencePlus" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "+"
+
+[node name="IntSpacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EndLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "Endurance"
+
+[node name="EnduranceValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "10"
+
+[node name="EndurancePlus" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "+"
+
+[node name="EndSpacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="LckLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "Luck"
+
+[node name="LuckValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "10"
+
+[node name="LuckPlus" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+text = "+"
+
+[node name="LckSpacer" type="Control" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/AttributesGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="HSeparator2" type="HSeparator" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+
+[node name="DerivedLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+text = "Derived Stats"
+
+[node name="DerivedGrid" type="GridContainer" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel"]
+layout_mode = 2
+columns = 4
+
+[node name="HealthLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "Health:"
+
+[node name="HealthValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "100"
+
+[node name="StaminaLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "Stamina:"
+
+[node name="StaminaValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "100"
+
+[node name="ArmorLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "Armor:"
+
+[node name="ArmorValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "0"
+
+[node name="DamageLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "Damage:"
+
+[node name="DamageValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "+0"
+
+[node name="CritLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "Crit Chance:"
+
+[node name="CritChanceValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "5.0%"
+
+[node name="DodgeLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "Dodge:"
+
+[node name="DodgeValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/CharacterPanel/DerivedGrid"]
+layout_mode = 2
+text = "0.0%"
+
+[node name="SkillsPanel" type="VBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="SkillPointsRow" type="HBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/SkillsPanel"]
+layout_mode = 2
+
+[node name="SkillPointsLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/SkillsPanel/SkillPointsRow"]
+layout_mode = 2
+text = "Skill Points:"
+
+[node name="SkillPointsValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/SkillsPanel/SkillPointsRow"]
+layout_mode = 2
+text = "0"
+
+[node name="SkillScroll" type="ScrollContainer" parent="Background/MarginContainer/VBox/ContentContainer/SkillsPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SkillGrid" type="GridContainer" parent="Background/MarginContainer/VBox/ContentContainer/SkillsPanel/SkillScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+columns = 4
+
+[node name="InventoryPanel" type="VBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="InventoryLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/InventoryPanel"]
+layout_mode = 2
+text = "Inventory (20 slots)"
+
+[node name="InventoryScroll" type="ScrollContainer" parent="Background/MarginContainer/VBox/ContentContainer/InventoryPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="InventoryGrid" type="GridContainer" parent="Background/MarginContainer/VBox/ContentContainer/InventoryPanel/InventoryScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 5
+
+[node name="EquipmentPanel" type="HBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="EquipmentSlots" type="VBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="EquipLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots"]
+layout_mode = 2
+text = "Equipment Slots"
+
+[node name="SlotsGrid" type="GridContainer" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots"]
+layout_mode = 2
+columns = 2
+
+[node name="HeadLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[H] Head:"
+
+[node name="HeadSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="ChestLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[C] Chest:"
+
+[node name="ChestSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="HandsLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[G] Hands:"
+
+[node name="HandsSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="LegsLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[L] Legs:"
+
+[node name="LegsSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="FeetLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[F] Feet:"
+
+[node name="FeetSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="BackLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[B] Back:"
+
+[node name="BackSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="Ring1Label" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[R] Ring L:"
+
+[node name="Ring_leftSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="Ring2Label" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[R] Ring R:"
+
+[node name="Ring_rightSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="PendantLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[P] Pendant:"
+
+[node name="PendantSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="WeaponLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[W] Weapon:"
+
+[node name="Weapon_mainSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="OffhandLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "[O] Off-hand:"
+
+[node name="Weapon_offSlot" type="Button" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/EquipmentSlots/SlotsGrid"]
+layout_mode = 2
+text = "Empty"
+
+[node name="StatsPanel" type="VBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StatsLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel"]
+layout_mode = 2
+text = "Equipment Stats"
+
+[node name="TotalArmorRow" type="HBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel"]
+layout_mode = 2
+
+[node name="ArmorLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel/TotalArmorRow"]
+layout_mode = 2
+text = "Total Armor:"
+
+[node name="TotalArmorValue" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel/TotalArmorRow"]
+layout_mode = 2
+text = "0"
+
+[node name="ConditionsLabel" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel"]
+layout_mode = 2
+text = "Active Conditions"
+
+[node name="ConditionsContainer" type="VBoxContainer" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel"]
+layout_mode = 2
+
+[node name="NoConditions" type="Label" parent="Background/MarginContainer/VBox/ContentContainer/EquipmentPanel/StatsPanel/ConditionsContainer"]
+layout_mode = 2
+text = "None"
+
+[node name="CloseButton" type="Button" parent="Background/MarginContainer/VBox"]
+layout_mode = 2
+text = "Close [ESC]"
