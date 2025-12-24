@@ -212,7 +212,11 @@ func _create_impact_decal(position: Vector3, normal: Vector3, surface_type: Stri
 	decal.cull_mask = 1
 
 	# Add to scene
-	get_tree().current_scene.add_child(decal)
+	var scene = get_tree().current_scene
+	if not scene:
+		decal.queue_free()
+		return
+	scene.add_child(decal)
 
 	# Auto cleanup
 	await get_tree().create_timer(60.0).timeout
@@ -376,7 +380,11 @@ func _spawn_explosion_local(position: Vector3, radius: float):
 
 	explosion.process_material = material
 
-	get_tree().current_scene.add_child(explosion)
+	var scene = get_tree().current_scene
+	if not scene:
+		explosion.queue_free()
+		return
+	scene.add_child(explosion)
 
 	# Shockwave ring
 	_create_shockwave(position, radius)
@@ -411,7 +419,11 @@ func _create_shockwave(position: Vector3, radius: float):
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	ring.material_override = material
 
-	get_tree().current_scene.add_child(ring)
+	var scene = get_tree().current_scene
+	if not scene:
+		ring.queue_free()
+		return
+	scene.add_child(ring)
 
 	# Expand animation
 	var tween = create_tween()
@@ -469,7 +481,11 @@ func _spawn_shell_local(position: Vector3, direction: Vector3):
 	shell.add_child(collision)
 
 	shell.mass = 0.01
-	get_tree().current_scene.add_child(shell)
+	var scene = get_tree().current_scene
+	if not scene:
+		shell.queue_free()
+		return
+	scene.add_child(shell)
 
 	# Apply ejection force
 	await get_tree().physics_frame

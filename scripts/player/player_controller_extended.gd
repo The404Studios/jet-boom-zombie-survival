@@ -274,6 +274,10 @@ func reload_weapon():
 	# Animation would play here
 	await get_tree().create_timer(current_weapon_data.reload_time).timeout
 
+	# Validate after await - player may have been freed
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+
 	# Calculate ammo to reload
 	var ammo_needed = magazine_size - current_ammo
 	var ammo_to_load = min(ammo_needed, reserve_ammo)

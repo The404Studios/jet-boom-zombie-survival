@@ -357,7 +357,11 @@ func spawn_player(peer_id: int, _player_info: Dictionary):
 		var spawn = spawn_points[randi() % spawn_points.size()]
 		player.global_position = spawn.global_position
 
-	get_tree().current_scene.add_child(player)
+	var scene = get_tree().current_scene
+	if not scene:
+		player.queue_free()
+		return
+	scene.add_child(player)
 	player_nodes[peer_id] = player
 
 	print("Spawned player node for peer %d" % peer_id)
@@ -400,7 +404,11 @@ func spawn_zombie_networked(zombie_class_name: String, position: Vector3, zombie
 	zombie.name = "Zombie_%d" % zombie_id
 	zombie.global_position = position
 
-	get_tree().current_scene.add_child(zombie)
+	var scene = get_tree().current_scene
+	if not scene:
+		zombie.queue_free()
+		return
+	scene.add_child(zombie)
 
 @rpc("any_peer", "call_local")
 func damage_zombie(zombie_path: NodePath, damage: float, _is_headshot: bool):

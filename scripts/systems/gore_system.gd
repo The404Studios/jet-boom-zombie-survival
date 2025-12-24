@@ -103,11 +103,16 @@ func _create_blood_particles(position: Vector3, normal: Vector3, amount: int) ->
 	particles.process_material = material
 
 	# Add to scene
-	get_tree().current_scene.add_child(particles)
+	var scene = get_tree().current_scene
+	if not scene:
+		particles.queue_free()
+		return null
+	scene.add_child(particles)
 
 	# Auto-cleanup
 	await get_tree().create_timer(2.0).timeout
-	particles.queue_free()
+	if is_instance_valid(particles):
+		particles.queue_free()
 
 	return particles
 
@@ -130,7 +135,11 @@ func _create_blood_decal(position: Vector3, normal: Vector3):
 	decal.cull_mask = 1  # Only on environment layer
 
 	# Add to scene
-	get_tree().current_scene.add_child(decal)
+	var scene = get_tree().current_scene
+	if not scene:
+		decal.queue_free()
+		return null
+	scene.add_child(decal)
 	blood_decals.append(decal)
 
 	# Limit decals
@@ -255,7 +264,11 @@ func _create_single_gib(position: Vector3, base_force: Vector3) -> RigidBody3D:
 	)
 
 	# Add to scene
-	get_tree().current_scene.add_child(gib)
+	var scene = get_tree().current_scene
+	if not scene:
+		gib.queue_free()
+		return null
+	scene.add_child(gib)
 	active_gibs.append(gib)
 
 	# Apply impulse after physics frame
@@ -279,17 +292,19 @@ func _cleanup_gib(gib: RigidBody3D):
 	await get_tree().create_timer(GIB_LIFETIME).timeout
 
 	if is_instance_valid(gib):
-		# Fade out
-		var mesh = gib.get_child(0) as MeshInstance3D
-		if mesh:
-			var tween = create_tween()
-			var mat = mesh.material_override as StandardMaterial3D
-			if mat:
-				var current_color = mat.albedo_color
-				tween.tween_property(mat, "albedo_color", Color(current_color.r, current_color.g, current_color.b, 0.0), 1.0)
+		# Fade out - check if gib has children before accessing
+		if gib.get_child_count() > 0:
+			var mesh = gib.get_child(0) as MeshInstance3D
+			if mesh:
+				var tween = create_tween()
+				var mat = mesh.material_override as StandardMaterial3D
+				if mat:
+					var current_color = mat.albedo_color
+					tween.tween_property(mat, "albedo_color", Color(current_color.r, current_color.g, current_color.b, 0.0), 1.0)
 
 		await get_tree().create_timer(1.0).timeout
-		gib.queue_free()
+		if is_instance_valid(gib):
+			gib.queue_free()
 
 # ============================================
 # DISMEMBERMENT (Headshots, etc.)
@@ -348,7 +363,11 @@ func _create_head_gib(position: Vector3):
 	gib.add_child(collision)
 
 	gib.mass = 2.0
-	get_tree().current_scene.add_child(gib)
+	var scene = get_tree().current_scene
+	if not scene:
+		gib.queue_free()
+		return
+	scene.add_child(gib)
 
 	# Apply upward force
 	await get_tree().physics_frame
@@ -388,7 +407,11 @@ func _create_limb_gib(position: Vector3):
 	gib.add_child(collision)
 
 	gib.mass = 1.0
-	get_tree().current_scene.add_child(gib)
+	var scene = get_tree().current_scene
+	if not scene:
+		gib.queue_free()
+		return
+	scene.add_child(gib)
 
 	# Apply force
 	await get_tree().physics_frame

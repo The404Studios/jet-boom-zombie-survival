@@ -36,6 +36,10 @@ func _start_build(_player: Node):
 	for i in range(nails_required):
 		await get_tree().create_timer(0.5).timeout
 
+		# Validate instance after await
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+
 		if not is_being_nailed:
 			break
 
@@ -51,6 +55,8 @@ func _start_build(_player: Node):
 			var hit_pos = global_position + Vector3(randf_range(-0.3, 0.3), randf_range(0.5, 1.5), randf_range(-0.3, 0.3))
 			get_node("/root/VFXManager").spawn_impact_effect(hit_pos, Vector3.UP, "wood")
 
+	if not is_instance_valid(self):
+		return
 	is_built = true
 	is_being_nailed = false
 	barricade_built.emit()
@@ -67,6 +73,10 @@ func _start_repair(_player: Node):
 
 	for i in range(nails_needed):
 		await get_tree().create_timer(0.5).timeout
+
+		# Validate instance after await
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
 
 		if not is_being_nailed:
 			break
@@ -86,6 +96,8 @@ func _start_repair(_player: Node):
 		if current_health >= max_health:
 			break
 
+	if not is_instance_valid(self):
+		return
 	is_being_nailed = false
 
 func cancel_nailing():

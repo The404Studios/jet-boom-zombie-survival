@@ -26,6 +26,8 @@ func _ready():
 
 	# Start first wave after delay
 	await get_tree().create_timer(5.0).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
 	start_next_wave()
 
 func _process(delta):
@@ -45,6 +47,8 @@ func start_next_wave():
 func spawn_wave(count: int):
 	for i in range(count):
 		await get_tree().create_timer(2.0).timeout  # Stagger spawns
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
 		spawn_zombie()
 
 func spawn_zombie():
@@ -56,7 +60,11 @@ func spawn_zombie():
 
 	var spawn_point = zombie_spawn_points[randi() % zombie_spawn_points.size()]
 	var zombie = zombie_scene.instantiate()
-	get_tree().current_scene.add_child(zombie)
+	var scene = get_tree().current_scene
+	if not scene:
+		zombie.queue_free()
+		return
+	scene.add_child(zombie)
 	zombie.global_position = spawn_point.global_position
 	zombie.zombie_died.connect(_on_zombie_died)
 

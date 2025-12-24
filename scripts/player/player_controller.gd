@@ -143,6 +143,13 @@ func reload_weapon():
 	# Animation would play here
 	await get_tree().create_timer(weapon_data.reload_time).timeout
 
+	# Validate after await - player or weapon may have changed/been freed
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+	if not inventory or not inventory.equipped_weapon:
+		is_reloading = false
+		return
+
 	inventory.equipped_weapon.current_ammo = weapon_data.magazine_size
 	is_reloading = false
 
