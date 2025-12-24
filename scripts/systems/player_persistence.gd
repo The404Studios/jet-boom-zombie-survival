@@ -57,7 +57,7 @@ var player_data = {
 	}
 }
 
-func save_player_data(character_stats: CharacterStats = null, equipment: EquipmentSystem = null, inventory: InventorySystem = null):
+func save_player_data(character_stats: Node = null, equipment: Node = null, inventory: Node = null):
 	# Update character stats
 	if character_stats:
 		player_data.character.level = character_stats.level
@@ -105,7 +105,7 @@ func load_player_data() -> bool:
 		print("Failed to load player data")
 		return false
 
-func apply_to_character_stats(character_stats: CharacterStats):
+func apply_to_character_stats(character_stats: Node):
 	if not character_stats:
 		return
 
@@ -119,12 +119,12 @@ func apply_to_character_stats(character_stats: CharacterStats):
 	character_stats.vitality = player_data.character.vitality
 	character_stats.calculate_derived_stats()
 
-func apply_to_equipment(equipment: EquipmentSystem):
+func apply_to_equipment(equipment: Node):
 	if not equipment:
 		return
 	# Would need to deserialize and equip items
 
-func serialize_equipment(equipment: EquipmentSystem) -> Dictionary:
+func serialize_equipment(equipment: Node) -> Dictionary:
 	return {
 		"head": serialize_item(equipment.head),
 		"chest": serialize_item(equipment.chest),
@@ -148,7 +148,7 @@ func serialize_inventory(inventory: Array) -> Array:
 		})
 	return serialized
 
-func serialize_item(item: ItemDataExtended) -> Dictionary:
+func serialize_item(item: Resource) -> Dictionary:
 	if not item:
 		return {}
 

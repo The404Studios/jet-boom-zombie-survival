@@ -3,7 +3,7 @@ extends Node
 # Gore system with blood particles, decals, and gibs
 # Fully network replicated for multiplayer consistency
 
-signal gore_spawned(position: Vector3, type: String)
+signal gore_spawned(gore_position: Vector3, gore_type: String)
 
 const MAX_BLOOD_DECALS: int = 100
 const MAX_GIBS: int = 50
