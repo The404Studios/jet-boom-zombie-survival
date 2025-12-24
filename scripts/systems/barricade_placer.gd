@@ -5,7 +5,7 @@ class_name BarricadeSpot
 @export var requires_nails: int = 5
 
 var has_barricade: bool = false
-var current_barricade: Barricade = null
+var current_barricade: Node = null
 
 @onready var placement_marker: MeshInstance3D = $PlacementMarker if has_node("PlacementMarker") else null
 
@@ -25,13 +25,13 @@ func _ready():
 		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		placement_marker.material_override = mat
 
-func interact(player: Player):
+func interact(player: Node):
 	if not has_barricade:
 		place_barricade(player)
 	else:
 		repair_barricade(player)
 
-func place_barricade(player: Player):
+func place_barricade(_player: Node):
 	# Check if player has nails/materials
 	# For now, just place it
 	if barricade_scene:
@@ -45,8 +45,8 @@ func place_barricade(player: Player):
 		if placement_marker:
 			placement_marker.visible = false
 
-func repair_barricade(player: Player):
-	if current_barricade:
+func repair_barricade(player: Node):
+	if current_barricade and current_barricade.has_method("repair"):
 		current_barricade.repair(player)
 
 func _on_barricade_destroyed():
