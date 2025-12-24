@@ -39,10 +39,11 @@ func _on_close_pressed():
 	visible = false
 
 func _on_singleplayer_pressed():
+	# Just emit signal - main_menu_controller handles the flow
 	singleplayer_selected.emit()
-	_start_singleplayer_game()
 
 func _on_multiplayer_pressed():
+	# Just emit signal - main_menu_controller handles the flow
 	multiplayer_selected.emit()
 
 func _on_singleplayer_hover(is_hovering: bool):

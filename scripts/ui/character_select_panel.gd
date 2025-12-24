@@ -5,36 +5,41 @@ signal character_selected(character_id: String)
 signal panel_closed
 signal continue_pressed
 
-# Character data
+# Character data - using .tscn files for proper animations
 const CHARACTERS = {
 	"dizzy": {
 		"name": "Dizzy",
 		"description": "Street-smart survivor with agility bonus",
-		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Street/Dizzy.glb",
+		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Street/Dizzy.tscn",
+		"glb_fallback": "res://Free_Character/ShowcaseFreeCharacter/Characters/Street/Dizzy.glb",
 		"stats": {"health": 100, "speed": 1.2, "damage": 1.0}
 	},
 	"piggy": {
 		"name": "Piggy",
 		"description": "Tough survivor with extra health",
-		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/Piggy.glb",
+		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/Piggy.tscn",
+		"glb_fallback": "res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/Piggy.glb",
 		"stats": {"health": 150, "speed": 0.9, "damage": 1.0}
 	},
 	"popcorn": {
 		"name": "Popcorn",
 		"description": "Balanced survivor, jack of all trades",
-		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Popcorn.glb",
+		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Popcorn.tscn",
+		"glb_fallback": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Popcorn.glb",
 		"stats": {"health": 100, "speed": 1.0, "damage": 1.1}
 	},
 	"spawn": {
 		"name": "Spawn",
 		"description": "Mysterious survivor with damage bonus",
-		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.glb",
+		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.tscn",
+		"glb_fallback": "res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.glb",
 		"stats": {"health": 90, "speed": 1.1, "damage": 1.3}
 	},
 	"nanzy": {
 		"name": "Nanzy",
 		"description": "Quick and nimble survivor",
-		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy.glb",
+		"model_path": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy.tscn",
+		"glb_fallback": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy.glb",
 		"stats": {"health": 85, "speed": 1.3, "damage": 0.9}
 	}
 }
@@ -126,24 +131,69 @@ func _load_character(index: int):
 		current_model.queue_free()
 		current_model = null
 
-	# Load new model
+	# Load new model - try .tscn first, then .glb fallback
 	var model_path = char_data["model_path"]
-	if ResourceLoader.exists(model_path):
-		var model_scene = load(model_path)
-		if model_scene:
-			current_model = model_scene.instantiate()
-			if character_holder:
-				character_holder.add_child(current_model)
-				# Scale and position the model appropriately
-				current_model.scale = Vector3(1, 1, 1)
-				current_model.position = Vector3.ZERO
-				current_model.rotation = Vector3.ZERO
+	var model_scene = null
 
-				# Try to play idle animation if available
-				_play_idle_animation(current_model)
+	if ResourceLoader.exists(model_path):
+		model_scene = load(model_path)
+	elif char_data.has("glb_fallback") and ResourceLoader.exists(char_data["glb_fallback"]):
+		model_scene = load(char_data["glb_fallback"])
+		print("[CharacterSelect] Using GLB fallback for: ", char_id)
+
+	if model_scene:
+		current_model = model_scene.instantiate()
+		if character_holder:
+			character_holder.add_child(current_model)
+
+			# Auto-scale based on model bounds
+			var scale_factor = _calculate_model_scale(current_model)
+			current_model.scale = Vector3(scale_factor, scale_factor, scale_factor)
+			current_model.position = Vector3.ZERO
+			current_model.rotation = Vector3.ZERO
+
+			# Try to play idle animation if available
+			_play_idle_animation(current_model)
+	else:
+		print("[CharacterSelect] Failed to load model for: ", char_id)
 
 	# Update UI
 	_update_character_info(char_data)
+
+func _calculate_model_scale(model: Node3D) -> float:
+	# Try to find the skeleton or mesh to determine appropriate scale
+	var target_height = 2.0  # Target height in viewport units
+
+	# Look for a skeleton or mesh to calculate bounds
+	var aabb = _get_model_aabb(model)
+	if aabb.size.y > 0.01:
+		return target_height / aabb.size.y
+
+	return 1.0  # Default scale
+
+func _get_model_aabb(node: Node) -> AABB:
+	var result = AABB()
+	var found = false
+
+	if node is MeshInstance3D:
+		var mi = node as MeshInstance3D
+		if mi.mesh:
+			if not found:
+				result = mi.mesh.get_aabb()
+				found = true
+			else:
+				result = result.merge(mi.mesh.get_aabb())
+
+	for child in node.get_children():
+		var child_aabb = _get_model_aabb(child)
+		if child_aabb.size.length() > 0:
+			if not found:
+				result = child_aabb
+				found = true
+			else:
+				result = result.merge(child_aabb)
+
+	return result
 
 func _play_idle_animation(model: Node3D):
 	# Look for AnimationPlayer in the model
