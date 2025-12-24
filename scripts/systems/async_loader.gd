@@ -66,9 +66,10 @@ func _on_resource_loaded(resource_path: String, resource: Resource, callback: Ca
 
 func load_resources_batch(resource_paths: Array, callback: Callable = Callable()) -> void:
 	var resources = {}
-	var pending_count = resource_paths.size()
+	# Use a dictionary to hold count - lambdas capture references to objects, not primitives
+	var state = {"pending": resource_paths.size()}
 
-	if pending_count == 0:
+	if state.pending == 0:
 		if callback and callback.is_valid():
 			callback.call(resources)
 		return
@@ -76,9 +77,9 @@ func load_resources_batch(resource_paths: Array, callback: Callable = Callable()
 	for path in resource_paths:
 		load_resource_async(path, func(resource):
 			resources[path] = resource
-			pending_count -= 1
+			state.pending -= 1
 
-			if pending_count == 0:
+			if state.pending == 0:
 				if callback and callback.is_valid():
 					callback.call(resources)
 		)

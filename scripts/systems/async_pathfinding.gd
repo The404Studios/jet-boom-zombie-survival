@@ -97,6 +97,6 @@ func _calculate_paths_batch(requests: Array) -> Array:
 
 	return results
 
-func _on_paths_calculated_batch(request_id: int, paths: Array, callback: Callable):
+func _on_paths_calculated_batch(_request_id: int, paths: Array, callback: Callable):
 	if callback and callback.is_valid():
 		callback.call(paths)

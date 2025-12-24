@@ -47,8 +47,8 @@ func spawn_blood_effect(position: Vector3, normal: Vector3, amount: int = 1):
 
 @rpc("any_peer", "call_local", "reliable")
 func _spawn_blood_effect_networked(position: Vector3, normal: Vector3, amount: int):
-	# Create blood particle burst
-	var particles = _create_blood_particles(position, normal, amount)
+	# Create blood particle burst (fire and forget - don't await)
+	_create_blood_particles(position, normal, amount)
 
 	# Add blood decal
 	_create_blood_decal(position, normal)

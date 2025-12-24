@@ -216,7 +216,7 @@ func calculate_lobby_score(lobby: Dictionary) -> float:
 
 	# Prefer lobbies at similar wave
 	var wave = int(lobby.get("wave", "1"))
-	var wave_diff = abs(wave - (preferred_wave_range.x + preferred_wave_range.y) / 2)
+	var wave_diff = abs(wave - float(preferred_wave_range.x + preferred_wave_range.y) / 2.0)
 	score -= wave_diff * 2.0
 
 	# Prefer lobbies that are about to start
