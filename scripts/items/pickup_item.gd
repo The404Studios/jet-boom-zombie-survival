@@ -42,7 +42,11 @@ func _on_body_entered(body: Node3D):
 	_pickup(body)
 
 func _pickup(_player: Node):
-	# Network replicate pickup
+	# Network replicate pickup (or call directly in single-player)
+	if not multiplayer.has_multiplayer_peer():
+		_pickup_networked(get_path())
+		return
+
 	if multiplayer.is_server():
 		_pickup_networked.rpc(get_path())
 	else:

@@ -273,7 +273,11 @@ func calculate_incoming_damage(base_damage: float) -> float:
 		return 0.0  # Dodged!
 
 	# Armor formula: damage_reduction = armor / (armor + 100)
-	var damage_reduction = armor_value / (armor_value + 100.0)
+	# Guard against division by zero (when armor is exactly -100)
+	var armor_divisor = armor_value + 100.0
+	if armor_divisor <= 0.0:
+		return base_damage  # No reduction possible
+	var damage_reduction = armor_value / armor_divisor
 	return base_damage * (1.0 - damage_reduction)
 
 # ============================================

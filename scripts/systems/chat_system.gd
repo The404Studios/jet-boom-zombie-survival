@@ -73,7 +73,7 @@ func send_message(message: String, is_team: bool = false):
 	else:
 		_send_message_to_server.rpc_id(1, message, is_team)
 
-@rpc("any_peer")
+@rpc("any_peer", "reliable")
 func _send_message_to_server(message: String, is_team: bool):
 	var sender_id = multiplayer.get_remote_sender_id()
 
