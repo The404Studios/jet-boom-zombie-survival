@@ -527,7 +527,7 @@ func _die():
 	_show_death_screen()
 
 	# Network replicate death
-	if multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_player_died.rpc(multiplayer.get_unique_id())
 
 	# Schedule respawn
@@ -567,7 +567,7 @@ func _respawn():
 		viewmodel.visible = true
 
 	# Network replicate respawn
-	if multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_player_respawned.rpc(multiplayer.get_unique_id(), global_position)
 
 	if has_node("/root/ChatSystem"):

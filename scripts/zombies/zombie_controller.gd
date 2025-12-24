@@ -270,8 +270,10 @@ func use_ranged_attack():
 	ability_timer = ranged_cooldown
 	ability_used.emit(self, "ranged_attack")
 
-	# Network replicate projectile spawning
-	if multiplayer.is_server():
+	# Network replicate projectile spawning (or spawn directly in single-player)
+	if not multiplayer.has_multiplayer_peer():
+		_spawn_projectile(global_position, target.global_position if target else global_position + global_transform.basis.z * 10, ranged_damage)
+	elif multiplayer.is_server():
 		_spawn_projectile.rpc(global_position, target.global_position if target else global_position + global_transform.basis.z * 10, ranged_damage)
 
 @rpc("authority", "call_local", "reliable")
@@ -290,9 +292,12 @@ func create_acid_projectile() -> Node3D:
 	return projectile
 
 func start_buff_loop():
-	while not is_dead and buff_nearby:
+	while not is_dead and buff_nearby and is_instance_valid(self):
 		buff_nearby_zombies()
 		await get_tree().create_timer(1.0).timeout
+		# Safety check after await
+		if not is_instance_valid(self):
+			break
 
 func buff_nearby_zombies():
 	var zombies = get_tree().get_nodes_in_group("zombies")

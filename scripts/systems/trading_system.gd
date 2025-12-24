@@ -62,7 +62,7 @@ func request_trade(from_player: int, to_player: int) -> int:
 	trade_requested.emit(from_player, to_player)
 
 	# Network replicate
-	if multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_request_trade_rpc.rpc(trade.id, from_player, to_player)
 
 	return trade.id
@@ -83,7 +83,7 @@ func accept_trade(trade_id: int) -> bool:
 			pending_requests.remove_at(i)
 			trade_accepted.emit(trade_id)
 
-			if multiplayer.is_server():
+			if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 				_accept_trade_rpc.rpc(trade_id)
 
 			return true
@@ -99,7 +99,7 @@ func decline_trade(trade_id: int) -> bool:
 			pending_requests.remove_at(i)
 			trade_declined.emit(trade_id)
 
-			if multiplayer.is_server():
+			if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 				_decline_trade_rpc.rpc(trade_id)
 
 			return true
@@ -128,8 +128,10 @@ func add_item_to_trade(trade_id: int, player_id: int, item: Resource) -> bool:
 
 	item_added_to_trade.emit(trade_id, player_id, item)
 
-	if multiplayer.is_server():
-		_sync_trade_items.rpc(trade_id)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var trade = active_trades[trade_id]
+		_sync_trade_items.rpc(trade_id, trade.player1_items.size(), trade.player2_items.size(),
+			trade.player1_currency, trade.player2_currency)
 
 	return true
 
@@ -158,8 +160,10 @@ func remove_item_from_trade(trade_id: int, player_id: int, item_index: int) -> b
 	if item:
 		item_removed_from_trade.emit(trade_id, player_id, item)
 
-		if multiplayer.is_server():
-			_sync_trade_items.rpc(trade_id)
+		if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+			var trade_data = active_trades[trade_id]
+			_sync_trade_items.rpc(trade_id, trade_data.player1_items.size(), trade_data.player2_items.size(),
+				trade_data.player1_currency, trade_data.player2_currency)
 
 		return true
 
@@ -182,8 +186,10 @@ func set_currency_offer(trade_id: int, player_id: int, amount: int) -> bool:
 	else:
 		return false
 
-	if multiplayer.is_server():
-		_sync_trade_items.rpc(trade_id)
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		var trade_data = active_trades[trade_id]
+		_sync_trade_items.rpc(trade_id, trade_data.player1_items.size(), trade_data.player2_items.size(),
+			trade_data.player1_currency, trade_data.player2_currency)
 
 	return true
 
@@ -206,15 +212,20 @@ func set_player_ready(trade_id: int, player_id: int, is_ready: bool) -> bool:
 	if trade.player1_ready and trade.player2_ready:
 		_complete_trade(trade_id)
 
-	if multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_sync_ready_status.rpc(trade_id, trade.player1_ready, trade.player2_ready)
 
 	return true
 
 @rpc("authority", "call_local", "reliable")
-func _sync_trade_items(_trade_id: int):
+func _sync_trade_items(trade_id: int, p1_item_count: int, p2_item_count: int, p1_currency: int, p2_currency: int):
 	# Sync trade state to clients
-	pass
+	if active_trades.has(trade_id):
+		var trade = active_trades[trade_id]
+		trade.player1_currency = p1_currency
+		trade.player2_currency = p2_currency
+		# Note: Item sync would require serialization - counts are synced for now
+		print("Trade %d synced: P1=%d items, P2=%d items" % [trade_id, p1_item_count, p2_item_count])
 
 @rpc("authority", "call_local", "reliable")
 func _sync_ready_status(trade_id: int, p1_ready: bool, p2_ready: bool):
@@ -249,7 +260,7 @@ func _complete_trade(trade_id: int):
 	# Clean up
 	active_trades.erase(trade_id)
 
-	if multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_complete_trade_rpc.rpc(trade_id)
 
 @rpc("authority", "call_local", "reliable")
@@ -272,7 +283,7 @@ func cancel_trade(trade_id: int, player_id: int) -> bool:
 	trade_cancelled.emit(trade_id)
 	active_trades.erase(trade_id)
 
-	if multiplayer.is_server():
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_cancel_trade_rpc.rpc(trade_id)
 
 	return true

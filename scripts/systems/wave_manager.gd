@@ -134,7 +134,7 @@ func select_random_zombie_class() -> ZombieClassData:
 		total_weight += weight
 
 	if total_weight <= 0:
-		return zombie_classes[0]
+		return zombie_classes[0] if not zombie_classes.is_empty() else null
 
 	# Random selection based on weight
 	var random = randf() * total_weight
@@ -147,7 +147,7 @@ func select_random_zombie_class() -> ZombieClassData:
 		if random <= cumulative:
 			return zombie_classes[i]
 
-	return zombie_classes[0]
+	return zombie_classes[0] if not zombie_classes.is_empty() else null
 
 func get_zombie_class(type: ZombieClassData.ZombieClass) -> ZombieClassData:
 	for zombie_class in zombie_classes:

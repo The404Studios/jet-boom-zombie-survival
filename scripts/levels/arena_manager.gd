@@ -257,5 +257,5 @@ func sync_wave_state(wave: int, alive: int, to_spawn: int, active: bool):
 
 func _physics_process(_delta):
 	# Sync wave state for clients (if server)
-	if multiplayer.is_server() and get_tree().get_frame() % 60 == 0:
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server() and get_tree().get_frame() % 60 == 0:
 		sync_wave_state.rpc(current_wave, zombies_alive, zombies_to_spawn, wave_active)
