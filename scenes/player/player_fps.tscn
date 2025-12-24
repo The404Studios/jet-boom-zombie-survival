@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://player_fps001"]
+[gd_scene load_steps=14 format=3 uid="uid://player_fps001"]
 
 [ext_resource type="Script" path="res://scripts/player/fps_controller.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://viewmodel_fps001" path="res://scenes/player/viewmodel.tscn" id="2"]
@@ -17,6 +17,12 @@ height = 1.8
 [sub_resource type="StandardMaterial3D" id="BootMaterial"]
 albedo_color = Color(0.15, 0.12, 0.1, 1.0)
 roughness = 0.7
+
+[sub_resource type="BoxMesh" id="LeftFootMesh"]
+size = Vector3(0.1, 0.05, 0.2)
+
+[sub_resource type="BoxMesh" id="RightFootMesh"]
+size = Vector3(0.1, 0.05, 0.2)
 
 [node name="PlayerFPS" type="CharacterBody3D" groups=["player"]]
 collision_layer = 2
@@ -38,12 +44,12 @@ script = ExtResource("3")
 
 [node name="LeftFoot" type="MeshInstance3D" parent="Camera3D/FootIK"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.15, -1.55, 0.1)
-mesh = BoxMesh.new()
+mesh = SubResource("LeftFootMesh")
 surface_material_override/0 = SubResource("BootMaterial")
 
 [node name="RightFoot" type="MeshInstance3D" parent="Camera3D/FootIK"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.15, -1.55, 0.1)
-mesh = BoxMesh.new()
+mesh = SubResource("RightFootMesh")
 surface_material_override/0 = SubResource("BootMaterial")
 
 [node name="RayCast3D" type="RayCast3D" parent="Camera3D"]
