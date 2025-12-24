@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://arena_main001"]
+[gd_scene load_steps=23 format=3 uid="uid://arena_main001"]
 
 [ext_resource type="PackedScene" uid="uid://player_fps001" path="res://scenes/player/player_fps.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2"]
@@ -22,6 +22,21 @@ roughness = 0.8
 vertices = PackedVector3Array(-25, 0.5, -25, 25, 0.5, -25, 25, 0.5, 25, -25, 0.5, 25)
 polygons = [PackedInt32Array(0, 1, 2, 3)]
 
+[sub_resource type="BoxMesh" id="BoxMesh_ground"]
+size = Vector3(50, 1, 50)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ns"]
+size = Vector3(50, 5, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ns"]
+size = Vector3(50, 5, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_ew"]
+size = Vector3(1, 5, 50)
+
+[sub_resource type="BoxMesh" id="BoxMesh_wall_ew"]
+size = Vector3(1, 5, 50)
+
 [node name="Arena01" type="Node3D" groups=["arena"]]
 script = ExtResource("4")
 
@@ -39,7 +54,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 shape = SubResource("BoxShape3D_ground")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
-mesh = BoxMesh.new()
+mesh = SubResource("BoxMesh_ground")
 surface_material_override/0 = SubResource("StandardMaterial3D_ground")
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
@@ -135,37 +150,37 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 20)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, -25)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallNorth"]
-shape = BoxShape3D.new()
+shape = SubResource("BoxShape3D_wall_ns")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallNorth"]
-mesh = BoxMesh.new()
+mesh = SubResource("BoxMesh_wall_ns")
 
 [node name="WallSouth" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 25)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallSouth"]
-shape = BoxShape3D.new()
+shape = SubResource("BoxShape3D_wall_ns")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallSouth"]
-mesh = BoxMesh.new()
+mesh = SubResource("BoxMesh_wall_ns")
 
 [node name="WallEast" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 2.5, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallEast"]
-shape = BoxShape3D.new()
+shape = SubResource("BoxShape3D_wall_ew")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallEast"]
-mesh = BoxMesh.new()
+mesh = SubResource("BoxMesh_wall_ew")
 
 [node name="WallWest" type="StaticBody3D" parent="Walls" groups=["environment", "concrete"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 2.5, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WallWest"]
-shape = BoxShape3D.new()
+shape = SubResource("BoxShape3D_wall_ew")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WallWest"]
-mesh = BoxMesh.new()
+mesh = SubResource("BoxMesh_wall_ew")
 
 [node name="ItemSpawns" type="Node3D" parent="."]
 
