@@ -20,10 +20,10 @@ func _ready():
 		NetworkManager.player_connected.connect(_on_player_connected)
 		NetworkManager.player_disconnected.connect(_on_player_disconnected)
 
-func _on_player_connected(peer_id: int, player_data: Dictionary):
+func _on_player_connected(_peer_id: int, player_data: Dictionary):
 	var msg = "%s joined the game" % player_data.get("name", "Player")
 	emit_system_message(msg)
-	message_timestamps[peer_id] = []
+	message_timestamps[_peer_id] = []
 
 func _on_player_disconnected(peer_id: int):
 	var player_name = "Player"
