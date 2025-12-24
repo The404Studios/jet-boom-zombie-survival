@@ -506,7 +506,7 @@ func add_points(amount: int):
 	# Points are tracked by arena manager
 	pass
 
-func apply_status_effect(effect_type: String, value: float, duration: float):
+func apply_status_effect(effect_type: String, _value: float, duration: float):
 	"""Apply a status effect to the player"""
 	if player_conditions:
 		player_conditions.apply_condition(effect_type, duration)

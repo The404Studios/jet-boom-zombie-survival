@@ -191,7 +191,7 @@ func spawn_next_zombie():
 
 	zombie_spawned.emit(zombie, zombie_class)
 
-func _on_zombie_died(zombie: Node):
+func _on_zombie_died(zombie: Node, _points: int = 0, _experience: int = 0):
 	zombies_alive -= 1
 	zombies_killed_this_wave += 1
 	total_zombies_killed += 1

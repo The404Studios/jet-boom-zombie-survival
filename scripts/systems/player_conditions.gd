@@ -387,13 +387,13 @@ func _apply_condition_heal(amount: float):
 # EFFECT APPLICATION
 # ============================================
 
-func _apply_condition_effects(condition_id: String):
+func _apply_condition_effects(_condition_id: String):
 	"""Apply immediate effects of a condition"""
 	# Effects are generally queried through get_* methods
 	# This could trigger visual effects, sounds, etc.
 	pass
 
-func _remove_condition_effects(condition_id: String):
+func _remove_condition_effects(_condition_id: String):
 	"""Remove effects when condition ends"""
 	pass
 
