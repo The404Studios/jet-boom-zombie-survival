@@ -44,7 +44,9 @@ enum DamageType {
 @export var stack_size: int = 1
 @export var weight: float = 1.0
 @export var value: int = 100
+@export var price: int = 100  # Shop price (can differ from value)
 @export var level_requirement: int = 1
+@export var grid_size: Vector2i = Vector2i(1, 1)  # Size in inventory grid (width x height)
 
 # Weapon Properties
 @export var damage: float = 10.0

@@ -21,6 +21,9 @@ var is_reloading: bool = false
 @onready var inventory: InventorySystem = $InventorySystem
 @onready var ui: Control = $UI
 
+# Grid-based inventory (optional - for grid UI system)
+var grid_inventory: GridInventorySystem
+
 var current_weapon: Node3D = null
 var shoot_timer: float = 0.0
 
@@ -29,11 +32,23 @@ signal stamina_changed(new_stamina: float, max_stamina: float)
 signal died
 
 func _ready():
+	add_to_group("player")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	current_health = max_health
 	current_stamina = max_stamina
 	health_changed.emit(current_health, max_health)
 	stamina_changed.emit(current_stamina, max_stamina)
+
+	# Initialize grid inventory system
+	_setup_grid_inventory()
+
+func _setup_grid_inventory():
+	# Create grid inventory if not already exists
+	if not grid_inventory:
+		grid_inventory = GridInventorySystem.new()
+		grid_inventory.name = "GridInventorySystem"
+		add_child(grid_inventory)
+		grid_inventory.add_to_group("grid_inventory")
 
 func _input(event):
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

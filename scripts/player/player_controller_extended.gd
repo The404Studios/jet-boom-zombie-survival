@@ -30,6 +30,9 @@ var magazine_size: int = 30
 @onready var player_persistence: PlayerPersistence = $PlayerPersistence
 @onready var ui: Control = $UI
 
+# Grid-based inventory (optional - for grid UI system)
+var grid_inventory: GridInventorySystem
+
 var current_weapon: Node3D = null
 var current_weapon_data: ItemDataExtended = null
 var shoot_timer: float = 0.0
@@ -43,6 +46,9 @@ signal critical_hit(target: Node, damage: float)
 func _ready():
 	add_to_group("player")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	# Initialize grid inventory system
+	_setup_grid_inventory()
 
 	# Load player data
 	if player_persistence:
@@ -66,6 +72,14 @@ func _ready():
 	# Connect signals
 	if equipment_system:
 		equipment_system.gear_equipped.connect(_on_gear_equipped)
+
+func _setup_grid_inventory():
+	# Create grid inventory if not already exists
+	if not grid_inventory:
+		grid_inventory = GridInventorySystem.new()
+		grid_inventory.name = "GridInventorySystem"
+		add_child(grid_inventory)
+		grid_inventory.add_to_group("grid_inventory")
 
 func _input(event):
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:

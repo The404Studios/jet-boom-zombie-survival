@@ -480,12 +480,22 @@ func equip_backpack(backpack: Resource) -> bool:
 	if not backpack:
 		return false
 
-	# Check if backpack has expansion properties
-	var extra_width = backpack.extra_width if backpack.has_meta("extra_width") else 0
-	var extra_height = backpack.extra_height if backpack.has_meta("extra_height") else 2
+	# Check if backpack has expansion properties (BackpackData uses extra_rows)
+	var extra_rows = 2  # Default expansion
+	if "extra_rows" in backpack:
+		extra_rows = backpack.extra_rows
+	elif backpack.has_meta("extra_rows"):
+		extra_rows = backpack.get_meta("extra_rows")
 
-	if extra_width <= 0 and extra_height <= 0:
-		extra_height = 2  # Default expansion
+	# Also get weight capacity if available (check both property names)
+	var extra_weight = 0.0
+	if "extra_weight_capacity" in backpack:
+		extra_weight = backpack.extra_weight_capacity
+	elif backpack.has_meta("extra_weight_capacity"):
+		extra_weight = backpack.get_meta("extra_weight_capacity")
+	elif backpack.has_meta("extra_weight"):
+		extra_weight = backpack.get_meta("extra_weight")
+	max_weight += extra_weight
 
 	# Unequip current backpack
 	if equipment["backpack"]:
@@ -494,7 +504,7 @@ func equip_backpack(backpack: Resource) -> bool:
 	equipment["backpack"] = backpack
 
 	# Expand grid
-	_expand_grid(extra_height)
+	_expand_grid(extra_rows)
 
 	inventory_changed.emit()
 	return true
@@ -505,6 +515,18 @@ func unequip_backpack() -> Resource:
 		return null
 
 	var backpack = equipment["backpack"]
+
+	# Remove weight capacity from backpack (check both property names)
+	var extra_weight = 0.0
+	if "extra_weight_capacity" in backpack:
+		extra_weight = backpack.extra_weight_capacity
+	elif backpack.has_meta("extra_weight_capacity"):
+		extra_weight = backpack.get_meta("extra_weight_capacity")
+	elif backpack.has_meta("extra_weight"):
+		extra_weight = backpack.get_meta("extra_weight")
+	max_weight -= extra_weight
+	max_weight = max(50.0, max_weight)  # Don't go below base
+
 	equipment["backpack"] = null
 
 	# Check if items would be lost
@@ -531,7 +553,6 @@ func unequip_backpack() -> Resource:
 
 func _expand_grid(extra_rows: int):
 	"""Add rows to the inventory grid"""
-	var old_height = grid_height
 	grid_height += extra_rows
 
 	for i in range(extra_rows):
@@ -541,7 +562,7 @@ func _expand_grid(extra_rows: int):
 		grid.append(row)
 
 	total_slots = grid_width * grid_height
-	max_weight += extra_rows * 5  # Each row adds 5 weight capacity
+	# Weight capacity is handled by extra_weight_capacity in equip_backpack
 
 func _shrink_grid():
 	"""Remove expansion rows from grid"""
@@ -549,7 +570,7 @@ func _shrink_grid():
 	while grid.size() > grid_height:
 		grid.pop_back()
 	total_slots = grid_width * grid_height
-	max_weight = 50.0
+	# Weight capacity is handled by unequip_backpack
 
 func _get_items_in_expansion() -> Array[Dictionary]:
 	"""Get items that are in the expansion area"""

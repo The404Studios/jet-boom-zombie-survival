@@ -12,6 +12,9 @@ signal purchase_failed(reason: String)
 
 # Currency
 var current_sigils: int = 0
+var sigils: int:
+	get: return current_sigils
+	set(value): current_sigils = value
 
 # Shop categories
 enum ShopCategory {
