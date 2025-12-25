@@ -942,6 +942,11 @@ func _handle_interaction(delta):
 		_process_nailing(delta, hud)
 		return
 
+	# Handle ongoing prop barricading
+	if is_barricading_prop:
+		_process_prop_barricading(delta)
+		return
+
 	# Check for interactable objects
 	if not interact_ray:
 		return
@@ -992,6 +997,21 @@ func _show_interact_prompt(collider: Node, hud):
 				hud.show_interact_prompt("Barricade Full Health")
 		return
 
+	# Props that can be barricaded
+	if collider.is_in_group("props"):
+		if collider.has_method("can_be_barricaded") and collider.can_be_barricaded():
+			if "is_barricaded" in collider and collider.is_barricaded:
+				var nails = collider.barricade_nails if "barricade_nails" in collider else 0
+				var max_nails = collider.max_barricade_nails if "max_barricade_nails" in collider else 6
+				hud.show_interact_prompt("[E] Hold to Add Nails (%d/%d)" % [nails, max_nails])
+			else:
+				hud.show_interact_prompt("[E] Hold to Barricade")
+			return
+		elif "current_health" in collider and "max_health" in collider:
+			var health_pct = int(collider.current_health / collider.max_health * 100)
+			hud.show_interact_prompt("Prop (%d%% HP)" % health_pct)
+			return
+
 	# Loot items
 	if collider.is_in_group("loot"):
 		var item_name = "Item"
@@ -1038,6 +1058,12 @@ func _start_interaction(collider: Node):
 	if collider.is_in_group("barricades"):
 		_start_nailing(collider)
 		return
+
+	# Prop barricading
+	if collider.is_in_group("props"):
+		if collider.has_method("can_be_barricaded") and collider.can_be_barricaded():
+			_start_prop_barricading(collider)
+			return
 
 	# Loot pickup
 	if collider.is_in_group("loot"):
@@ -1183,6 +1209,128 @@ func _cancel_nailing(hud):
 	is_nailing = false
 	nailing_barricade = null
 	nails_placed = 0
+
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+	if hud and hud.has_method("update_nail_progress"):
+		hud.update_nail_progress(0.0, false)
+
+# ============================================
+# PROP BARRICADING
+# ============================================
+
+var is_barricading_prop: bool = false
+var barricading_prop: Node = null
+var prop_nail_timer: float = 0.0
+const PROP_NAIL_TIME: float = 0.6  # Time per nail on props
+
+func _start_prop_barricading(prop: Node):
+	"""Begin barricading a prop"""
+	if not prop or is_barricading_prop:
+		return
+
+	is_barricading_prop = true
+	barricading_prop = prop
+	prop_nail_timer = PROP_NAIL_TIME
+
+	# Start barricade if not already
+	if prop.has_method("start_barricade") and "is_barricaded" in prop and not prop.is_barricaded:
+		prop.start_barricade()
+
+	# Play starting sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("hammer_start", prop.global_position, 0.6)
+
+	# Update HUD
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_interact_prompt"):
+		var nails = prop.barricade_nails if "barricade_nails" in prop else 0
+		var max_nails = prop.max_barricade_nails if "max_barricade_nails" in prop else 6
+		hud.show_interact_prompt("Barricading... %d/%d nails" % [nails, max_nails])
+
+func _process_prop_barricading(delta):
+	"""Process ongoing prop barricading"""
+	var hud = get_tree().get_first_node_in_group("hud")
+
+	# Cancel if not holding interact
+	if not Input.is_action_pressed("interact"):
+		_cancel_prop_barricading(hud)
+		return
+
+	# Cancel if prop is gone
+	if not barricading_prop or not is_instance_valid(barricading_prop):
+		_cancel_prop_barricading(hud)
+		return
+
+	# Cancel if too far
+	var distance = global_position.distance_to(barricading_prop.global_position)
+	if distance > interact_range + 1.5:
+		_cancel_prop_barricading(hud)
+		return
+
+	# Check if fully barricaded
+	if barricading_prop.has_method("is_fully_barricaded") and barricading_prop.is_fully_barricaded():
+		_complete_prop_barricading(hud)
+		return
+
+	# Progress timer
+	prop_nail_timer -= delta
+
+	if prop_nail_timer <= 0:
+		_place_prop_nail(hud)
+		prop_nail_timer = PROP_NAIL_TIME
+
+	# Update progress bar
+	if hud and hud.has_method("update_nail_progress"):
+		var progress = barricading_prop.get_barricade_progress() if barricading_prop.has_method("get_barricade_progress") else 0.0
+		hud.update_nail_progress(progress, true)
+
+func _place_prop_nail(hud):
+	"""Place a nail on the prop"""
+	if not barricading_prop:
+		return
+
+	# Add nail to prop
+	if barricading_prop.has_method("add_barricade_nail"):
+		var added = barricading_prop.add_barricade_nail()
+		if not added:
+			# Prop is fully barricaded
+			_complete_prop_barricading(hud)
+			return
+
+	# Update HUD
+	if hud and hud.has_method("show_interact_prompt"):
+		var nails = barricading_prop.barricade_nails if "barricade_nails" in barricading_prop else 0
+		var max_nails = barricading_prop.max_barricade_nails if "max_barricade_nails" in barricading_prop else 6
+		hud.show_interact_prompt("Barricading... %d/%d nails" % [nails, max_nails])
+
+func _complete_prop_barricading(hud):
+	"""Finish barricading the prop"""
+	is_barricading_prop = false
+
+	# Play completion sound
+	if barricading_prop and has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("barricade_complete", barricading_prop.global_position, 0.8)
+
+	barricading_prop = null
+	prop_nail_timer = 0.0
+
+	if hud:
+		if hud.has_method("show_interact_prompt"):
+			hud.show_interact_prompt("Barricade Complete!")
+		if hud.has_method("update_nail_progress"):
+			hud.update_nail_progress(1.0, false)
+
+	# Auto-hide message after delay
+	await get_tree().create_timer(1.5).timeout
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+
+func _cancel_prop_barricading(hud):
+	"""Cancel prop barricading"""
+	is_barricading_prop = false
+	barricading_prop = null
+	prop_nail_timer = 0.0
 
 	if hud and hud.has_method("hide_interact_prompt"):
 		hud.hide_interact_prompt()

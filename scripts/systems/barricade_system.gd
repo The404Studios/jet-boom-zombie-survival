@@ -12,6 +12,7 @@ var current_health: float = 0.0
 var nails_placed: int = 0
 var is_built: bool = false
 var is_being_nailed: bool = false
+var health_bar: WorldHealthBar = null
 
 signal barricade_built
 signal barricade_destroyed
@@ -19,6 +20,29 @@ signal barricade_destroyed
 func _ready():
 	add_to_group("barricades")
 	add_to_group("zombie_targets")
+	_setup_health_bar()
+
+func _setup_health_bar():
+	"""Create 3D world health bar for this barricade"""
+	health_bar = WorldHealthBar.new()
+	add_child(health_bar)
+	health_bar.bar_width = 1.8
+	health_bar.offset_y = 2.0
+	health_bar.show_text = true
+	health_bar.always_visible = false
+	health_bar.auto_hide_delay = 5.0
+	health_bar.setup(self, current_health, max_health, "Barricade")
+
+func _update_health_bar():
+	"""Update health bar display"""
+	if health_bar:
+		var nail_text = "[%d/%d Nails]" % [nails_placed, nails_required]
+		health_bar.entity_name = "Barricade %s" % nail_text
+		health_bar.update_health(current_health, max_health)
+
+		# Show bar when barricade is built
+		if is_built:
+			health_bar.set_always_visible(true)
 
 func interact(player: Node):
 	if not is_built:
@@ -46,6 +70,9 @@ func _start_build(_player: Node):
 		nails_placed += 1
 		current_health += nail_health
 
+		# Update health bar
+		_update_health_bar()
+
 		# Audio feedback
 		if has_node("/root/AudioManager"):
 			get_node("/root/AudioManager").play_sound_3d("hammer", global_position)
@@ -59,6 +86,7 @@ func _start_build(_player: Node):
 		return
 	is_built = true
 	is_being_nailed = false
+	_update_health_bar()
 	barricade_built.emit()
 
 func _start_repair(_player: Node):
@@ -84,6 +112,9 @@ func _start_repair(_player: Node):
 		nails_placed += 1
 		current_health = min(current_health + nail_health, max_health)
 
+		# Update health bar
+		_update_health_bar()
+
 		# Audio feedback
 		if has_node("/root/AudioManager"):
 			get_node("/root/AudioManager").play_sound_3d("hammer", global_position)
@@ -99,6 +130,7 @@ func _start_repair(_player: Node):
 	if not is_instance_valid(self):
 		return
 	is_being_nailed = false
+	_update_health_bar()
 
 func cancel_nailing():
 	is_being_nailed = false
@@ -125,10 +157,21 @@ func get_health_percent() -> float:
 
 func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	current_health -= amount
+	current_health = max(current_health, 0)
 
 	# Cancel any ongoing nailing
 	if is_being_nailed:
 		is_being_nailed = false
+
+	# Track nails knocked off
+	var nails_lost = int(amount / nail_health)
+	if nails_lost > 0:
+		nails_placed = max(nails_placed - nails_lost, 0)
+
+	# Update health bar
+	_update_health_bar()
+	if health_bar:
+		health_bar.show_bar()
 
 	# Visual/audio feedback
 	if has_node("/root/AudioManager"):
