@@ -62,6 +62,10 @@ func _input(event):
 	if event.is_action_pressed("extract"):
 		attempt_extract()
 
+	# Drop item with G key (if action exists)
+	if InputMap.has_action("drop_item") and event.is_action_pressed("drop_item"):
+		drop_held_item()
+
 func _physics_process(delta):
 	# Stamina regeneration
 	if not is_sprinting and current_stamina < max_stamina:
@@ -184,12 +188,163 @@ func interact():
 			place_barricade(collider)
 
 func pickup_item(item_node: Node3D):
-	if not item_node or not inventory:
+	"""Pick up a loot item from the world"""
+	if not item_node:
 		return
+
+	var item_data: Resource = null
+	var quantity: int = 1
+
+	# Get item data from the node
 	if item_node.has_method("get_item_data"):
-		var item_data = item_node.get_item_data()
-		if item_data and inventory.add_item(item_data, 1):
-			item_node.queue_free()
+		item_data = item_node.get_item_data()
+	elif "item_data" in item_node:
+		item_data = item_node.item_data
+
+	# Get quantity if available
+	if "loot_quantity" in item_node:
+		quantity = item_node.loot_quantity
+
+	if not item_data:
+		# Try to handle special loot types (ammo, health, etc.)
+		if item_node is LootItem:
+			var loot = item_node as LootItem
+			if loot.loot_type != "":
+				_handle_special_pickup(loot)
+				return
+		return
+
+	# Try to add to grid inventory first
+	if grid_inventory and grid_inventory.has_method("add_item"):
+		if grid_inventory.add_item(item_data, quantity, false):
+			_on_pickup_success(item_node, item_data)
+			return
+
+	# Fallback to regular inventory
+	if inventory and inventory.has_method("add_item"):
+		if inventory.add_item(item_data, quantity):
+			_on_pickup_success(item_node, item_data)
+			return
+
+	# Inventory full
+	show_pickup_message("Inventory full!")
+
+func _handle_special_pickup(loot: LootItem):
+	"""Handle special loot types that don't use ItemData"""
+	var success = false
+
+	match loot.loot_type:
+		"ammo":
+			if "reserve_ammo" in self:
+				reserve_ammo += loot.loot_quantity
+				success = true
+		"health":
+			var heal_amount = loot.get_meta("heal_amount", 25)
+			heal(heal_amount)
+			success = true
+
+	if success:
+		show_pickup_message(loot._get_display_name())
+		loot.picked_up.emit(self)
+		loot.queue_free()
+
+func _on_pickup_success(item_node: Node3D, item_data: Resource):
+	"""Called when an item is successfully picked up"""
+	# Show pickup message
+	var item_name = item_data.item_name if "item_name" in item_data else "Item"
+	show_pickup_message(item_name)
+
+	# Play pickup sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sfx("pickup")
+
+	# Emit signal on loot item
+	if item_node.has_signal("picked_up"):
+		item_node.picked_up.emit(self)
+
+	# Free or return to pool
+	var pool_manager = get_node_or_null("/root/ObjectPoolManager")
+	if pool_manager and pool_manager.has_method("release"):
+		pool_manager.release("loot_item", item_node)
+	else:
+		item_node.queue_free()
+
+func show_pickup_message(item_name: String):
+	"""Show a pickup notification to the player"""
+	# Try HUD notification
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_notification"):
+		hud.show_notification("+ %s" % item_name)
+		return
+
+	# Try chat system
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("Picked up: %s" % item_name)
+		return
+
+	# Fallback to print
+	print("Picked up: %s" % item_name)
+
+func drop_held_item():
+	"""Drop the currently selected item from inventory"""
+	# Check if inventory UI is open and has selected item
+	var grid_ui = get_tree().get_first_node_in_group("grid_inventory_ui")
+	if grid_ui and grid_ui.is_open and "hovered_item" in grid_ui:
+		var hovered = grid_ui.hovered_item
+		if not hovered.is_empty() and "item" in hovered:
+			drop_item(hovered.item, hovered.get("quantity", 1))
+			return
+
+	# Otherwise, try to drop first inventory item
+	if grid_inventory:
+		var items = grid_inventory.get_all_items(false)
+		if items.size() > 0:
+			var first_item = items[0]
+			drop_item(first_item.item, 1)
+
+func drop_item(item_data: Resource, quantity: int = 1):
+	"""Drop an item from inventory into the world"""
+	if not item_data:
+		return
+
+	# Remove from inventory
+	var removed = false
+	if grid_inventory and grid_inventory.has_method("remove_item"):
+		removed = grid_inventory.remove_item(item_data, quantity)
+	elif inventory and inventory.has_method("remove_item"):
+		removed = inventory.remove_item(item_data, quantity)
+
+	if not removed:
+		return
+
+	# Spawn loot item in front of player
+	var drop_position = global_position + (-global_transform.basis.z * 1.5) + Vector3(0, 0.5, 0)
+
+	# Try to use object pool
+	var pool_manager = get_node_or_null("/root/ObjectPoolManager")
+	if pool_manager and pool_manager.has_method("spawn_loot"):
+		var loot = pool_manager.spawn_loot(drop_position, item_data, get_parent())
+		if loot:
+			return
+
+	# Fallback: create new loot item
+	var loot_scene = preload("res://scenes/items/loot_item.tscn")
+	var loot = loot_scene.instantiate()
+	get_parent().add_child(loot)
+	loot.global_position = drop_position
+
+	if loot.has_method("set_item_data"):
+		loot.set_item_data(item_data)
+	elif "item_data" in loot:
+		loot.item_data = item_data
+
+	# Apply small random velocity for visual effect
+	if loot is RigidBody3D:
+		loot.linear_velocity = Vector3(randf_range(-1, 1), 2, randf_range(-1, 1))
+
+	# Show drop message
+	var item_name = item_data.item_name if "item_name" in item_data else "Item"
+	show_pickup_message("Dropped: %s" % item_name)
 
 func place_barricade(spot: Node3D):
 	# Check if player has barricade material in inventory

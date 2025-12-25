@@ -2,8 +2,11 @@ extends Area3D
 class_name LootItem
 
 # Loot Item - Interactable pickup item that can contain weapons, ammo, materials, gear, etc.
+# Supports world-space tooltips and right-click inspection
 
 signal picked_up(player: Node)
+signal hover_started
+signal hover_ended
 
 @export var item_data: Resource = null
 @export var auto_pickup: bool = false
@@ -12,14 +15,19 @@ signal picked_up(player: Node)
 @export var bob_amplitude: float = 0.1
 @export var bob_speed: float = 2.0
 @export var rotation_speed: float = 1.0
+@export var show_world_tooltip: bool = true
+@export var tooltip_distance: float = 8.0
 
 var item_mesh: MeshInstance3D = null
 var glow_light: OmniLight3D = null
 var label: Label3D = null
+var world_tooltip: Control = null
 
 var despawn_timer: float = 0.0
 var initial_y: float = 0.0
 var bob_time: float = 0.0
+var is_hovered: bool = false
+var hover_player: Node = null
 
 # Loot type tracking (from loot spawner)
 var loot_type: String = ""
@@ -32,6 +40,7 @@ func _ready():
 
 	# Connect signals
 	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
 
 	# Store initial position
 	initial_y = position.y
@@ -49,6 +58,14 @@ func _ready():
 	# Random rotation start
 	bob_time = randf() * TAU
 
+	# Track spawn time for garbage collection
+	set_meta("spawn_time", Time.get_ticks_msec() / 1000.0)
+
+	# Register with garbage collector
+	var gc = get_node_or_null("/root/GarbageCollector")
+	if gc and gc.has_method("track_loot"):
+		gc.track_loot(self)
+
 func _process(delta):
 	# Bob up and down
 	bob_time += delta * bob_speed
@@ -61,6 +78,89 @@ func _process(delta):
 	despawn_timer -= delta
 	if despawn_timer <= 0:
 		queue_free()
+
+	# Update hover state for world tooltip
+	if show_world_tooltip:
+		_update_hover_state()
+
+func _update_hover_state():
+	"""Check if player is looking at this item and update tooltip"""
+	var players = get_tree().get_nodes_in_group("player")
+	var was_hovered = is_hovered
+	is_hovered = false
+	hover_player = null
+
+	for player in players:
+		if not is_instance_valid(player):
+			continue
+
+		# Check distance
+		var distance = global_position.distance_to(player.global_position)
+		if distance > tooltip_distance:
+			continue
+
+		# Check if player is looking at this item
+		var camera = player.get_node_or_null("Camera3D")
+		if not camera:
+			continue
+
+		var interact_ray = player.get_node_or_null("Camera3D/InteractRay")
+		if interact_ray and interact_ray.is_colliding():
+			if interact_ray.get_collider() == self:
+				is_hovered = true
+				hover_player = player
+				break
+
+	# Handle hover state changes
+	if is_hovered and not was_hovered:
+		_on_hover_start()
+	elif not is_hovered and was_hovered:
+		_on_hover_end()
+
+func _on_hover_start():
+	"""Called when player starts looking at this item"""
+	hover_started.emit()
+
+	# Highlight the item
+	if item_mesh and item_mesh.material_override:
+		var mat = item_mesh.material_override as StandardMaterial3D
+		if mat:
+			mat.emission_energy_multiplier = 1.5
+
+	# Show world tooltip
+	_show_world_tooltip()
+
+func _on_hover_end():
+	"""Called when player stops looking at this item"""
+	hover_ended.emit()
+
+	# Remove highlight
+	if item_mesh and item_mesh.material_override:
+		var mat = item_mesh.material_override as StandardMaterial3D
+		if mat:
+			mat.emission_energy_multiplier = 0.5
+
+	# Hide world tooltip
+	_hide_world_tooltip()
+
+func _show_world_tooltip():
+	"""Show world-space tooltip for this item"""
+	# Try to use the global WorldTooltip system
+	var tooltip_system = get_tree().get_first_node_in_group("world_tooltip")
+	if tooltip_system and tooltip_system.has_method("show_for_item"):
+		tooltip_system.show_for_item(self, item_data)
+
+func _hide_world_tooltip():
+	"""Hide world-space tooltip"""
+	var tooltip_system = get_tree().get_first_node_in_group("world_tooltip")
+	if tooltip_system and tooltip_system.has_method("hide_tooltip"):
+		tooltip_system.hide_tooltip()
+
+func _on_body_exited(body: Node3D):
+	"""Handle player leaving proximity"""
+	if body.is_in_group("player"):
+		if hover_player == body:
+			_on_hover_end()
 
 func _create_default_visual():
 	# Create a simple visual representation

@@ -175,21 +175,49 @@ func spawn_next_zombie():
 	var zombie_class = zombie_spawn_queue.pop_front()
 	var spawn_point = spawn_points[randi() % spawn_points.size()]
 
-	var zombie = zombie_scene.instantiate()
+	var zombie: Node = null
+
+	# Try to use object pool first
+	var pool_manager = get_node_or_null("/root/ObjectPoolManager")
+	if pool_manager and pool_manager.has_method("acquire"):
+		zombie = pool_manager.acquire("zombie")
+
+	# Fallback to instantiation
+	if not zombie and zombie_scene:
+		zombie = zombie_scene.instantiate()
+
+	if not zombie:
+		return
+
 	var scene = get_tree().current_scene
 	if not scene:
-		zombie.queue_free()
+		if pool_manager:
+			pool_manager.release("zombie", zombie)
+		else:
+			zombie.queue_free()
 		return
-	scene.add_child(zombie)
+
+	# Ensure zombie is in scene
+	if zombie.get_parent() != scene:
+		if zombie.get_parent():
+			zombie.get_parent().remove_child(zombie)
+		scene.add_child(zombie)
+
 	zombie.global_position = spawn_point.global_position
 
 	# Apply class data
 	if zombie.has_method("setup_from_class"):
 		zombie.setup_from_class(zombie_class, current_wave)
 
-	# Connect signals
+	# Connect signals (check if already connected)
 	if zombie.has_signal("zombie_died"):
-		zombie.zombie_died.connect(_on_zombie_died)
+		if not zombie.zombie_died.is_connected(_on_zombie_died):
+			zombie.zombie_died.connect(_on_zombie_died)
+
+	# Register with performance optimizer
+	var perf_opt = get_node_or_null("/root/PerformanceOptimizer")
+	if perf_opt and perf_opt.has_method("register_node"):
+		perf_opt.register_node(zombie, "normal")
 
 	active_zombies.append(zombie)
 	zombies_spawned_this_wave += 1
