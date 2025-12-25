@@ -169,8 +169,12 @@ func reload_weapon():
 	is_reloading = false
 
 func interact():
+	if not interact_ray:
+		return
 	if interact_ray.is_colliding():
 		var collider = interact_ray.get_collider()
+		if not collider:
+			return
 
 		if collider.has_method("interact"):
 			collider.interact(self)
@@ -180,9 +184,11 @@ func interact():
 			place_barricade(collider)
 
 func pickup_item(item_node: Node3D):
+	if not item_node or not inventory:
+		return
 	if item_node.has_method("get_item_data"):
 		var item_data = item_node.get_item_data()
-		if inventory.add_item(item_data, 1):
+		if item_data and inventory.add_item(item_data, 1):
 			item_node.queue_free()
 
 func place_barricade(spot: Node3D):
@@ -235,10 +241,13 @@ func toggle_inventory():
 
 func attempt_extract():
 	# Check if near extract point
+	if not interact_ray:
+		return
 	if interact_ray.is_colliding():
 		var collider = interact_ray.get_collider()
-		if collider.is_in_group("extract_zone"):
-			collider.extract(self)
+		if collider and collider.is_in_group("extract_zone"):
+			if collider.has_method("extract"):
+				collider.extract(self)
 
 func equip_weapon_item(weapon_data: ItemData):
 	# Clear current weapon visual

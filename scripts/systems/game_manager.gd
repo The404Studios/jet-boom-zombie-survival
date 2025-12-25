@@ -60,13 +60,18 @@ func spawn_zombie():
 
 	var spawn_point = zombie_spawn_points[randi() % zombie_spawn_points.size()]
 	var zombie = zombie_scene.instantiate()
+	if not zombie:
+		return
 	var scene = get_tree().current_scene
 	if not scene:
 		zombie.queue_free()
 		return
 	scene.add_child(zombie)
 	zombie.global_position = spawn_point.global_position
-	zombie.zombie_died.connect(_on_zombie_died)
+
+	# Connect zombie died signal if it exists
+	if zombie.has_signal("zombie_died"):
+		zombie.zombie_died.connect(_on_zombie_died)
 
 	zombies_alive += 1
 	zombie_spawned.emit(zombie)

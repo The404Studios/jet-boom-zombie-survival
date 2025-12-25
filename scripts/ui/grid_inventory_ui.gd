@@ -720,8 +720,8 @@ func _consume_item(item_entry: Dictionary):
 			if player.has_method("heal"):
 				player.heal(item.health_restore)
 		if "stamina_restore" in item and item.stamina_restore > 0:
-			if "stamina" in player:
-				player.stamina = min(player.stamina + item.stamina_restore, player.max_stamina)
+			if "current_stamina" in player and "max_stamina" in player:
+				player.current_stamina = min(player.current_stamina + item.stamina_restore, player.max_stamina)
 
 	# Remove consumed item
 	grid_inventory.remove_item_at(item_entry.position, false)
