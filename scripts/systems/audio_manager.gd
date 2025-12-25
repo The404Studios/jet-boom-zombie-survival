@@ -282,16 +282,31 @@ func play_zombie_sound(sound_type: String, position: Vector3):
 
 func _get_sound_from_library(sound_name: String) -> AudioStream:
 	# Check all libraries
-	if gunshot_sounds.has(sound_name):
+	if gunshot_sounds.has(sound_name) and gunshot_sounds[sound_name]:
 		return gunshot_sounds[sound_name]
-	if impact_sounds.has(sound_name):
+	if impact_sounds.has(sound_name) and impact_sounds[sound_name]:
 		return impact_sounds[sound_name]
-	if ui_sounds.has(sound_name):
+	if ui_sounds.has(sound_name) and ui_sounds[sound_name]:
 		return ui_sounds[sound_name]
-	if ambient_sounds.has(sound_name):
+	if ambient_sounds.has(sound_name) and ambient_sounds[sound_name]:
 		return ambient_sounds[sound_name]
 
-	return null
+	# Try to load from common paths
+	var common_paths = [
+		"res://audio/sfx/%s.wav" % sound_name,
+		"res://audio/sfx/%s.ogg" % sound_name,
+		"res://sounds/%s.wav" % sound_name,
+		"res://sounds/%s.ogg" % sound_name,
+		"res://audio/%s.wav" % sound_name,
+		"res://audio/%s.ogg" % sound_name
+	]
+
+	for path in common_paths:
+		if ResourceLoader.exists(path):
+			return ResourceLoader.load(path)
+
+	# Generate procedural sound as fallback
+	return _generate_procedural_sound(sound_name)
 
 func _get_next_2d_player() -> AudioStreamPlayer:
 	var player = audio_pool_2d[pool_index_2d]
@@ -326,6 +341,160 @@ func linear_to_db(linear: float) -> float:
 	if linear <= 0.0:
 		return -80.0
 	return 20.0 * log(linear) / log(10.0)
+
+# ============================================
+# PROCEDURAL SOUND GENERATION
+# ============================================
+
+var _generated_sounds: Dictionary = {}
+
+func _generate_procedural_sound(sound_name: String) -> AudioStream:
+	"""Generate procedural sounds for missing audio files"""
+	# Check cache first
+	if _generated_sounds.has(sound_name):
+		return _generated_sounds[sound_name]
+
+	var generator = AudioStreamGenerator.new()
+	generator.mix_rate = 44100.0
+
+	# Store in cache
+	_generated_sounds[sound_name] = generator
+
+	# Configure based on sound type
+	if "gunshot" in sound_name or "shot" in sound_name:
+		return _create_gunshot_sound(sound_name)
+	elif "impact" in sound_name or "hit" in sound_name:
+		return _create_impact_sound(sound_name)
+	elif "hammer" in sound_name or "nail" in sound_name:
+		return _create_hammer_sound()
+	elif "death" in sound_name or "hurt" in sound_name:
+		return _create_hurt_sound()
+	elif "click" in sound_name or "ui" in sound_name:
+		return _create_ui_sound()
+	elif "reload" in sound_name:
+		return _create_reload_sound()
+	elif "respawn" in sound_name:
+		return _create_respawn_sound()
+	elif "zombie" in sound_name or "growl" in sound_name:
+		return _create_zombie_sound(sound_name)
+	elif "walk" in sound_name or "step" in sound_name:
+		return _create_footstep_sound()
+	elif "explosion" in sound_name or "explode" in sound_name:
+		return _create_explosion_sound()
+
+	return generator
+
+func _create_gunshot_sound(sound_name: String) -> AudioStream:
+	"""Create procedural gunshot sound"""
+	var sample_rate = 22050
+	var duration = 0.15
+
+	# Different parameters for different weapons
+	var freq = 150.0
+	var noise_mix = 0.8
+
+	if "pistol" in sound_name:
+		freq = 180.0
+		duration = 0.12
+	elif "rifle" in sound_name or "ak" in sound_name or "m16" in sound_name:
+		freq = 120.0
+		duration = 0.18
+		noise_mix = 0.9
+	elif "shotgun" in sound_name:
+		freq = 80.0
+		duration = 0.25
+		noise_mix = 0.95
+	elif "sniper" in sound_name:
+		freq = 100.0
+		duration = 0.22
+
+	return _generate_noise_sound(sample_rate, duration, freq, noise_mix)
+
+func _create_impact_sound(sound_name: String) -> AudioStream:
+	"""Create impact/hit sound"""
+	var sample_rate = 22050
+	var duration = 0.1
+	var freq = 400.0
+
+	if "metal" in sound_name:
+		freq = 800.0
+		duration = 0.15
+	elif "wood" in sound_name:
+		freq = 300.0
+	elif "flesh" in sound_name:
+		freq = 200.0
+		duration = 0.08
+
+	return _generate_noise_sound(sample_rate, duration, freq, 0.6)
+
+func _create_hammer_sound() -> AudioStream:
+	"""Create hammer/nailing sound"""
+	return _generate_noise_sound(22050, 0.08, 500.0, 0.4)
+
+func _create_hurt_sound() -> AudioStream:
+	"""Create hurt/damage sound"""
+	return _generate_noise_sound(22050, 0.2, 200.0, 0.7)
+
+func _create_ui_sound() -> AudioStream:
+	"""Create UI click sound"""
+	return _generate_noise_sound(22050, 0.05, 1000.0, 0.2)
+
+func _create_reload_sound() -> AudioStream:
+	"""Create reload sound"""
+	return _generate_noise_sound(22050, 0.3, 400.0, 0.5)
+
+func _create_respawn_sound() -> AudioStream:
+	"""Create respawn sound"""
+	return _generate_noise_sound(22050, 0.4, 600.0, 0.3)
+
+func _create_zombie_sound(sound_name: String) -> AudioStream:
+	"""Create zombie growl/attack sound"""
+	var duration = 0.5
+	var freq = 100.0
+
+	if "attack" in sound_name:
+		duration = 0.3
+		freq = 150.0
+	elif "death" in sound_name:
+		duration = 0.8
+		freq = 80.0
+
+	return _generate_noise_sound(22050, duration, freq, 0.9)
+
+func _create_footstep_sound() -> AudioStream:
+	"""Create footstep sound"""
+	return _generate_noise_sound(22050, 0.1, 200.0, 0.5)
+
+func _create_explosion_sound() -> AudioStream:
+	"""Create explosion sound"""
+	return _generate_noise_sound(22050, 0.6, 60.0, 0.95)
+
+func _generate_noise_sound(sample_rate: int, duration: float, base_freq: float, noise_amount: float) -> AudioStreamWAV:
+	"""Generate a noise-based sound effect"""
+	var samples = int(sample_rate * duration)
+	var data = PackedByteArray()
+	data.resize(samples * 2)  # 16-bit audio
+
+	for i in range(samples):
+		var t = float(i) / sample_rate
+		var envelope = exp(-t * 10.0)  # Quick decay
+
+		# Mix sine wave with noise
+		var sine = sin(2.0 * PI * base_freq * t)
+		var noise = randf_range(-1.0, 1.0)
+		var sample = (sine * (1.0 - noise_amount) + noise * noise_amount) * envelope
+
+		# Convert to 16-bit
+		var value = int(clamp(sample * 32767.0, -32768.0, 32767.0))
+		data[i * 2] = value & 0xFF
+		data[i * 2 + 1] = (value >> 8) & 0xFF
+
+	var stream = AudioStreamWAV.new()
+	stream.format = AudioStreamWAV.FORMAT_16_BITS
+	stream.mix_rate = sample_rate
+	stream.data = data
+
+	return stream
 
 func _save_audio_settings():
 	var config = ConfigFile.new()

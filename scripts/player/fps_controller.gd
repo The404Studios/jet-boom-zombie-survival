@@ -9,11 +9,14 @@ extends CharacterBody3D
 @export var base_sprint_speed: float = 8.0
 @export var jump_velocity: float = 4.5
 @export var gravity: float = 9.8
+@export var interact_range: float = 3.0
 
 # Nodes
 @onready var camera: Camera3D = $Camera3D
 @onready var viewmodel: Node3D = $Camera3D/Viewmodel
 @onready var raycast: RayCast3D = $Camera3D/RayCast3D
+@onready var interact_ray: RayCast3D = $Camera3D/InteractRay if has_node("Camera3D/InteractRay") else null
+@onready var spectator_controller: SpectatorController = $SpectatorController if has_node("SpectatorController") else null
 
 # RPG Systems
 @onready var character_attributes: CharacterAttributes = $CharacterAttributes if has_node("CharacterAttributes") else null
@@ -41,6 +44,14 @@ var current_weapon_index: int = 0
 var can_shoot: bool = true
 var fire_rate_timer: float = 0.0
 
+# Nailing/Barricade system
+var is_nailing: bool = false
+var nailing_barricade: Node = null
+var nails_placed: int = 0
+var nail_timer: float = 0.0
+var nails_required: int = 6
+var nail_time: float = 0.5  # Time per nail
+
 # Stats (from character attributes)
 var max_health: float = 100.0
 var current_health: float = 100.0
@@ -60,6 +71,15 @@ func _ready():
 	if raycast:
 		raycast.target_position = Vector3(0, 0, -100)
 		raycast.enabled = true
+
+	# Setup interact ray if it doesn't exist
+	if not interact_ray and camera:
+		interact_ray = RayCast3D.new()
+		interact_ray.name = "InteractRay"
+		interact_ray.target_position = Vector3(0, 0, -interact_range)
+		interact_ray.enabled = true
+		interact_ray.collision_mask = 0b11111  # All layers
+		camera.add_child(interact_ray)
 
 	# Initialize stats from character attributes
 	_sync_stats_from_attributes()
@@ -175,6 +195,9 @@ func _physics_process(delta):
 
 	# Weapon handling
 	_handle_weapons(delta)
+
+	# Interaction and nailing
+	_handle_interaction(delta)
 
 	# Health regeneration from skills/attributes
 	_update_health_regen(delta)
@@ -781,8 +804,23 @@ func _die():
 	if viewmodel:
 		viewmodel.visible = false
 
+	# Disable main camera
+	if camera:
+		camera.current = false
+
+	# Enable spectator mode for multiplayer
+	if multiplayer.has_multiplayer_peer() and spectator_controller:
+		spectator_controller.enable_spectating()
+	elif spectator_controller:
+		# Single player - still allow spectating zombies/arena
+		spectator_controller.enable_spectating()
+
 	# Show death screen
 	_show_death_screen()
+
+	# Play death sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_2d("player_death", 0.9)
 
 	# Network replicate death
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
@@ -806,6 +844,10 @@ func _show_death_screen():
 
 func _respawn():
 	"""Respawn the player"""
+	# Disable spectator mode
+	if spectator_controller:
+		spectator_controller.disable_spectating()
+
 	# Reset health
 	current_health = max_health
 	current_stamina = max_stamina
@@ -820,9 +862,15 @@ func _respawn():
 	set_physics_process(true)
 	set_process_input(true)
 
-	# Show viewmodel
+	# Show viewmodel and enable camera
 	if viewmodel:
 		viewmodel.visible = true
+	if camera:
+		camera.current = true
+
+	# Play respawn sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_2d("player_respawn", 0.7)
 
 	# Network replicate respawn
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
@@ -880,6 +928,266 @@ func _handle_phasing():
 		for prop in props:
 			if prop.has_method("disable_phasing"):
 				prop.disable_phasing()
+
+# ============================================
+# INTERACTION & NAILING SYSTEM
+# ============================================
+
+func _handle_interaction(delta):
+	"""Handle player interaction with objects and JetBoom-style nailing"""
+	var hud = get_tree().get_first_node_in_group("hud")
+
+	# Handle ongoing nailing
+	if is_nailing:
+		_process_nailing(delta, hud)
+		return
+
+	# Check for interactable objects
+	if not interact_ray:
+		return
+
+	interact_ray.force_raycast_update()
+
+	if interact_ray.is_colliding():
+		var collider = interact_ray.get_collider()
+		var distance = global_position.distance_to(interact_ray.get_collision_point())
+
+		if distance <= interact_range:
+			_show_interact_prompt(collider, hud)
+
+			# Start interaction
+			if Input.is_action_just_pressed("interact"):
+				_start_interaction(collider)
+		else:
+			_hide_interact_prompt(hud)
+	else:
+		_hide_interact_prompt(hud)
+
+func _show_interact_prompt(collider: Node, hud):
+	"""Show context-sensitive interaction prompt"""
+	if not hud or not hud.has_method("show_interact_prompt"):
+		return
+
+	# Barricade spots
+	if collider.is_in_group("barricade_spot"):
+		if "has_barricade" in collider and collider.has_barricade:
+			if "current_barricade" in collider and collider.current_barricade:
+				var barricade = collider.current_barricade
+				if "current_health" in barricade and "max_health" in barricade:
+					if barricade.current_health < barricade.max_health:
+						hud.show_interact_prompt("[E] Hold to Repair")
+					else:
+						hud.show_interact_prompt("Barricade Full Health")
+					return
+		else:
+			hud.show_interact_prompt("[E] Hold to Build Barricade")
+		return
+
+	# Existing barricades
+	if collider.is_in_group("barricades"):
+		if "current_health" in collider and "max_health" in collider:
+			if collider.current_health < collider.max_health:
+				hud.show_interact_prompt("[E] Hold to Repair (%d%%)" % [int(collider.current_health / collider.max_health * 100)])
+			else:
+				hud.show_interact_prompt("Barricade Full Health")
+		return
+
+	# Loot items
+	if collider.is_in_group("loot"):
+		var item_name = "Item"
+		if "item_name" in collider:
+			item_name = collider.item_name
+		elif collider.has_method("get_item_data"):
+			var data = collider.get_item_data()
+			if data and "item_name" in data:
+				item_name = data.item_name
+		hud.show_interact_prompt("[E] Pick up %s" % item_name)
+		return
+
+	# Generic interactables
+	if collider.has_method("interact"):
+		hud.show_interact_prompt("[E] Interact")
+		return
+
+	# Hide if nothing valid
+	_hide_interact_prompt(hud)
+
+func _hide_interact_prompt(hud):
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+	if hud and hud.has_method("update_nail_progress"):
+		hud.update_nail_progress(0.0, false)
+
+func _start_interaction(collider: Node):
+	"""Begin an interaction based on collider type"""
+	# Barricade spots - start building/repairing
+	if collider.is_in_group("barricade_spot"):
+		if "has_barricade" in collider and collider.has_barricade:
+			if "current_barricade" in collider and collider.current_barricade:
+				_start_nailing(collider.current_barricade)
+		else:
+			# Build new barricade
+			if collider.has_method("interact"):
+				collider.interact(self)
+				# After placing, start nailing the new barricade
+				if "current_barricade" in collider and collider.current_barricade:
+					_start_nailing(collider.current_barricade)
+		return
+
+	# Direct barricade interaction
+	if collider.is_in_group("barricades"):
+		_start_nailing(collider)
+		return
+
+	# Loot pickup
+	if collider.is_in_group("loot"):
+		if collider.has_method("interact"):
+			collider.interact(self)
+		elif collider.has_method("pickup"):
+			collider.pickup(self)
+		return
+
+	# Generic interaction
+	if collider.has_method("interact"):
+		collider.interact(self)
+
+func _start_nailing(barricade: Node):
+	"""Begin the JetBoom-style nailing process"""
+	if not barricade:
+		return
+
+	# Check if barricade needs nails
+	if "current_health" in barricade and "max_health" in barricade:
+		if barricade.current_health >= barricade.max_health:
+			return  # Already full
+
+	is_nailing = true
+	nailing_barricade = barricade
+	nails_placed = 0
+	nail_timer = nail_time
+
+	# Get nails required from barricade if available
+	if "nails_required" in barricade:
+		nails_required = barricade.nails_required
+	else:
+		# Calculate based on missing health
+		var health_missing = barricade.max_health - barricade.current_health if "max_health" in barricade else 100.0
+		var nail_health = barricade.nail_health if "nail_health" in barricade else 20.0
+		nails_required = int(ceil(health_missing / nail_health))
+
+	# Play starting sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("hammer_start", barricade.global_position, 0.6)
+
+	# Update HUD
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_interact_prompt"):
+		hud.show_interact_prompt("Nailing... 0/%d" % nails_required)
+
+func _process_nailing(delta, hud):
+	"""Process the ongoing nailing - JetBoom style hold-to-nail"""
+	# Cancel if player releases interact
+	if not Input.is_action_pressed("interact"):
+		_cancel_nailing(hud)
+		return
+
+	# Cancel if barricade is gone
+	if not nailing_barricade or not is_instance_valid(nailing_barricade):
+		_cancel_nailing(hud)
+		return
+
+	# Cancel if too far away
+	var distance = global_position.distance_to(nailing_barricade.global_position)
+	if distance > interact_range + 1.0:
+		_cancel_nailing(hud)
+		return
+
+	# Cancel if barricade is full
+	if "current_health" in nailing_barricade and "max_health" in nailing_barricade:
+		if nailing_barricade.current_health >= nailing_barricade.max_health:
+			_complete_nailing(hud)
+			return
+
+	# Progress nail timer
+	nail_timer -= delta
+
+	if nail_timer <= 0:
+		_place_nail(hud)
+		nail_timer = nail_time
+
+func _place_nail(hud):
+	"""Place a single nail"""
+	nails_placed += 1
+
+	# Add health to barricade
+	if nailing_barricade.has_method("add_nail"):
+		nailing_barricade.add_nail()
+	elif "current_health" in nailing_barricade and "max_health" in nailing_barricade:
+		var nail_health = nailing_barricade.nail_health if "nail_health" in nailing_barricade else 20.0
+		nailing_barricade.current_health = min(nailing_barricade.current_health + nail_health, nailing_barricade.max_health)
+
+	# Play hammer sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("hammer", nailing_barricade.global_position, 0.8)
+
+	# Spawn nail particle effect
+	if has_node("/root/VFXManager"):
+		var hit_pos = nailing_barricade.global_position + Vector3(
+			randf_range(-0.3, 0.3),
+			randf_range(0.5, 1.5),
+			randf_range(-0.3, 0.3)
+		)
+		get_node("/root/VFXManager").spawn_impact_effect(hit_pos, Vector3.UP, "wood")
+
+	# Update HUD
+	if hud and hud.has_method("show_interact_prompt"):
+		hud.show_interact_prompt("Nailing... %d/%d" % [nails_placed, nails_required])
+	if hud and hud.has_method("update_nail_progress"):
+		hud.update_nail_progress(float(nails_placed) / float(nails_required), true)
+
+	# Check if complete
+	if nails_placed >= nails_required:
+		_complete_nailing(hud)
+
+func _complete_nailing(hud):
+	"""Finish the nailing process"""
+	# Complete repair on barricade
+	if nailing_barricade and nailing_barricade.has_method("complete_repair"):
+		nailing_barricade.complete_repair()
+
+	# Play completion sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("hammer_complete", nailing_barricade.global_position if nailing_barricade else global_position, 0.7)
+
+	# Update HUD
+	if hud and hud.has_method("show_interact_prompt"):
+		hud.show_interact_prompt("Barricade Complete!")
+	if hud and hud.has_method("update_nail_progress"):
+		hud.update_nail_progress(1.0, false)
+
+	# Award points for repairing
+	add_points(25, "Barricade repaired")
+
+	# Reset state
+	is_nailing = false
+	nailing_barricade = null
+	nails_placed = 0
+
+	# Hide prompt after short delay
+	await get_tree().create_timer(1.0).timeout
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+
+func _cancel_nailing(hud):
+	"""Cancel the nailing process"""
+	is_nailing = false
+	nailing_barricade = null
+	nails_placed = 0
+
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+	if hud and hud.has_method("update_nail_progress"):
+		hud.update_nail_progress(0.0, false)
 
 # ============================================
 # NETWORK
