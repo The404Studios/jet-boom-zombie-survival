@@ -18,12 +18,24 @@ var player_data = {
 		"dexterity": 10.0,
 		"intelligence": 10.0,
 		"agility": 10.0,
-		"vitality": 10.0
+		"vitality": 10.0,
+		"endurance": 10.0,
+		"luck": 10.0
 	},
 	"currency": {
 		"coins": 0,
 		"tokens": 0,
-		"scrap": 0
+		"scrap": 0,
+		"sigils": 500  # Starting sigils for shop
+	},
+	"materials": {
+		"scrap_small": 0,
+		"scrap_medium": 0,
+		"scrap_large": 0,
+		"weapon_parts": 0,
+		"rare_alloy": 0,
+		"mythic_core": 0,
+		"augment_crystal": 0
 	},
 	"stash": [],
 	"equipped": {
@@ -199,26 +211,41 @@ func reset_player_data():
 			"dexterity": 10.0,
 			"intelligence": 10.0,
 			"agility": 10.0,
-			"vitality": 10.0
+			"vitality": 10.0,
+			"endurance": 10.0,
+			"luck": 10.0
 		},
 		"currency": {
 			"coins": 1000,  # Starting currency
 			"tokens": 0,
-			"scrap": 100
+			"scrap": 100,
+			"sigils": 500  # Starting sigils
+		},
+		"materials": {
+			"scrap_small": 20,  # Starting materials
+			"scrap_medium": 5,
+			"scrap_large": 0,
+			"weapon_parts": 5,
+			"rare_alloy": 0,
+			"mythic_core": 0,
+			"augment_crystal": 0
 		},
 		"stash": [],
 		"equipped": {},
 		"unlocks": {
-			"weapons": [],
+			"weapons": ["pistol", "combat_knife"],  # Starting weapons
 			"perks": [],
-			"zones": []
+			"zones": ["arena_01"]
 		},
 		"stats": {
 			"zombies_killed": 0,
 			"waves_survived": 0,
 			"items_looted": 0,
 			"extractions": 0,
-			"deaths": 0
+			"deaths": 0,
+			"sigils_earned": 0,
+			"sigils_spent": 0,
+			"weapons_upgraded": 0
 		},
 		"settings": {
 			"mouse_sensitivity": 0.003,
@@ -227,3 +254,39 @@ func reset_player_data():
 		}
 	}
 	save_player_data()
+
+func add_material(material_id: String, amount: int):
+	"""Add crafting materials"""
+	if not player_data.has("materials"):
+		player_data["materials"] = {}
+
+	if player_data.materials.has(material_id):
+		player_data.materials[material_id] += amount
+	else:
+		player_data.materials[material_id] = amount
+
+func spend_material(material_id: String, amount: int) -> bool:
+	"""Spend crafting materials, returns true if successful"""
+	if not player_data.has("materials"):
+		return false
+
+	if not player_data.materials.has(material_id):
+		return false
+
+	if player_data.materials[material_id] < amount:
+		return false
+
+	player_data.materials[material_id] -= amount
+	return true
+
+func get_material(material_id: String) -> int:
+	"""Get current material count"""
+	if player_data.has("materials") and player_data.materials.has(material_id):
+		return player_data.materials[material_id]
+	return 0
+
+func get_all_materials() -> Dictionary:
+	"""Get all materials"""
+	if player_data.has("materials"):
+		return player_data.materials.duplicate()
+	return {}

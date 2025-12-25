@@ -6,6 +6,7 @@ extends Control
 @onready var wave_label = $TopLeft/WaveLabel if has_node("TopLeft/WaveLabel") else null
 @onready var zombies_label = $TopLeft/ZombiesLabel if has_node("TopLeft/ZombiesLabel") else null
 @onready var points_label = $TopLeft/PointsLabel if has_node("TopLeft/PointsLabel") else null
+@onready var sigils_label = $TopLeft/SigilsLabel if has_node("TopLeft/SigilsLabel") else null
 
 @onready var health_bar = $TopRight/HealthBar if has_node("TopRight/HealthBar") else null
 @onready var health_label = $TopRight/HealthLabel if has_node("TopRight/HealthLabel") else null
@@ -27,6 +28,7 @@ extends Control
 var player: Node = null
 var current_wave: int = 0
 var current_points: int = 500
+var current_sigils: int = 500
 
 func _ready():
 	# Add to hud group so arena manager can find us
@@ -47,10 +49,31 @@ func _ready():
 	# Initialize display
 	update_wave_info(1, 0, 0)
 	update_points(current_points)
+	update_sigils(current_sigils)
 
-	# Connect to arena manager if available
+	# Connect to systems
 	await get_tree().create_timer(0.1).timeout
 	_connect_arena_manager()
+	_connect_points_system()
+
+func _connect_points_system():
+	if has_node("/root/PointsSystem"):
+		var points_system = get_node("/root/PointsSystem")
+		if points_system.has_signal("points_changed"):
+			if not points_system.points_changed.is_connected(_on_points_changed):
+				points_system.points_changed.connect(_on_points_changed)
+		if points_system.has_signal("sigils_changed"):
+			if not points_system.sigils_changed.is_connected(_on_sigils_changed):
+				points_system.sigils_changed.connect(_on_sigils_changed)
+		# Initialize values
+		update_points(points_system.current_points)
+		update_sigils(points_system.current_sigils)
+
+func _on_points_changed(new_points: int):
+	update_points(new_points)
+
+func _on_sigils_changed(new_sigils: int):
+	update_sigils(new_sigils)
 
 func _connect_arena_manager():
 	var arena = get_tree().get_first_node_in_group("arena_manager")
@@ -155,6 +178,25 @@ func update_points(points: int):
 	current_points = points
 	if points_label:
 		points_label.text = "$%d" % points
+
+func update_sigils(sigils: int):
+	current_sigils = sigils
+	if sigils_label:
+		sigils_label.text = "Sigils: %d" % sigils
+	# Create sigils label dynamically if it doesn't exist
+	elif has_node("TopLeft") and not sigils_label:
+		sigils_label = Label.new()
+		sigils_label.name = "SigilsLabel"
+		sigils_label.text = "Sigils: %d" % sigils
+		sigils_label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.8))
+		$TopLeft.add_child(sigils_label)
+
+func update_weapon_info(weapon_data: Resource, ammo: int, reserve: int):
+	"""Update weapon display from weapon data"""
+	if weapon_label and weapon_data:
+		weapon_label.text = weapon_data.item_name if "item_name" in weapon_data else "Unknown"
+	if ammo_label:
+		ammo_label.text = "%d / %d" % [ammo, reserve]
 
 func show_interact_prompt(text: String):
 	if interact_label:
