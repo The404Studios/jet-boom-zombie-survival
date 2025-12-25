@@ -115,19 +115,22 @@ func _load_player_data():
 	if has_node("/root/PlayerPersistence"):
 		var persistence = get_node("/root/PlayerPersistence")
 		if persistence.player_data:
-			player_stats = persistence.player_data.get("stats", player_stats)
+			var loaded_stats = persistence.player_data.get("stats", {})
+			# Merge loaded stats into player_stats
+			for key in loaded_stats:
+				player_stats[key] = loaded_stats[key]
 
 	# Get player reference for live stats
 	var player = get_tree().get_first_node_in_group("player")
 	if player:
 		if "current_health" in player:
-			player_stats.health = player.current_health
+			player_stats["health"] = player.current_health
 		if "max_health" in player:
-			player_stats.max_health = player.max_health
+			player_stats["max_health"] = player.max_health
 		if "current_stamina" in player:
-			player_stats.stamina = player.current_stamina
+			player_stats["stamina"] = player.current_stamina
 		if "max_stamina" in player:
-			player_stats.max_stamina = player.max_stamina
+			player_stats["max_stamina"] = player.max_stamina
 
 func _setup_inventory_grid():
 	if not inventory_grid:
@@ -265,25 +268,25 @@ func _update_stats_display():
 		rank_label.text = rank_text
 
 	if health_bar:
-		health_bar.max_value = player_stats.max_health
-		health_bar.value = player_stats.health
+		health_bar.max_value = player_stats.get("max_health", 100)
+		health_bar.value = player_stats.get("health", 100)
 
 	if stamina_bar:
-		stamina_bar.max_value = player_stats.max_stamina
-		stamina_bar.value = player_stats.stamina
+		stamina_bar.max_value = player_stats.get("max_stamina", 100)
+		stamina_bar.value = player_stats.get("stamina", 100)
 
 	# Update resistance labels
-	_update_stat_label("BulletproofHead", "%.1f %%" % player_stats.bulletproof_head)
-	_update_stat_label("BulletproofBody", "%.1f %%" % player_stats.bulletproof_body)
-	_update_stat_label("PenetrationHead", "%.1f %%" % player_stats.penetration_head)
-	_update_stat_label("PenetrationBody", "%.1f %%" % player_stats.penetration_body)
-	_update_stat_label("BleedingResist", "%.1f %%" % player_stats.bleeding_resist)
-	_update_stat_label("ExplosionResist", "%.1f %%" % player_stats.explosion_resist)
-	_update_stat_label("FireResist", "%.1f %%" % player_stats.fire_resist)
-	_update_stat_label("ColdResist", "%.1f %%" % player_stats.cold_resist)
-	_update_stat_label("ShockResist", "%.1f %%" % player_stats.shock_resist)
-	_update_stat_label("ChemicalResist", "%.1f %%" % player_stats.chemical_resist)
-	_update_stat_label("RadiationResist", "%.1f %%" % player_stats.radiation_resist)
+	_update_stat_label("BulletproofHead", "%.1f %%" % player_stats.get("bulletproof_head", 0.0))
+	_update_stat_label("BulletproofBody", "%.1f %%" % player_stats.get("bulletproof_body", 0.0))
+	_update_stat_label("PenetrationHead", "%.1f %%" % player_stats.get("penetration_head", 0.0))
+	_update_stat_label("PenetrationBody", "%.1f %%" % player_stats.get("penetration_body", 0.0))
+	_update_stat_label("BleedingResist", "%.1f %%" % player_stats.get("bleeding_resist", 0.0))
+	_update_stat_label("ExplosionResist", "%.1f %%" % player_stats.get("explosion_resist", 0.0))
+	_update_stat_label("FireResist", "%.1f %%" % player_stats.get("fire_resist", 0.0))
+	_update_stat_label("ColdResist", "%.1f %%" % player_stats.get("cold_resist", 0.0))
+	_update_stat_label("ShockResist", "%.1f %%" % player_stats.get("shock_resist", 0.0))
+	_update_stat_label("ChemicalResist", "%.1f %%" % player_stats.get("chemical_resist", 0.0))
+	_update_stat_label("RadiationResist", "%.1f %%" % player_stats.get("radiation_resist", 0.0))
 
 func _get_rank_name(rank: int) -> String:
 	match rank:
@@ -498,17 +501,17 @@ func _refresh_equipment_display():
 
 func _recalculate_stats():
 	# Reset to base stats
-	player_stats.bulletproof_head = 0.0
-	player_stats.bulletproof_body = 0.0
-	player_stats.penetration_head = 0.0
-	player_stats.penetration_body = 0.0
-	player_stats.bleeding_resist = 0.0
-	player_stats.explosion_resist = 0.0
-	player_stats.fire_resist = 0.0
-	player_stats.cold_resist = 0.0
-	player_stats.shock_resist = 0.0
-	player_stats.chemical_resist = 0.0
-	player_stats.radiation_resist = 0.0
+	player_stats["bulletproof_head"] = 0.0
+	player_stats["bulletproof_body"] = 0.0
+	player_stats["penetration_head"] = 0.0
+	player_stats["penetration_body"] = 0.0
+	player_stats["bleeding_resist"] = 0.0
+	player_stats["explosion_resist"] = 0.0
+	player_stats["fire_resist"] = 0.0
+	player_stats["cold_resist"] = 0.0
+	player_stats["shock_resist"] = 0.0
+	player_stats["chemical_resist"] = 0.0
+	player_stats["radiation_resist"] = 0.0
 
 	# Add stats from equipment
 	for slot_name in equipped_items:
@@ -518,19 +521,19 @@ func _recalculate_stats():
 
 		if "armor_value" in item:
 			if slot_name == "head":
-				player_stats.bulletproof_head += item.armor_value
+				player_stats["bulletproof_head"] += item.armor_value
 			else:
-				player_stats.bulletproof_body += item.armor_value
+				player_stats["bulletproof_body"] += item.armor_value
 
 		# Add resistances
 		if "fire_resist" in item:
-			player_stats.fire_resist += item.fire_resist
+			player_stats["fire_resist"] += item.fire_resist
 		if "cold_resist" in item:
-			player_stats.cold_resist += item.cold_resist
+			player_stats["cold_resist"] += item.cold_resist
 		if "bleed_resist" in item:
-			player_stats.bleeding_resist += item.bleed_resist
+			player_stats["bleeding_resist"] += item.bleed_resist
 		if "explosion_resist" in item:
-			player_stats.explosion_resist += item.explosion_resist
+			player_stats["explosion_resist"] += item.explosion_resist
 
 	_update_stats_display()
 
