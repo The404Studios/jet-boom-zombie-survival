@@ -18,8 +18,8 @@ const NORMAL_LAYER = 1  # Layer 1 - world geometry
 signal prop_damaged(health_remaining: float, health_percent: float)
 signal prop_destroyed
 
-@onready var mesh: MeshInstance3D = $MeshInstance3D if has_node("MeshInstance3D") else null
-@onready var health_label: Label3D = $HealthLabel3D if has_node("HealthLabel3D") else null
+@onready var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D") as MeshInstance3D
+@onready var health_label: Label3D = get_node_or_null("HealthLabel3D") as Label3D
 
 func _ready():
 	add_to_group("props")

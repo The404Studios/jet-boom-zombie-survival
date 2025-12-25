@@ -7,22 +7,22 @@ signal trade_requested(player_id: int)
 signal panel_closed
 
 # Filter options
-@onready var category_filter: OptionButton = $FilterBar/CategoryFilter
-@onready var rarity_filter: OptionButton = $FilterBar/RarityFilter
-@onready var type_filter: OptionButton = $FilterBar/TypeFilter
-@onready var price_min: SpinBox = $FilterBar/PriceMin
-@onready var price_max: SpinBox = $FilterBar/PriceMax
-@onready var search_input: LineEdit = $FilterBar/SearchInput
-@onready var search_button: Button = $FilterBar/SearchButton
-@onready var back_button: Button = $FilterBar/BackButton
-@onready var reset_button: Button = $FilterBar/ResetButton
+@onready var category_filter: OptionButton = get_node_or_null("FilterBar/CategoryFilter")
+@onready var rarity_filter: OptionButton = get_node_or_null("FilterBar/RarityFilter")
+@onready var type_filter: OptionButton = get_node_or_null("FilterBar/TypeFilter")
+@onready var price_min: SpinBox = get_node_or_null("FilterBar/PriceMin")
+@onready var price_max: SpinBox = get_node_or_null("FilterBar/PriceMax")
+@onready var search_input: LineEdit = get_node_or_null("FilterBar/SearchInput")
+@onready var search_button: Button = get_node_or_null("FilterBar/SearchButton")
+@onready var back_button: Button = get_node_or_null("FilterBar/BackButton")
+@onready var reset_button: Button = get_node_or_null("FilterBar/ResetButton")
 
 # Market grid
-@onready var market_grid: GridContainer = $MarketContainer/ScrollContainer/MarketGrid
+@onready var market_grid: GridContainer = get_node_or_null("MarketContainer/ScrollContainer/MarketGrid")
 
 # Player info
-@onready var player_currency_label: Label = $InfoBar/CurrencyLabel
-@onready var listing_count_label: Label = $InfoBar/ListingCountLabel
+@onready var player_currency_label: Label = get_node_or_null("InfoBar/CurrencyLabel")
+@onready var listing_count_label: Label = get_node_or_null("InfoBar/ListingCountLabel")
 
 # Listing data
 var market_listings: Array = []
@@ -289,8 +289,8 @@ func _apply_filters():
 
 		# Search filter
 		if current_filters.search != "" and passes_filter:
-			var name = listing.get("item_name", "").to_lower()
-			if not name.contains(current_filters.search):
+			var item_name = listing.get("item_name", "").to_lower()
+			if not item_name.contains(current_filters.search):
 				passes_filter = false
 
 		if passes_filter:

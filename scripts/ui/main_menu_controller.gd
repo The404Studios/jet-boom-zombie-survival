@@ -128,9 +128,9 @@ func _load_player_info():
 	if has_node("/root/AccountSystem"):
 		var account = get_node("/root/AccountSystem")
 		if account.has_method("get_username"):
-			var name = account.get_username()
-			if name and name != "":
-				steam_username = name
+			var username = account.get_username()
+			if username and username != "":
+				steam_username = username
 		if account.has_method("get_rank"):
 			player_rank = account.get_rank()
 
