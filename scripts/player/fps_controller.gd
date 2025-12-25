@@ -52,6 +52,13 @@ var nail_timer: float = 0.0
 var nails_required: int = 6
 var nail_time: float = 0.5  # Time per nail
 
+# Prop carrying system
+var is_carrying_prop: bool = false
+var carried_prop: Node = null
+var prop_carry_offset: Vector3 = Vector3(0, 0, -2.0)  # Position in front of player
+var prop_rotation: Vector3 = Vector3.ZERO  # Current rotation of carried prop
+var prop_rotation_speed: float = 2.0  # Rotation speed when holding Alt
+
 # Stats (from character attributes)
 var max_health: float = 100.0
 var current_health: float = 100.0
@@ -144,16 +151,26 @@ func _physics_process(delta):
 	if rpg_menu and rpg_menu.is_menu_open():
 		return
 
+	# Update carried prop position
+	if is_carrying_prop:
+		_update_carried_prop(delta)
+
+	# Calculate weight penalty from carried prop
+	var weight_penalty = 1.0  # 1.0 = no penalty
+	if is_carrying_prop and carried_prop and carried_prop.has_method("get_weight_penalty"):
+		weight_penalty = 1.0 - carried_prop.get_weight_penalty()  # 0.3 to 0.6 of normal speed
+
 	# Gravity
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	# Jump
+	# Jump with weight penalty
 	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = jump_velocity
+		var jump_power = jump_velocity * weight_penalty
+		velocity.y = jump_power
 
-	# Sprint (uses stamina)
-	var can_sprint = current_stamina > 0
+	# Sprint (uses stamina) - can't sprint while carrying heavy props
+	var can_sprint = current_stamina > 0 and (not is_carrying_prop or weight_penalty > 0.5)
 	is_sprinting = Input.is_action_pressed("sprint") and is_on_floor() and can_sprint
 
 	# Calculate movement speed with bonuses
@@ -172,7 +189,8 @@ func _physics_process(delta):
 	if player_conditions:
 		speed_bonus *= player_conditions.get_movement_speed_modifier()
 
-	current_speed = base_speed * speed_bonus
+	# Apply weight penalty
+	current_speed = base_speed * speed_bonus * weight_penalty
 
 	# Handle stamina drain/regen
 	_update_stamina(delta)
@@ -997,9 +1015,23 @@ func _show_interact_prompt(collider: Node, hud):
 				hud.show_interact_prompt("Barricade Full Health")
 		return
 
-	# Props that can be barricaded
+	# Props - can be picked up or barricaded
 	if collider.is_in_group("props"):
-		if collider.has_method("can_be_barricaded") and collider.can_be_barricaded():
+		# Check if player is already carrying something
+		if is_carrying_prop:
+			hud.show_interact_prompt("Already carrying a prop")
+			return
+
+		# Check if prop can be picked up
+		if collider.has_method("can_pickup") and collider.can_pickup():
+			var weight_pct = 50
+			if "prop_weight" in collider:
+				weight_pct = int(collider.prop_weight * 100)
+			var prop_name = collider.prop_name if "prop_name" in collider else "Prop"
+			hud.show_interact_prompt("[E] Pick up %s (Weight: %d%%)" % [prop_name, weight_pct])
+			return
+		# Check if can be barricaded (already placed prop)
+		elif collider.has_method("can_be_barricaded") and collider.can_be_barricaded():
 			if "is_barricaded" in collider and collider.is_barricaded:
 				var nails = collider.barricade_nails if "barricade_nails" in collider else 0
 				var max_nails = collider.max_barricade_nails if "max_barricade_nails" in collider else 6
@@ -1059,8 +1091,13 @@ func _start_interaction(collider: Node):
 		_start_nailing(collider)
 		return
 
-	# Prop barricading
+	# Prop interaction - pickup or barricading
 	if collider.is_in_group("props"):
+		# Try to pick up first
+		if collider.has_method("can_pickup") and collider.can_pickup():
+			_pickup_prop(collider)
+			return
+		# Otherwise try to barricade
 		if collider.has_method("can_be_barricaded") and collider.can_be_barricaded():
 			_start_prop_barricading(collider)
 			return
@@ -1336,6 +1373,122 @@ func _cancel_prop_barricading(hud):
 		hud.hide_interact_prompt()
 	if hud and hud.has_method("update_nail_progress"):
 		hud.update_nail_progress(0.0, false)
+
+# ============================================
+# PROP CARRYING SYSTEM
+# ============================================
+
+func _update_carried_prop(delta):
+	"""Update carried prop position and handle rotation"""
+	if not carried_prop or not is_instance_valid(carried_prop):
+		_drop_prop()
+		return
+
+	# Calculate prop position in front of player
+	var carry_pos = camera.global_position + camera.global_transform.basis.z * prop_carry_offset.z
+	carry_pos.y += prop_carry_offset.y
+
+	# Smoothly move prop to carry position
+	carried_prop.global_position = carried_prop.global_position.lerp(carry_pos, delta * 15.0)
+
+	# Handle rotation with Alt key
+	if Input.is_action_pressed("alt"):
+		_handle_prop_rotation(delta)
+
+	# Apply current rotation
+	carried_prop.rotation = prop_rotation
+
+	# Drop prop with E
+	if Input.is_action_just_pressed("interact"):
+		_place_carried_prop()
+
+func _handle_prop_rotation(delta):
+	"""Handle prop rotation while holding Alt"""
+	# Forward/backward rotation (pitch) with W/S
+	if Input.is_action_pressed("move_forward"):
+		prop_rotation.x -= prop_rotation_speed * delta
+	if Input.is_action_pressed("move_back"):
+		prop_rotation.x += prop_rotation_speed * delta
+
+	# Left/right rotation (yaw) with A/D
+	if Input.is_action_pressed("move_left"):
+		prop_rotation.y += prop_rotation_speed * delta
+	if Input.is_action_pressed("move_right"):
+		prop_rotation.y -= prop_rotation_speed * delta
+
+func _pickup_prop(prop: Node):
+	"""Pick up a prop"""
+	if is_carrying_prop:
+		return  # Already carrying something
+
+	if not prop or not prop.has_method("can_pickup"):
+		return
+
+	if not prop.can_pickup():
+		return
+
+	# Attempt pickup
+	if prop.has_method("pickup") and prop.pickup(self):
+		is_carrying_prop = true
+		carried_prop = prop
+		prop_rotation = prop.rotation  # Preserve original rotation
+
+		# Show HUD message
+		var hud = get_tree().get_first_node_in_group("hud")
+		if hud and hud.has_method("show_interact_prompt"):
+			var weight_pct = int(prop.get_weight_penalty() * 100) if prop.has_method("get_weight_penalty") else 50
+			hud.show_interact_prompt("[E] Place | [Alt+WASD] Rotate | Weight: %d%%" % weight_pct)
+
+func _place_carried_prop():
+	"""Place the carried prop at current position"""
+	if not is_carrying_prop or not carried_prop:
+		return
+
+	# Find placement position (raycast down from prop position)
+	var prop_pos = carried_prop.global_position
+	var space_state = get_world_3d().direct_space_state
+
+	# Cast down to find ground
+	var query = PhysicsRayQueryParameters3D.create(
+		prop_pos + Vector3(0, 0.5, 0),
+		prop_pos + Vector3(0, -5, 0)
+	)
+	query.exclude = [self, carried_prop]
+
+	var result = space_state.intersect_ray(query)
+	var final_pos = prop_pos
+	if result:
+		final_pos = result.position + Vector3(0, 0.1, 0)  # Slight offset above ground
+
+	# Drop the prop
+	if carried_prop.has_method("drop"):
+		carried_prop.drop(final_pos, prop_rotation)
+
+	is_carrying_prop = false
+	carried_prop = null
+	prop_rotation = Vector3.ZERO
+
+	# Hide prompt
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("hide_interact_prompt"):
+		hud.hide_interact_prompt()
+
+func _drop_prop():
+	"""Drop prop without proper placement (e.g., prop was destroyed)"""
+	is_carrying_prop = false
+	carried_prop = null
+	prop_rotation = Vector3.ZERO
+
+func is_currently_carrying() -> bool:
+	return is_carrying_prop and carried_prop != null
+
+func get_carried_prop_weight() -> float:
+	"""Get weight of currently carried prop (0.0 to 1.0)"""
+	if not is_carrying_prop or not carried_prop:
+		return 0.0
+	if carried_prop.has_method("get_weight_penalty"):
+		return carried_prop.get_weight_penalty()
+	return 0.5  # Default weight
 
 # ============================================
 # NETWORK

@@ -2,14 +2,23 @@ extends StaticBody3D
 
 # JetBoom-style props - zombies attack as secondary target
 # Players can phase through by holding Z
+# Players can pick up and carry props
 
 @export var max_health: float = 500.0
 @export var health_per_wave: float = 100.0
 @export var prop_name: String = "Prop"
 
+# Weight system - affects player speed/jump when carrying
+# Weight ranges from 0.0 (light) to 1.0 (very heavy)
+@export_range(0.0, 1.0) var prop_weight: float = 0.5
+@export var prop_size: Vector3 = Vector3(1.0, 1.0, 1.0)  # Used for visual scaling
+@export var can_be_picked_up: bool = true
+
 var current_health: float = 500.0
 var current_wave: int = 1
 var is_destroyed: bool = false
+var is_being_carried: bool = false
+var carrier: Node = null  # Reference to player carrying this prop
 
 # Phasing mechanic
 const PHASE_LAYER = 32  # Layer 6 - dedicated phase layer
@@ -17,6 +26,8 @@ const NORMAL_LAYER = 1  # Layer 1 - world geometry
 
 signal prop_damaged(health_remaining: float, health_percent: float)
 signal prop_destroyed
+signal prop_picked_up(by_player: Node)
+signal prop_dropped(at_position: Vector3)
 
 @onready var mesh: MeshInstance3D = get_node_or_null("MeshInstance3D") as MeshInstance3D
 @onready var health_label: Label3D = get_node_or_null("HealthLabel3D") as Label3D
@@ -33,6 +44,10 @@ signal barricade_damaged(nails_remaining: int)
 func _ready():
 	add_to_group("props")
 	add_to_group("zombie_targets")
+
+	# Calculate health based on weight
+	_recalculate_health_from_weight()
+
 	_setup_health_bar()
 	_update_visual()
 
@@ -152,8 +167,8 @@ func add_barricade_nail() -> bool:
 
 	barricade_nails += 1
 
-	# Each nail adds health
-	var nail_health = 50.0
+	# Each nail adds health based on prop weight
+	var nail_health = get_weight_based_nail_health()
 	max_health += nail_health
 	current_health += nail_health
 
@@ -182,6 +197,94 @@ func get_barricade_progress() -> float:
 
 func is_fully_barricaded() -> bool:
 	return is_barricaded and barricade_nails >= max_barricade_nails
+
+# ============================================
+# CARRYING SYSTEM
+# ============================================
+
+func can_pickup() -> bool:
+	"""Check if this prop can be picked up"""
+	return can_be_picked_up and not is_being_carried and not is_barricaded and not is_destroyed
+
+func pickup(player: Node) -> bool:
+	"""Pick up this prop - called by player"""
+	if not can_pickup():
+		return false
+
+	is_being_carried = true
+	carrier = player
+
+	# Disable collision while being carried
+	collision_layer = 0
+	collision_mask = 0
+
+	# Remove from groups temporarily
+	remove_from_group("props")
+	remove_from_group("zombie_targets")
+
+	# Hide health bar while carrying
+	if health_bar:
+		health_bar.visible = false
+
+	prop_picked_up.emit(player)
+
+	# Play pickup sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("prop_pickup", global_position, 0.6)
+
+	return true
+
+func drop(drop_position: Vector3, drop_rotation: Vector3 = Vector3.ZERO):
+	"""Drop this prop at the specified position"""
+	if not is_being_carried:
+		return
+
+	is_being_carried = false
+	carrier = null
+
+	# Set position and rotation
+	global_position = drop_position
+	rotation = drop_rotation
+
+	# Re-enable collision
+	collision_layer = NORMAL_LAYER
+	collision_mask = 1
+
+	# Re-add to groups
+	add_to_group("props")
+	add_to_group("zombie_targets")
+
+	# Show health bar again
+	if health_bar:
+		health_bar.visible = true
+		_update_health_bar()
+
+	prop_dropped.emit(drop_position)
+
+	# Play drop sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("prop_drop", global_position, 0.7)
+
+func get_weight_penalty() -> float:
+	"""Get movement/jump penalty based on weight (0.4 to 0.7)"""
+	# Weight 0.0 = 40% penalty, Weight 1.0 = 70% penalty
+	return 0.4 + (prop_weight * 0.3)
+
+func get_weight_based_health() -> float:
+	"""Get base health scaled by weight - heavier props have more HP"""
+	# Light props: 300 HP base, Heavy props: 800 HP base
+	return 300.0 + (prop_weight * 500.0)
+
+func get_weight_based_nail_health() -> float:
+	"""Get nail health scaled by weight - heavier props get more HP per nail"""
+	# Light props: 30 HP per nail, Heavy props: 100 HP per nail
+	return 30.0 + (prop_weight * 70.0)
+
+func _recalculate_health_from_weight():
+	"""Recalculate health values based on prop weight"""
+	var base_health = get_weight_based_health()
+	max_health = base_health + (health_per_wave * (current_wave - 1))
+	current_health = max_health
 
 func enable_phasing():
 	"""Allow player to phase through (called when holding Z)"""
