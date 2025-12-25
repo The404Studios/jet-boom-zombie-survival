@@ -1,4 +1,4 @@
-[gd_scene load_steps=65 format=3 uid="uid://arena_main001"]
+[gd_scene load_steps=80 format=3 uid="uid://arena_main001"]
 
 [ext_resource type="PackedScene" uid="uid://player_fps001" path="res://scenes/player/player_fps.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="2"]
@@ -19,6 +19,8 @@
 [ext_resource type="Texture2D" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Textures/dark_ground.png" id="17"]
 [ext_resource type="Texture2D" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Textures/mud.png" id="18"]
 [ext_resource type="Texture2D" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Textures/rock.png" id="19"]
+[ext_resource type="PackedScene" uid="uid://capture_sigil001" path="res://scenes/systems/capture_sigil.tscn" id="20"]
+[ext_resource type="Script" path="res://scripts/ui/teleport_ui.gd" id="21"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.03, 0.03, 0.08, 1)
@@ -782,6 +784,249 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 7, -35)
 [node name="WeaponSpawn3" type="Marker3D" parent="ItemSpawns"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 7, 35)
 
+[node name="CaptureSigils" type="Node3D" parent="."]
+
+[node name="SigilAlpha" parent="CaptureSigils" instance=ExtResource("20")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0.5, -40)
+sigil_name = "Sigil Alpha"
+sigil_id = 1
+
+[node name="SigilBeta" parent="CaptureSigils" instance=ExtResource("20")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.5, -40)
+sigil_name = "Sigil Beta"
+sigil_id = 2
+
+[node name="SigilGamma" parent="CaptureSigils" instance=ExtResource("20")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 45)
+sigil_name = "Sigil Gamma"
+sigil_id = 3
+
+[node name="CaptureSigilLights" type="Node3D" parent="."]
+
+[node name="AlphaLight" type="OmniLight3D" parent="CaptureSigilLights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 5, -40)
+light_color = Color(0.5, 0.5, 0.5, 1)
+light_energy = 3.0
+omni_range = 15.0
+omni_attenuation = 1.2
+
+[node name="BetaLight" type="OmniLight3D" parent="CaptureSigilLights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 5, -40)
+light_color = Color(0.5, 0.5, 0.5, 1)
+light_energy = 3.0
+omni_range = 15.0
+omni_attenuation = 1.2
+
+[node name="GammaLight" type="OmniLight3D" parent="CaptureSigilLights"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 45)
+light_color = Color(0.5, 0.5, 0.5, 1)
+light_energy = 3.0
+omni_range = 15.0
+omni_attenuation = 1.2
+
+[node name="TerrainExtras" type="Node3D" parent="."]
+
+[node name="Ravine" type="Node3D" parent="TerrainExtras"]
+
+[node name="RavineFloor" type="StaticBody3D" parent="TerrainExtras/Ravine" groups=["environment", "navigation_mesh_source"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -2, 0)
+
+[node name="RavineFloorCol" type="CollisionShape3D" parent="TerrainExtras/Ravine/RavineFloor"]
+shape = SubResource("BoxShape3D_trail_h")
+
+[node name="RavineFloorMesh" type="MeshInstance3D" parent="TerrainExtras/Ravine/RavineFloor"]
+mesh = SubResource("BoxMesh_trail_h")
+surface_material_override/0 = SubResource("StandardMaterial3D_trail")
+
+[node name="RavineWallN" type="StaticBody3D" parent="TerrainExtras/Ravine" groups=["environment"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -1, -4)
+
+[node name="RavineWallNCol" type="CollisionShape3D" parent="TerrainExtras/Ravine/RavineWallN"]
+shape = SubResource("BoxShape3D_trail_h")
+
+[node name="RavineWallNMesh" type="MeshInstance3D" parent="TerrainExtras/Ravine/RavineWallN"]
+mesh = SubResource("BoxMesh_trail_h")
+surface_material_override/0 = SubResource("StandardMaterial3D_hill")
+
+[node name="RavineWallS" type="StaticBody3D" parent="TerrainExtras/Ravine" groups=["environment"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -1, 4)
+
+[node name="RavineWallSCol" type="CollisionShape3D" parent="TerrainExtras/Ravine/RavineWallS"]
+shape = SubResource("BoxShape3D_trail_h")
+
+[node name="RavineWallSMesh" type="MeshInstance3D" parent="TerrainExtras/Ravine/RavineWallS"]
+mesh = SubResource("BoxMesh_trail_h")
+surface_material_override/0 = SubResource("StandardMaterial3D_hill")
+
+[node name="Ruins" type="Node3D" parent="TerrainExtras"]
+
+[node name="RuinWall1" type="StaticBody3D" parent="TerrainExtras/Ruins" groups=["environment", "cover"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 1.5, -35)
+
+[node name="RuinWall1Col" type="CollisionShape3D" parent="TerrainExtras/Ruins/RuinWall1"]
+shape = SubResource("BoxShape3D_cover")
+
+[node name="RuinWall1Mesh" type="MeshInstance3D" parent="TerrainExtras/Ruins/RuinWall1"]
+mesh = SubResource("BoxMesh_cover")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="RuinWall2" type="StaticBody3D" parent="TerrainExtras/Ruins" groups=["environment", "cover"]]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -35, 1.5, -40)
+
+[node name="RuinWall2Col" type="CollisionShape3D" parent="TerrainExtras/Ruins/RuinWall2"]
+shape = SubResource("BoxShape3D_cover")
+
+[node name="RuinWall2Mesh" type="MeshInstance3D" parent="TerrainExtras/Ruins/RuinWall2"]
+mesh = SubResource("BoxMesh_cover")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="RuinWall3" type="StaticBody3D" parent="TerrainExtras/Ruins" groups=["environment", "cover"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 1.5, -35)
+
+[node name="RuinWall3Col" type="CollisionShape3D" parent="TerrainExtras/Ruins/RuinWall3"]
+shape = SubResource("BoxShape3D_cover")
+
+[node name="RuinWall3Mesh" type="MeshInstance3D" parent="TerrainExtras/Ruins/RuinWall3"]
+mesh = SubResource("BoxMesh_cover")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="RuinWall4" type="StaticBody3D" parent="TerrainExtras/Ruins" groups=["environment", "cover"]]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 45, 1.5, -40)
+
+[node name="RuinWall4Col" type="CollisionShape3D" parent="TerrainExtras/Ruins/RuinWall4"]
+shape = SubResource("BoxShape3D_cover")
+
+[node name="RuinWall4Mesh" type="MeshInstance3D" parent="TerrainExtras/Ruins/RuinWall4"]
+mesh = SubResource("BoxMesh_cover")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="RuinWall5" type="StaticBody3D" parent="TerrainExtras/Ruins" groups=["environment", "cover"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 50)
+
+[node name="RuinWall5Col" type="CollisionShape3D" parent="TerrainExtras/Ruins/RuinWall5"]
+shape = SubResource("BoxShape3D_cover")
+
+[node name="RuinWall5Mesh" type="MeshInstance3D" parent="TerrainExtras/Ruins/RuinWall5"]
+mesh = SubResource("BoxMesh_cover")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="RuinWall6" type="StaticBody3D" parent="TerrainExtras/Ruins" groups=["environment", "cover"]]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 5, 1.5, 45)
+
+[node name="RuinWall6Col" type="CollisionShape3D" parent="TerrainExtras/Ruins/RuinWall6"]
+shape = SubResource("BoxShape3D_cover")
+
+[node name="RuinWall6Mesh" type="MeshInstance3D" parent="TerrainExtras/Ruins/RuinWall6"]
+mesh = SubResource("BoxMesh_cover")
+surface_material_override/0 = SubResource("StandardMaterial3D_wall")
+
+[node name="Outposts" type="Node3D" parent="TerrainExtras"]
+
+[node name="OutpostAlpha" type="StaticBody3D" parent="TerrainExtras/Outposts" groups=["environment", "navigation_mesh_source"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0.4, -40)
+
+[node name="OutpostAlphaCol" type="CollisionShape3D" parent="TerrainExtras/Outposts/OutpostAlpha"]
+shape = SubResource("BoxShape3D_platform")
+
+[node name="OutpostAlphaMesh" type="MeshInstance3D" parent="TerrainExtras/Outposts/OutpostAlpha"]
+mesh = SubResource("BoxMesh_platform")
+surface_material_override/0 = SubResource("StandardMaterial3D_platform")
+
+[node name="OutpostBeta" type="StaticBody3D" parent="TerrainExtras/Outposts" groups=["environment", "navigation_mesh_source"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.4, -40)
+
+[node name="OutpostBetaCol" type="CollisionShape3D" parent="TerrainExtras/Outposts/OutpostBeta"]
+shape = SubResource("BoxShape3D_platform")
+
+[node name="OutpostBetaMesh" type="MeshInstance3D" parent="TerrainExtras/Outposts/OutpostBeta"]
+mesh = SubResource("BoxMesh_platform")
+surface_material_override/0 = SubResource("StandardMaterial3D_platform")
+
+[node name="OutpostGamma" type="StaticBody3D" parent="TerrainExtras/Outposts" groups=["environment", "navigation_mesh_source"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 45)
+
+[node name="OutpostGammaCol" type="CollisionShape3D" parent="TerrainExtras/Outposts/OutpostGamma"]
+shape = SubResource("BoxShape3D_platform")
+
+[node name="OutpostGammaMesh" type="MeshInstance3D" parent="TerrainExtras/Outposts/OutpostGamma"]
+mesh = SubResource("BoxMesh_platform")
+surface_material_override/0 = SubResource("StandardMaterial3D_platform")
+
+[node name="ExtraRocks" type="Node3D" parent="TerrainExtras"]
+
+[node name="Rock9" parent="TerrainExtras/ExtraRocks" instance=ExtResource("12")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, -45, 0, -35)
+
+[node name="Rock10" parent="TerrainExtras/ExtraRocks" instance=ExtResource("13")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -35, 0, -45)
+
+[node name="Rock11" parent="TerrainExtras/ExtraRocks" instance=ExtResource("12")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 45, 0, -35)
+
+[node name="Rock12" parent="TerrainExtras/ExtraRocks" instance=ExtResource("13")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, 35, 0, -45)
+
+[node name="Rock13" parent="TerrainExtras/ExtraRocks" instance=ExtResource("12")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 5, 0, 50)
+
+[node name="Rock14" parent="TerrainExtras/ExtraRocks" instance=ExtResource("13")]
+transform = Transform3D(2, 0, 0, 0, 2, 0, 0, 0, 2, -5, 0, 50)
+
+[node name="Rock15" parent="TerrainExtras/ExtraRocks" instance=ExtResource("12")]
+transform = Transform3D(1.8, 0, 0, 0, 1.8, 0, 0, 0, 1.8, 0, 0, 38)
+
+[node name="Rock16" parent="TerrainExtras/ExtraRocks" instance=ExtResource("13")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -25, -2, 0)
+
+[node name="Rock17" parent="TerrainExtras/ExtraRocks" instance=ExtResource("12")]
+transform = Transform3D(2.5, 0, 0, 0, 2.5, 0, 0, 0, 2.5, 55, -2, 0)
+
+[node name="ExtraTrees" type="Node3D" parent="TerrainExtras"]
+
+[node name="Tree9" parent="TerrainExtras/ExtraTrees" instance=ExtResource("15")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, -48, 0, -40)
+
+[node name="Tree10" parent="TerrainExtras/ExtraTrees" instance=ExtResource("15")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, -32, 0, -48)
+
+[node name="Tree11" parent="TerrainExtras/ExtraTrees" instance=ExtResource("15")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 48, 0, -40)
+
+[node name="Tree12" parent="TerrainExtras/ExtraTrees" instance=ExtResource("15")]
+transform = Transform3D(1.1, 0, 0, 0, 1.1, 0, 0, 0, 1.1, 32, 0, -48)
+
+[node name="Tree13" parent="TerrainExtras/ExtraTrees" instance=ExtResource("8")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -8, 0, 52)
+
+[node name="Tree14" parent="TerrainExtras/ExtraTrees" instance=ExtResource("8")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 8, 0, 52)
+
+[node name="Tree15" parent="TerrainExtras/ExtraTrees" instance=ExtResource("14")]
+transform = Transform3D(1.3, 0, 0, 0, 1.3, 0, 0, 0, 1.3, 0, 0, -48)
+
+[node name="ExtraPlants" type="Node3D" parent="TerrainExtras"]
+
+[node name="Fern7" parent="TerrainExtras/ExtraPlants" instance=ExtResource("9")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -45, 0, -42)
+
+[node name="Fern8" parent="TerrainExtras/ExtraPlants" instance=ExtResource("9")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 45, 0, -42)
+
+[node name="Fern9" parent="TerrainExtras/ExtraPlants" instance=ExtResource("9")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 48)
+
+[node name="PlantTall5" parent="TerrainExtras/ExtraPlants" instance=ExtResource("16")]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, -38, 0, -38)
+
+[node name="PlantTall6" parent="TerrainExtras/ExtraPlants" instance=ExtResource("16")]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 38, 0, -38)
+
+[node name="PlantTall7" parent="TerrainExtras/ExtraPlants" instance=ExtResource("16")]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, -3, 0, 42)
+
+[node name="PlantTall8" parent="TerrainExtras/ExtraPlants" instance=ExtResource("16")]
+transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 3, 0, 42)
+
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="HUD" parent="UI" instance=ExtResource("2")]
@@ -790,3 +1035,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 7, 35)
 
 [node name="PauseMenu" parent="UI" instance=ExtResource("11")]
 visible = false
+
+[node name="TeleportUI" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("21")
