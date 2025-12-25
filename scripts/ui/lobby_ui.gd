@@ -331,5 +331,5 @@ func start_game():
 
 	game_started.emit()
 
-	# Load game scene
-	get_tree().change_scene_to_file("res://scenes/main.tscn")
+	# Load the multiplayer arena scene (same scene used for singleplayer)
+	get_tree().change_scene_to_file("res://scenes/levels/arena_01.tscn")

@@ -295,6 +295,12 @@ func _load_game_scene():
 	"""Load the game scene"""
 	get_tree().change_scene_to_file("res://scenes/levels/arena_01.tscn")
 
+func on_game_starting():
+	"""Called when the game is starting from the lobby"""
+	# Mark players as not loaded yet for the new scene
+	players_loaded.clear()
+	game_starting.emit()
+
 @rpc("any_peer", "reliable")
 func notify_player_loaded():
 	"""Called by clients when they finish loading"""

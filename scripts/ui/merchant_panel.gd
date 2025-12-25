@@ -80,9 +80,56 @@ func _create_slot(index: int) -> Panel:
 	return slot
 
 func _load_merchant_inventory():
-	# Would load from game data/resources
-	# For now, generate sample items
-	pass
+	# Load merchant inventory from available resources
+	merchant_inventory = []
+
+	# Define merchant stock based on reputation level
+	var base_items = [
+		{"path": "res://resources/items/health_pack.tres", "price": 100, "min_rep": 0},
+		{"path": "res://resources/items/ammo_box.tres", "price": 50, "min_rep": 0},
+		{"path": "res://resources/weapons/pistol.tres", "price": 200, "min_rep": 0},
+		{"path": "res://resources/weapons/shotgun.tres", "price": 500, "min_rep": 5},
+		{"path": "res://resources/weapons/ak47.tres", "price": 800, "min_rep": 10},
+		{"path": "res://resources/weapons/mp5.tres", "price": 600, "min_rep": 8},
+		{"path": "res://resources/weapons/sniper_rifle.tres", "price": 1200, "min_rep": 15},
+		{"path": "res://resources/armor/tactical_helmet.tres", "price": 400, "min_rep": 5},
+		{"path": "res://resources/armor/combat_vest.tres", "price": 600, "min_rep": 10},
+		{"path": "res://resources/armor/marksman_gloves.tres", "price": 300, "min_rep": 5},
+		{"path": "res://resources/armor/sprint_boots.tres", "price": 350, "min_rep": 8},
+		{"path": "res://resources/augments/damage_augment.tres", "price": 250, "min_rep": 15}
+	]
+
+	# Add items player has sufficient reputation for
+	for item_data in base_items:
+		if merchant_reputation >= item_data.min_rep:
+			if ResourceLoader.exists(item_data.path):
+				var item = load(item_data.path)
+				if item:
+					merchant_inventory.append({
+						"item": item,
+						"price": item_data.price
+					})
+
+	# Setup crafting recipes
+	crafting_recipes = [
+		{
+			"name": "Enhanced Ammo",
+			"result_icon": null,
+			"materials": [
+				{"item_name": "Ammo Box", "count": 2},
+				{"item_name": "Scrap Metal", "count": 1}
+			],
+			"result": "Enhanced Ammo Box"
+		},
+		{
+			"name": "Medkit",
+			"result_icon": null,
+			"materials": [
+				{"item_name": "Health Pack", "count": 3}
+			],
+			"result": "Large Medkit"
+		}
+	]
 
 func _update_display():
 	if merchant_rep_label:
@@ -180,10 +227,43 @@ func craft_item(recipe_index: int) -> bool:
 
 	# Check if player has required materials
 	for material in recipe.materials:
-		# Verify material in stash
-		pass
+		var material_name = material.get("item_name", "")
+		var required_count = material.get("count", 1)
+		var found_count = 0
+
+		# Count matching materials in player stash
+		for stash_item in player_stash:
+			if stash_item and stash_item.has("item"):
+				var item = stash_item.item
+				if item and "item_name" in item and item.item_name == material_name:
+					found_count += stash_item.get("count", 1)
+
+		if found_count < required_count:
+			# Not enough materials
+			print("Missing material: %s (need %d, have %d)" % [material_name, required_count, found_count])
+			return false
+
+	# Remove materials from stash
+	for material in recipe.materials:
+		var material_name = material.get("item_name", "")
+		var required_count = material.get("count", 1)
+		var removed = 0
+
+		for i in range(player_stash.size() - 1, -1, -1):
+			if removed >= required_count:
+				break
+			var stash_item = player_stash[i]
+			if stash_item and stash_item.has("item"):
+				var item = stash_item.item
+				if item and "item_name" in item and item.item_name == material_name:
+					var take = mini(stash_item.get("count", 1), required_count - removed)
+					stash_item["count"] = stash_item.get("count", 1) - take
+					removed += take
+					if stash_item.get("count", 0) <= 0:
+						player_stash.remove_at(i)
 
 	craft_started.emit(recipe)
+	_refresh_stash_display()
 	return true
 
 func open():

@@ -501,10 +501,18 @@ func add_experience(amount: int):
 		character_attributes.add_experience(amount)
 	experience_gained.emit(amount)
 
-func add_points(_amount: int):
+func add_points(amount: int):
 	"""Add points (for kills, etc.)"""
-	# Points are tracked by arena manager
-	pass
+	# Forward to points system if available
+	if has_node("/root/PointsSystem"):
+		var points_system = get_node("/root/PointsSystem")
+		if points_system.has_method("add_points"):
+			points_system.add_points(multiplayer.get_unique_id(), amount)
+
+	# Also notify arena manager if in arena
+	var arena_manager = get_tree().get_first_node_in_group("arena_manager")
+	if arena_manager and arena_manager.has_method("add_player_points"):
+		arena_manager.add_player_points(multiplayer.get_unique_id(), amount)
 
 func apply_status_effect(effect_type: String, _value: float, duration: float):
 	"""Apply a status effect to the player"""

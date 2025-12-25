@@ -31,6 +31,9 @@ var player: Node = null
 var player_points: int = 500  # Starting points
 
 func _ready():
+	# Add to arena_manager group so other systems can find us
+	add_to_group("arena_manager")
+
 	# Find spawn points
 	_collect_spawn_points()
 
@@ -207,6 +210,27 @@ func _on_zombie_died(zombie: Node, points: int, _experience: int):
 	if has_node("/root/GoreSystem"):
 		var gore = get_node("/root/GoreSystem")
 		gore.spawn_gibs(zombie.global_position, Vector3(0, 2, 0), 5)
+
+func add_player_points(player_id: int, amount: int):
+	"""Add points to a specific player (for multiplayer support)"""
+	# In singleplayer, just add to the main points pool
+	# In multiplayer, would track per-player points
+	if not multiplayer.has_multiplayer_peer():
+		player_points += amount
+	else:
+		# Track per-player points if needed in multiplayer
+		player_points += amount
+
+	_update_hud()
+
+	# Sync points in multiplayer
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		sync_player_points.rpc(player_points)
+
+@rpc("authority", "call_local")
+func sync_player_points(points: int):
+	player_points = points
+	_update_hud()
 
 # ============================================
 # UI UPDATES

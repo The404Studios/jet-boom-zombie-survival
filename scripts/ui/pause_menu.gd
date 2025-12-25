@@ -73,12 +73,139 @@ func _on_options_pressed():
 	# Would show options panel here
 
 func _on_voice_pressed():
-	# Show voice settings
-	pass
+	# Show voice settings dialog
+	var dialog = AcceptDialog.new()
+	dialog.title = "Voice Settings"
+
+	var vbox = VBoxContainer.new()
+
+	# Voice enabled toggle
+	var voice_enabled = CheckBox.new()
+	voice_enabled.text = "Enable Voice Chat"
+	voice_enabled.button_pressed = true
+	if has_node("/root/VoiceChatSystem"):
+		var vcs = get_node("/root/VoiceChatSystem")
+		if "voice_enabled" in vcs:
+			voice_enabled.button_pressed = vcs.voice_enabled
+	voice_enabled.toggled.connect(func(toggled):
+		if has_node("/root/VoiceChatSystem"):
+			var vcs = get_node("/root/VoiceChatSystem")
+			if vcs.has_method("set_voice_enabled"):
+				vcs.set_voice_enabled(toggled)
+			elif "voice_enabled" in vcs:
+				vcs.voice_enabled = toggled
+	)
+	vbox.add_child(voice_enabled)
+
+	# Push to talk toggle
+	var ptt = CheckBox.new()
+	ptt.text = "Push to Talk"
+	ptt.button_pressed = true
+	if has_node("/root/VoiceChatSystem"):
+		var vcs = get_node("/root/VoiceChatSystem")
+		if "push_to_talk" in vcs:
+			ptt.button_pressed = vcs.push_to_talk
+	ptt.toggled.connect(func(toggled):
+		if has_node("/root/VoiceChatSystem"):
+			var vcs = get_node("/root/VoiceChatSystem")
+			if "push_to_talk" in vcs:
+				vcs.push_to_talk = toggled
+	)
+	vbox.add_child(ptt)
+
+	# Volume slider
+	var vol_label = Label.new()
+	vol_label.text = "Voice Volume"
+	vbox.add_child(vol_label)
+
+	var volume = HSlider.new()
+	volume.min_value = 0.0
+	volume.max_value = 1.0
+	volume.step = 0.1
+	volume.value = 1.0
+	volume.custom_minimum_size = Vector2(200, 20)
+	if has_node("/root/VoiceChatSystem"):
+		var vcs = get_node("/root/VoiceChatSystem")
+		if "voice_volume" in vcs:
+			volume.value = vcs.voice_volume
+	volume.value_changed.connect(func(val):
+		if has_node("/root/VoiceChatSystem"):
+			var vcs = get_node("/root/VoiceChatSystem")
+			if "voice_volume" in vcs:
+				vcs.voice_volume = val
+	)
+	vbox.add_child(volume)
+
+	dialog.add_child(vbox)
+	add_child(dialog)
+	dialog.popup_centered(Vector2i(300, 200))
 
 func _on_controls_pressed():
-	# Show controls panel
-	pass
+	# Show controls panel with key bindings
+	var dialog = AcceptDialog.new()
+	dialog.title = "Controls"
+	dialog.size = Vector2i(400, 500)
+
+	var scroll = ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(380, 400)
+
+	var vbox = VBoxContainer.new()
+
+	# Display current control bindings
+	var controls = [
+		["Movement", ""],
+		["Forward", "W"],
+		["Backward", "S"],
+		["Left", "A"],
+		["Right", "D"],
+		["Jump", "Space"],
+		["Sprint", "Shift"],
+		["", ""],
+		["Combat", ""],
+		["Fire", "Left Mouse"],
+		["Aim", "Right Mouse"],
+		["Reload", "R"],
+		["Melee", "V"],
+		["", ""],
+		["Weapons", ""],
+		["Weapon 1-9", "1-9 Keys"],
+		["", ""],
+		["Actions", ""],
+		["Interact", "E/F"],
+		["Phase Through Props", "Z (Hold)"],
+		["Barricade", "B"],
+		["", ""],
+		["UI", ""],
+		["Pause", "Escape"],
+		["Inventory", "Tab/I"],
+		["Chat", "T/Enter"]
+	]
+
+	for control in controls:
+		var hbox = HBoxContainer.new()
+
+		var action_label = Label.new()
+		action_label.text = control[0]
+		action_label.custom_minimum_size = Vector2(180, 0)
+		if control[1] == "":
+			action_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9))
+			action_label.add_theme_font_size_override("font_size", 16)
+		hbox.add_child(action_label)
+
+		var key_label = Label.new()
+		key_label.text = control[1]
+		key_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		key_label.custom_minimum_size = Vector2(150, 0)
+		if control[1] != "":
+			key_label.add_theme_color_override("font_color", Color.GOLD)
+		hbox.add_child(key_label)
+
+		vbox.add_child(hbox)
+
+	scroll.add_child(vbox)
+	dialog.add_child(scroll)
+	add_child(dialog)
+	dialog.popup_centered()
 
 func _on_main_menu_pressed():
 	# Confirm before returning to main menu
