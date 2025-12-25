@@ -34,6 +34,8 @@ var player_persistence: Node  # PlayerPersistence autoload
 @export var sell_value_multiplier: float = 0.6
 
 func _ready():
+	# Try to find PlayerPersistence autoload
+	player_persistence = get_node_or_null("/root/PlayerPersistence")
 	generate_shop_inventory()
 
 func generate_shop_inventory():
