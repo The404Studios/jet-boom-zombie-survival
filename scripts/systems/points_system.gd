@@ -3,17 +3,29 @@ extends Node
 # Access via: PointsSystem (the autoload name)
 
 # Worth/Points system like JetBoom's Zombie Survival
+# Now also manages Sigils (shop currency)
 
 signal points_changed(new_points: int)
 signal points_earned(amount: int, reason: String)
 signal points_spent(amount: int, item_name: String)
+signal sigils_changed(new_sigils: int)
+signal sigils_earned(amount: int, reason: String)
 
 @export var starting_points: int = 500
+@export var starting_sigils: int = 500
 @export var wave_completion_bonus: int = 250
 
 var current_points: int = 500
 var total_points_earned: int = 0
 var total_points_spent: int = 0
+
+# Sigil system
+var current_sigils: int = 500
+var total_sigils_earned: int = 0
+var total_sigils_spent: int = 0
+
+# Sigil conversion rate (points to sigils)
+const SIGIL_CONVERSION_RATE: float = 0.1  # 10% of points earned as sigils
 
 # Point rewards
 const SHAMBLER_KILL: int = 100
@@ -36,13 +48,32 @@ const HEALTH_PACK_COST: int = 150
 
 func _ready():
 	current_points = starting_points
+	current_sigils = starting_sigils
 	points_changed.emit(current_points)
+	sigils_changed.emit(current_sigils)
+
+	# Sync with persistence if available
+	await get_tree().create_timer(0.2).timeout
+	_sync_from_persistence()
+
+func _sync_from_persistence():
+	if has_node("/root/PlayerPersistence"):
+		var persistence = get_node("/root/PlayerPersistence")
+		var saved_sigils = persistence.get_currency("sigils")
+		if saved_sigils > 0:
+			current_sigils = saved_sigils
+			sigils_changed.emit(current_sigils)
 
 func add_points(amount: int, reason: String = ""):
 	current_points += amount
 	total_points_earned += amount
 	points_changed.emit(current_points)
 	points_earned.emit(amount, reason)
+
+	# Also award sigils based on points earned
+	var sigil_bonus = int(amount * SIGIL_CONVERSION_RATE)
+	if sigil_bonus > 0:
+		add_sigils(sigil_bonus, reason)
 
 func spend_points(amount: int, item_name: String = "") -> bool:
 	if current_points < amount:
@@ -124,22 +155,97 @@ func get_total_spent() -> int:
 func get_net_points() -> int:
 	return total_points_earned - total_points_spent
 
-# Save/Load
+# ============================================
+# SIGIL MANAGEMENT
+# ============================================
+
+func add_sigils(amount: int, reason: String = ""):
+	current_sigils += amount
+	total_sigils_earned += amount
+	sigils_changed.emit(current_sigils)
+	sigils_earned.emit(amount, reason)
+
+	# Sync with persistence
+	if has_node("/root/PlayerPersistence"):
+		get_node("/root/PlayerPersistence").add_currency("sigils", amount)
+
+func spend_sigils(amount: int) -> bool:
+	if current_sigils < amount:
+		return false
+
+	current_sigils -= amount
+	total_sigils_spent += amount
+	sigils_changed.emit(current_sigils)
+
+	# Sync with persistence
+	if has_node("/root/PlayerPersistence"):
+		get_node("/root/PlayerPersistence").spend_currency("sigils", amount)
+
+	return true
+
+func can_afford_sigils(amount: int) -> bool:
+	return current_sigils >= amount
+
+func get_sigils() -> int:
+	return current_sigils
+
+func get_total_sigils_earned() -> int:
+	return total_sigils_earned
+
+func get_total_sigils_spent() -> int:
+	return total_sigils_spent
+
+# ============================================
+# SPECIAL SIGIL REWARDS
+# ============================================
+
+func reward_wave_sigils(wave_number: int):
+	"""Award bonus sigils for completing a wave"""
+	var sigils = 50 + (wave_number * 25)  # 75, 100, 125, etc.
+	add_sigils(sigils, "Wave %d Complete" % wave_number)
+
+func reward_boss_sigils(boss_name: String):
+	"""Award sigils for killing a boss"""
+	add_sigils(200, "Killed " + boss_name)
+
+func reward_extraction_sigils():
+	"""Award sigils for successful extraction"""
+	add_sigils(100, "Extraction Bonus")
+
+func reward_headshot_sigils():
+	"""Small sigil bonus for headshots"""
+	add_sigils(5, "Headshot")
+
+# ============================================
+# SAVE/LOAD
+# ============================================
+
 func save_points_data() -> Dictionary:
 	return {
 		"current": current_points,
 		"earned": total_points_earned,
-		"spent": total_points_spent
+		"spent": total_points_spent,
+		"sigils_current": current_sigils,
+		"sigils_earned": total_sigils_earned,
+		"sigils_spent": total_sigils_spent
 	}
 
 func load_points_data(data: Dictionary):
 	current_points = data.get("current", starting_points)
 	total_points_earned = data.get("earned", 0)
 	total_points_spent = data.get("spent", 0)
+	current_sigils = data.get("sigils_current", starting_sigils)
+	total_sigils_earned = data.get("sigils_earned", 0)
+	total_sigils_spent = data.get("sigils_spent", 0)
 	points_changed.emit(current_points)
+	sigils_changed.emit(current_sigils)
 
 func reset_points():
 	current_points = starting_points
 	total_points_earned = 0
 	total_points_spent = 0
+	current_sigils = starting_sigils
+	total_sigils_earned = 0
+	total_sigils_spent = 0
 	points_changed.emit(current_points)
+	sigils_changed.emit(current_sigils)
