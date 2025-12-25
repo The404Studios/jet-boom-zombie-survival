@@ -243,6 +243,38 @@ func _equip_starting_weapon():
 	if pistol:
 		equipped_weapons.append(pistol)
 		_switch_weapon(0)
+	else:
+		# Try loading directly
+		pistol = load("res://resources/weapons/pistol.tres")
+		if pistol:
+			equipped_weapons.append(pistol)
+			_switch_weapon(0)
+		else:
+			# Create default weapon data
+			current_weapon_data = null
+			current_ammo = 15
+			reserve_ammo = 45
+
+func pickup_weapon(weapon_data: Resource) -> bool:
+	"""Pick up a new weapon - returns true if successful"""
+	if not weapon_data:
+		return false
+
+	# Check if we already have this weapon
+	for i in range(equipped_weapons.size()):
+		if equipped_weapons[i] and equipped_weapons[i].item_name == weapon_data.item_name:
+			# Add ammo instead
+			reserve_ammo += weapon_data.magazine_size if "magazine_size" in weapon_data else 30
+			return true
+
+	# Add new weapon (max 9 weapons)
+	if equipped_weapons.size() < 9:
+		equipped_weapons.append(weapon_data)
+		# Auto-switch to new weapon
+		_switch_weapon(equipped_weapons.size() - 1)
+		return true
+
+	return false
 
 func _fire_weapon():
 	if current_ammo <= 0:
@@ -251,6 +283,195 @@ func _fire_weapon():
 			get_node("/root/AudioManager").play_sound_2d("weapon_empty", 0.5)
 		return
 
+	# Check if weapon is melee
+	var is_melee = current_weapon_data and "is_melee" in current_weapon_data and current_weapon_data.is_melee
+
+	if is_melee:
+		_fire_melee_weapon()
+	elif current_weapon_data and "projectile_count" in current_weapon_data and current_weapon_data.projectile_count > 1:
+		_fire_shotgun_weapon()
+	else:
+		_fire_hitscan_weapon()
+
+func _fire_melee_weapon():
+	"""Handle melee weapon attacks"""
+	# Check viewmodel can fire
+	if viewmodel and viewmodel.has_method("fire_weapon"):
+		if not viewmodel.fire_weapon():
+			return
+
+	# Get melee range and damage
+	var melee_range = current_weapon_data.weapon_range if current_weapon_data and "weapon_range" in current_weapon_data else 2.5
+	var base_damage = current_weapon_data.damage if current_weapon_data else 25.0
+
+	# Calculate damage with modifiers
+	var damage = base_damage
+	if character_attributes:
+		damage = character_attributes.calculate_melee_damage(base_damage) if character_attributes.has_method("calculate_melee_damage") else character_attributes.calculate_ranged_damage(base_damage)
+	if skill_tree:
+		var damage_bonus = skill_tree.get_effect_value("damage_bonus")
+		damage *= (1.0 + damage_bonus / 100.0)
+	if player_conditions:
+		damage *= player_conditions.get_damage_dealt_modifier()
+
+	# Sphere cast for melee hit detection
+	var space_state = get_world_3d().direct_space_state
+	var cam_origin = camera.global_position
+	var cam_forward = -camera.global_transform.basis.z
+
+	# Check for hits in a cone in front of player
+	var query = PhysicsShapeQueryParameters3D.new()
+	var sphere = SphereShape3D.new()
+	sphere.radius = 1.0
+	query.shape = sphere
+	query.transform = Transform3D(Basis.IDENTITY, cam_origin + cam_forward * melee_range * 0.5)
+	query.collision_mask = 0b11111  # Hit everything
+
+	var results = space_state.intersect_shape(query, 5)
+
+	var hit_something = false
+	for result in results:
+		var collider = result.collider
+		if collider == self:
+			continue
+
+		# Deal damage
+		if collider.has_method("take_damage"):
+			var hit_pos = collider.global_position
+			var is_headshot = _check_headshot(collider, hit_pos)
+			var final_damage = damage
+
+			if is_headshot:
+				var headshot_mult = 2.0
+				if skill_tree:
+					headshot_mult += skill_tree.get_effect_value("headshot_bonus") / 100.0
+				final_damage *= headshot_mult
+
+			collider.take_damage(final_damage, hit_pos)
+			hit_something = true
+
+			# Spawn blood effect
+			if has_node("/root/GoreSystem"):
+				get_node("/root/GoreSystem").spawn_blood_effect(hit_pos, Vector3.UP, 2 if is_headshot else 1)
+
+			# Life steal
+			if skill_tree:
+				var life_steal = skill_tree.get_effect_value("life_steal")
+				if life_steal > 0:
+					heal(final_damage * life_steal / 100.0)
+
+	# Play swing sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("melee_swing", global_position, 0.6)
+		if hit_something:
+			get_node("/root/AudioManager").play_sound_3d("melee_hit", global_position, 0.8)
+
+	# Melee weapons don't consume ammo, but have cooldown
+	var fire_rate = current_weapon_data.fire_rate if current_weapon_data else 0.5
+	fire_rate_timer = fire_rate
+
+func _fire_shotgun_weapon():
+	"""Handle shotgun-style spread weapons"""
+	# Check viewmodel can fire
+	if viewmodel and viewmodel.has_method("fire_weapon"):
+		if not viewmodel.fire_weapon():
+			return
+
+	var pellet_count = current_weapon_data.projectile_count if current_weapon_data and "projectile_count" in current_weapon_data else 6
+	var spread_angle = current_weapon_data.spread_angle if current_weapon_data and "spread_angle" in current_weapon_data else 5.0
+	var base_damage = (current_weapon_data.damage if current_weapon_data else 15.0) / pellet_count  # Split damage across pellets
+
+	# Apply damage modifiers
+	var damage_per_pellet = base_damage
+	if character_attributes:
+		damage_per_pellet = character_attributes.calculate_ranged_damage(base_damage)
+	if skill_tree:
+		var damage_bonus = skill_tree.get_effect_value("damage_bonus")
+		damage_per_pellet *= (1.0 + damage_bonus / 100.0)
+	if player_conditions:
+		damage_per_pellet *= player_conditions.get_damage_dealt_modifier()
+
+	# Fire multiple pellets
+	var total_damage_dealt = 0.0
+	var cam_origin = camera.global_position
+	var cam_forward = -camera.global_transform.basis.z
+	var cam_right = camera.global_transform.basis.x
+	var cam_up = camera.global_transform.basis.y
+
+	for i in range(pellet_count):
+		# Random spread in a cone
+		var spread_x = randf_range(-spread_angle, spread_angle)
+		var spread_y = randf_range(-spread_angle, spread_angle)
+
+		var direction = cam_forward
+		direction = direction.rotated(cam_up, deg_to_rad(spread_x))
+		direction = direction.rotated(cam_right, deg_to_rad(spread_y))
+		direction = direction.normalized()
+
+		# Raycast for this pellet
+		var space_state = get_world_3d().direct_space_state
+		var ray_end = cam_origin + direction * 100.0
+		var query = PhysicsRayQueryParameters3D.create(cam_origin, ray_end)
+		query.collision_mask = 0b11111
+		query.exclude = [self]
+
+		var result = space_state.intersect_ray(query)
+
+		if result:
+			var hit_point = result.position
+			var hit_normal = result.normal
+			var collider = result.collider
+
+			if collider.has_method("take_damage"):
+				var is_headshot = _check_headshot(collider, hit_point)
+				var final_damage = damage_per_pellet
+
+				if is_headshot:
+					var headshot_mult = 2.0
+					if skill_tree:
+						headshot_mult += skill_tree.get_effect_value("headshot_bonus") / 100.0
+					final_damage *= headshot_mult
+
+				collider.take_damage(final_damage, hit_point)
+				total_damage_dealt += final_damage
+
+				# Spawn blood for first few pellet hits
+				if i < 3 and has_node("/root/GoreSystem"):
+					get_node("/root/GoreSystem").spawn_blood_effect(hit_point, hit_normal, 1)
+			else:
+				# Environment impact
+				var surface_type = _get_surface_type(collider)
+				if i < 3 and has_node("/root/VFXManager"):
+					get_node("/root/VFXManager").spawn_impact_effect(hit_point, hit_normal, surface_type)
+
+	# Life steal on total damage
+	if skill_tree and total_damage_dealt > 0:
+		var life_steal = skill_tree.get_effect_value("life_steal")
+		if life_steal > 0:
+			heal(total_damage_dealt * life_steal / 100.0)
+
+	# Consume ammo
+	var consume_ammo = true
+	if skill_tree and skill_tree.has_skill("lucky_shot"):
+		if randf() < 0.1:
+			consume_ammo = false
+
+	if consume_ammo:
+		current_ammo -= 1
+
+	# Fire rate cooldown
+	var fire_rate = current_weapon_data.fire_rate if current_weapon_data else 0.8
+	var attack_speed_mult = 1.0
+	if skill_tree:
+		attack_speed_mult -= skill_tree.get_effect_value("attack_speed_bonus") / 100.0
+	if player_conditions:
+		attack_speed_mult /= player_conditions.get_attack_speed_modifier()
+
+	fire_rate_timer = fire_rate * max(attack_speed_mult, 0.2)
+	_update_hud()
+
+func _fire_hitscan_weapon():
+	"""Handle standard hitscan weapons (pistols, rifles, etc.)"""
 	# Check viewmodel can fire
 	if viewmodel and viewmodel.has_method("fire_weapon"):
 		if not viewmodel.fire_weapon():
