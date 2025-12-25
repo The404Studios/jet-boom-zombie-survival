@@ -1,8 +1,11 @@
-extends MultiplayerPeerExtension
+extends RefCounted
 class_name SteamP2PPeer
 
 # Steam P2P Multiplayer Peer using GodotSteam Networking Sockets
 # Wraps Steam's P2P networking for seamless multiplayer
+# Note: This extends RefCounted for compatibility. For full multiplayer integration,
+# this class should extend MultiplayerPeerExtension when using Godot 4.x with
+# the GodotSteam plugin properly configured.
 
 signal peer_connection_established(peer_id: int)
 signal peer_connection_failed(peer_id: int)

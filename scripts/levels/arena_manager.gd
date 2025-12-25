@@ -58,9 +58,9 @@ func _ready():
 	await get_tree().process_frame
 	player = get_tree().get_first_node_in_group("player")
 
-	# Notify network manager that we've loaded
+	# Notify network manager that we've loaded (only if we're a client, not the server)
 	var network_manager = get_node_or_null("/root/NetworkManager")
-	if network_manager and multiplayer.has_multiplayer_peer():
+	if network_manager and multiplayer.has_multiplayer_peer() and not multiplayer.is_server():
 		network_manager.notify_player_loaded.rpc_id(1)
 
 	# Initialize core systems

@@ -14,7 +14,7 @@ class_name MarketplaceUI
 @onready var refresh_button: Button = $RefreshButton
 
 var shop_slots: Array[Control] = []
-var selected_shop_item: MerchantSystem.ShopItem = null
+var selected_shop_item = null  # MerchantSystem.ShopItem
 var is_open: bool = false
 
 signal marketplace_opened
@@ -135,7 +135,7 @@ func refresh_shop_display():
 		shop_grid.add_child(slot)
 		shop_slots.append(slot)
 
-func create_shop_slot(shop_item: MerchantSystem.ShopItem) -> Panel:
+func create_shop_slot(shop_item) -> Panel:  # MerchantSystem.ShopItem
 	var slot = Panel.new()
 	slot.custom_minimum_size = Vector2(120, 140)
 
@@ -228,7 +228,7 @@ func refresh_currency_display():
 	if scrap_label:
 		scrap_label.text = "🔧 %d" % player_persistence.get_currency("scrap")
 
-func _on_shop_item_clicked(shop_item: MerchantSystem.ShopItem):
+func _on_shop_item_clicked(shop_item):  # MerchantSystem.ShopItem
 	selected_shop_item = shop_item
 
 	# Attempt purchase
@@ -241,7 +241,7 @@ func _on_shop_item_clicked(shop_item: MerchantSystem.ShopItem):
 		else:
 			animate_purchase_failed()
 
-func _on_shop_item_hover(shop_item: MerchantSystem.ShopItem, slot: Panel):
+func _on_shop_item_hover(shop_item, slot: Panel):  # shop_item is MerchantSystem.ShopItem
 	# Show tooltip with item details
 	show_item_tooltip(shop_item.item, slot.global_position)
 
