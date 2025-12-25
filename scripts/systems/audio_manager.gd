@@ -143,6 +143,9 @@ func play_music(track_name: String, fade_time: float = 1.0):
 		print("Music track not found: %s" % track_path)
 		return
 
+	if not current_music:
+		return
+
 	var new_track = ResourceLoader.load(track_path)
 
 	# Fade out current
@@ -161,14 +164,19 @@ func play_music(track_name: String, fade_time: float = 1.0):
 func stop_music(fade_time: float = 1.0):
 	_fade_out_music(fade_time)
 	await get_tree().create_timer(fade_time).timeout
-	current_music.stop()
+	if current_music:
+		current_music.stop()
 	current_track = ""
 
 func _fade_out_music(duration: float):
+	if not current_music:
+		return
 	var tween = create_tween()
 	tween.tween_property(current_music, "volume_db", -80.0, duration)
 
 func _fade_in_music(duration: float):
+	if not current_music:
+		return
 	current_music.volume_db = -80.0
 	var tween = create_tween()
 	tween.tween_property(current_music, "volume_db", linear_to_db(music_volume), duration)
@@ -329,7 +337,8 @@ func set_master_volume(volume: float):
 func set_music_volume(volume: float):
 	music_volume = clamp(volume, 0.0, 1.0)
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear_to_db(music_volume))
-	current_music.volume_db = linear_to_db(music_volume)
+	if current_music:
+		current_music.volume_db = linear_to_db(music_volume)
 	_save_audio_settings()
 
 func set_sfx_volume(volume: float):
