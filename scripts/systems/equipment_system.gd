@@ -84,6 +84,7 @@ func equip_item(item: Resource, slot_name: String = "") -> Resource:
 	Returns the previously equipped item (or null).
 	"""
 	if not item:
+		push_warning("EquipmentSystem: Cannot equip null item")
 		return null
 
 	# Auto-determine slot if not specified
@@ -91,24 +92,34 @@ func equip_item(item: Resource, slot_name: String = "") -> Resource:
 		slot_name = _get_slot_for_item(item)
 
 	if slot_name == "":
-		push_warning("Cannot determine slot for item: %s" % item.item_name if "item_name" in item else "Unknown")
+		var item_name = "Unknown"
+		if item and "item_name" in item:
+			item_name = item.item_name
+		push_warning("EquipmentSystem: Cannot determine slot for item: %s" % item_name)
 		return null
 
 	# Store previous item
 	var previous_item = get_item_in_slot(slot_name)
 
-	# Remove stats from previous item
-	if previous_item and character_stats and character_stats.has_method("remove_gear_stats"):
-		if previous_item.has_method("get_all_stats"):
-			character_stats.remove_gear_stats(previous_item.get_all_stats())
+	# Remove stats from previous item - with null safety
+	if previous_item:
+		if character_stats and is_instance_valid(character_stats):
+			if character_stats.has_method("remove_gear_stats"):
+				if previous_item.has_method("get_all_stats"):
+					var stats = previous_item.get_all_stats()
+					if stats:
+						character_stats.remove_gear_stats(stats)
 
 	# Set new item
 	_set_item_in_slot(slot_name, item)
 
-	# Apply stats from new item
-	if character_stats and character_stats.has_method("apply_gear_stats"):
-		if item.has_method("get_all_stats"):
-			character_stats.apply_gear_stats(item.get_all_stats())
+	# Apply stats from new item - with null safety
+	if character_stats and is_instance_valid(character_stats):
+		if character_stats.has_method("apply_gear_stats"):
+			if item.has_method("get_all_stats"):
+				var stats = item.get_all_stats()
+				if stats:
+					character_stats.apply_gear_stats(stats)
 
 	# Recalculate bonuses
 	_recalculate_stat_bonuses()
@@ -123,14 +134,21 @@ func equip_item(item: Resource, slot_name: String = "") -> Resource:
 
 func unequip_item(slot_name: String) -> Resource:
 	"""Unequip item from slot, returns the item"""
+	if slot_name == "":
+		push_warning("EquipmentSystem: Cannot unequip from empty slot name")
+		return null
+
 	var item = get_item_in_slot(slot_name)
 	if not item:
 		return null
 
-	# Remove stats
-	if character_stats and character_stats.has_method("remove_gear_stats"):
-		if item.has_method("get_all_stats"):
-			character_stats.remove_gear_stats(item.get_all_stats())
+	# Remove stats - with null safety
+	if character_stats and is_instance_valid(character_stats):
+		if character_stats.has_method("remove_gear_stats"):
+			if item.has_method("get_all_stats"):
+				var stats = item.get_all_stats()
+				if stats:
+					character_stats.remove_gear_stats(stats)
 
 	_set_item_in_slot(slot_name, null)
 
@@ -262,22 +280,28 @@ func _recalculate_stat_bonuses():
 		"bleed_resist": 0.0
 	}
 
-	# Sum bonuses from all equipped items
-	for item in get_all_equipped_items():
+	# Sum bonuses from all equipped items - with null safety
+	var equipped_items = get_all_equipped_items()
+	for item in equipped_items:
+		if not item or not is_instance_valid(item):
+			continue
+
 		if item.has_method("get_stat_bonuses"):
 			var bonuses = item.get_stat_bonuses()
-			for stat in bonuses:
-				if total_stat_bonuses.has(stat):
-					total_stat_bonuses[stat] += bonuses[stat]
+			if bonuses:
+				for stat in bonuses:
+					if total_stat_bonuses.has(stat):
+						total_stat_bonuses[stat] += bonuses[stat]
 		elif "armor_value" in item:
 			total_stat_bonuses["armor"] += item.armor_value
 
 	# Apply set bonuses
 	_apply_set_bonuses()
 
-	# Update character attributes if available
-	if character_attributes:
-		character_attributes.set_equipment_bonuses(total_stat_bonuses)
+	# Update character attributes if available - with null safety
+	if character_attributes and is_instance_valid(character_attributes):
+		if character_attributes.has_method("set_equipment_bonuses"):
+			character_attributes.set_equipment_bonuses(total_stat_bonuses)
 
 	stats_updated.emit(total_stat_bonuses)
 
@@ -285,8 +309,11 @@ func _apply_set_bonuses():
 	"""Check and apply equipment set bonuses"""
 	var set_counts: Dictionary = {}
 
-	for item in get_all_equipped_items():
-		if "equipment_set" in item and item.equipment_set != "":
+	var equipped = get_all_equipped_items()
+	for item in equipped:
+		if not item or not is_instance_valid(item):
+			continue
+		if "equipment_set" in item and item.equipment_set != null and item.equipment_set != "":
 			if not set_counts.has(item.equipment_set):
 				set_counts[item.equipment_set] = 0
 			set_counts[item.equipment_set] += 1
@@ -296,9 +323,10 @@ func _apply_set_bonuses():
 		var count = set_counts[equip_set_name]
 		var set_bonuses = _get_set_bonuses(equip_set_name, count)
 
-		for stat in set_bonuses:
-			if total_stat_bonuses.has(stat):
-				total_stat_bonuses[stat] += set_bonuses[stat]
+		if set_bonuses:
+			for stat in set_bonuses:
+				if total_stat_bonuses.has(stat):
+					total_stat_bonuses[stat] += set_bonuses[stat]
 
 func _get_set_bonuses(equip_set_name: String, piece_count: int) -> Dictionary:
 	"""Get bonuses for a specific set based on piece count"""
