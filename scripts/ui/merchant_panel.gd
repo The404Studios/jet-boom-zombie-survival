@@ -555,9 +555,9 @@ func _on_craft_pressed():
 	dialog.popup_centered()
 
 func _has_materials(recipe: Dictionary) -> bool:
-	for material in recipe.get("materials", []):
-		var material_name = material.get("item_name", "")
-		var required_count = material.get("count", 1)
+	for craft_mat in recipe.get("materials", []):
+		var material_name = craft_mat.get("item_name", "")
+		var required_count = craft_mat.get("count", 1)
 		var found_count = 0
 
 		for stash_item in player_stash:
@@ -582,9 +582,9 @@ func _confirm_craft(recipe_index: int):
 			ps.spend_points(craft_cost, "Crafting: " + recipe.get("name", ""))
 
 	# Remove materials
-	for material in recipe.get("materials", []):
-		var material_name = material.get("item_name", "")
-		var required_count = material.get("count", 1)
+	for craft_mat in recipe.get("materials", []):
+		var material_name = craft_mat.get("item_name", "")
+		var required_count = craft_mat.get("count", 1)
 		var removed = 0
 
 		for i in range(player_stash.size() - 1, -1, -1):

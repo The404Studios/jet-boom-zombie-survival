@@ -289,8 +289,8 @@ func _apply_filters():
 
 		# Search filter
 		if current_filters.search != "" and passes_filter:
-			var name = listing.get("item_name", "").to_lower()
-			if not name.contains(current_filters.search):
+			var item_name = listing.get("item_name", "").to_lower()
+			if not item_name.contains(current_filters.search):
 				passes_filter = false
 
 		if passes_filter:
