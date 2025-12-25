@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://capture_sigil001"]
+
+[ext_resource type="Script" path="res://scripts/systems/capture_sigil.gd" id="1"]
+
+[node name="CaptureSigil" type="Area3D" groups=["capture_sigil", "sigil_network", "interactable"]]
+script = ExtResource("1")
+sigil_name = "Sigil Alpha"
+sigil_id = 1
+capture_time = 5.0
+capture_radius = 4.0
+teleport_cooldown = 10.0
+link_cost = 50
