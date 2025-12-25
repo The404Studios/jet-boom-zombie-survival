@@ -2,11 +2,13 @@ extends Node3D
 
 # Arena manager - handles wave spawning, game loop, and arena events
 # Integrates all systems for complete gameplay
+# Now works with GameCoordinator for phase management
 
 signal wave_started(wave_number: int)
 signal wave_completed(wave_number: int)
 signal all_zombies_defeated
 signal player_died
+signal zombie_killed(zombie: Node, points: int, xp: int)
 
 # Wave system
 var current_wave: int = 0
@@ -18,6 +20,8 @@ var intermission_timer: float = 0.0
 
 # Spawn points
 var spawn_points: Array = []
+var player_spawn_points: Array = []
+var loot_spawn_points: Array = []
 var spawn_timer: float = 0.0
 var spawn_interval: float = 2.0
 
@@ -30,6 +34,11 @@ var player: Node = null
 # Points
 var player_points: int = 500  # Starting points
 
+# System references
+var game_coordinator: GameCoordinator = null
+var loot_spawner: LootSpawner = null
+var wave_manager: Node = null
+
 func _ready():
 	# Add to arena_manager group so other systems can find us
 	add_to_group("arena_manager")
@@ -39,6 +48,8 @@ func _ready():
 
 	# Find spawn points
 	_collect_spawn_points()
+	_collect_player_spawn_points()
+	_collect_loot_spawn_points()
 
 	# Load zombie scenes
 	_load_zombie_scenes()
@@ -52,12 +63,36 @@ func _ready():
 	if network_manager and multiplayer.has_multiplayer_peer():
 		network_manager.notify_player_loaded.rpc_id(1)
 
-	# Wait for player to be ready
-	await get_tree().create_timer(1.0).timeout
+	# Initialize core systems
+	await get_tree().create_timer(0.5).timeout
+	_initialize_systems()
 
-	# Start first wave (only on server or single-player)
-	if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
-		start_wave()
+	# Wait for player to be ready
+	await get_tree().create_timer(0.5).timeout
+
+	# Let game coordinator handle game start
+	# If no coordinator, start directly
+	if not game_coordinator:
+		if not multiplayer.has_multiplayer_peer() or multiplayer.is_server():
+			start_wave()
+
+func _initialize_systems():
+	# Create game coordinator if not present
+	game_coordinator = get_tree().get_first_node_in_group("game_coordinator")
+	if not game_coordinator:
+		game_coordinator = GameCoordinator.new()
+		game_coordinator.name = "GameCoordinator"
+		add_child(game_coordinator)
+
+	# Create loot spawner if not present
+	loot_spawner = get_tree().get_first_node_in_group("loot_spawner")
+	if not loot_spawner:
+		loot_spawner = LootSpawner.new()
+		loot_spawner.name = "LootSpawner"
+		add_child(loot_spawner)
+
+	# Find wave manager
+	wave_manager = get_tree().get_first_node_in_group("wave_manager")
 
 func _process(delta):
 	if wave_active:
@@ -86,13 +121,84 @@ func _bake_navigation_mesh():
 			push_warning("No NavigationRegion3D found - zombies may not navigate properly!")
 
 func _collect_spawn_points():
-	var spawns = get_node("SpawnPoints")
+	var spawns = get_node_or_null("SpawnPoints")
 	if spawns:
 		for child in spawns.get_children():
 			if child is Marker3D:
 				spawn_points.append(child)
+	else:
+		# Look for spawn points in groups
+		spawn_points = get_tree().get_nodes_in_group("zombie_spawn")
 
-	print("Found %d spawn points" % spawn_points.size())
+	# Create default spawn points if none found
+	if spawn_points.is_empty():
+		_create_default_zombie_spawns()
+
+	print("Found %d zombie spawn points" % spawn_points.size())
+
+func _collect_player_spawn_points():
+	# Find player spawn points
+	player_spawn_points = get_tree().get_nodes_in_group("player_spawn")
+
+	var player_spawns = get_node_or_null("PlayerSpawnPoints")
+	if player_spawns:
+		for child in player_spawns.get_children():
+			if child is Marker3D:
+				player_spawn_points.append(child)
+
+	# Create default player spawn points if none found
+	if player_spawn_points.is_empty():
+		_create_default_player_spawns()
+
+	print("Found %d player spawn points" % player_spawn_points.size())
+
+func _collect_loot_spawn_points():
+	# Find loot spawn points
+	loot_spawn_points = get_tree().get_nodes_in_group("loot_spawn")
+
+	var loot_spawns = get_node_or_null("LootSpawnPoints")
+	if loot_spawns:
+		for child in loot_spawns.get_children():
+			if child is Marker3D:
+				loot_spawn_points.append(child)
+
+	print("Found %d loot spawn points" % loot_spawn_points.size())
+
+func _create_default_zombie_spawns():
+	# Create spawn points around the perimeter
+	var center = Vector3.ZERO
+	var sigil = get_tree().get_first_node_in_group("sigil")
+	if sigil:
+		center = sigil.global_position
+
+	var spawn_distance = 60.0
+	var spawn_count = 8
+
+	for i in range(spawn_count):
+		var angle = (float(i) / spawn_count) * TAU
+		var marker = Marker3D.new()
+		marker.position = center + Vector3(cos(angle) * spawn_distance, 0, sin(angle) * spawn_distance)
+		marker.add_to_group("zombie_spawn")
+		add_child(marker)
+		spawn_points.append(marker)
+
+func _create_default_player_spawns():
+	# Create player spawn points in a circle around the map edge
+	var center = Vector3.ZERO
+	var sigil = get_tree().get_first_node_in_group("sigil")
+	if sigil:
+		center = sigil.global_position
+
+	var spawn_distance = 45.0  # Closer than zombie spawns, but still away from sigil
+	var spawn_count = 8
+
+	for i in range(spawn_count):
+		var angle = (float(i) / spawn_count) * TAU + 0.2  # Offset from zombie spawns
+		var marker = Marker3D.new()
+		marker.position = center + Vector3(cos(angle) * spawn_distance, 0, sin(angle) * spawn_distance)
+		marker.add_to_group("player_spawn")
+		add_child(marker)
+		player_spawn_points.append(marker)
 
 func _load_zombie_scenes():
 	zombie_scenes = {
@@ -217,7 +323,7 @@ func _complete_wave():
 
 	print("Wave %d completed!" % current_wave)
 
-func _on_zombie_died(zombie: Node, points: int, _experience: int):
+func _on_zombie_died(zombie: Node, points: int, experience: int):
 	zombies_alive -= 1
 
 	# Award points
@@ -225,10 +331,26 @@ func _on_zombie_died(zombie: Node, points: int, _experience: int):
 
 	_update_hud()
 
+	# Emit signal for other systems
+	zombie_killed.emit(zombie, points, experience)
+
+	# Spawn loot from zombie
+	if loot_spawner and loot_spawner.has_method("spawn_zombie_drop"):
+		var zombie_type = "shambler"
+		if "zombie_type" in zombie:
+			zombie_type = zombie.zombie_type
+		elif "class_name" in zombie:
+			zombie_type = zombie.class_name
+		loot_spawner.spawn_zombie_drop(zombie.global_position, zombie_type)
+
 	# Spawn gibs
 	if has_node("/root/GoreSystem"):
 		var gore = get_node("/root/GoreSystem")
 		gore.spawn_gibs(zombie.global_position, Vector3(0, 2, 0), 5)
+
+	# Award experience to player
+	if player and "character_attributes" in player and player.character_attributes:
+		player.character_attributes.add_experience(experience)
 
 func add_player_points(player_id: int, amount: int):
 	"""Add points to a specific player (for multiplayer support)"""

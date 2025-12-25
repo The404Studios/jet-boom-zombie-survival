@@ -246,3 +246,48 @@ func add_sigils_to_player(amount: int, reason: String = ""):
 	"""Add sigils to the player's currency"""
 	if sigil_shop:
 		sigil_shop.add_sigils(amount, reason)
+
+func get_players_at_sigil() -> Array:
+	"""Return list of players currently at the sigil"""
+	return players_in_range.duplicate()
+
+func get_player_count_at_sigil() -> int:
+	"""Return number of players at the sigil"""
+	return players_in_range.size()
+
+func is_any_player_at_sigil() -> bool:
+	"""Check if any player is within sigil range"""
+	return players_in_range.size() > 0
+
+func setup_for_wave(wave_number: int):
+	"""Prepare sigil for a new wave - can increase health for later waves"""
+	# Scale health slightly for later waves
+	max_health = 1000.0 + (wave_number * 50.0)
+	current_health = max_health
+
+	# Visual pulse to indicate wave start
+	if mesh:
+		var tween = create_tween()
+		var mat = mesh.material_override as StandardMaterial3D
+		if mat:
+			var original_energy = mat.emission_energy_multiplier
+			tween.tween_property(mat, "emission_energy_multiplier", 5.0, 0.3)
+			tween.tween_property(mat, "emission_energy_multiplier", original_energy, 0.3)
+
+func get_health_percent() -> float:
+	"""Return current health as percentage"""
+	return current_health / max_health if max_health > 0 else 0.0
+
+func heal(amount: float):
+	"""Repair sigil damage"""
+	current_health = min(current_health + amount, max_health)
+	sigil_damaged.emit(current_health, max_health)
+
+	# Visual feedback
+	if mesh:
+		var tween = create_tween()
+		var mat = mesh.material_override as StandardMaterial3D
+		if mat:
+			var original_color = mat.albedo_color
+			tween.tween_property(mat, "albedo_color", Color.GREEN, 0.1)
+			tween.tween_property(mat, "albedo_color", original_color, 0.1)
