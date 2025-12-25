@@ -241,55 +241,26 @@ func _physics_process(delta):
 func find_target():
 	"""
 	JetBoom targeting priority:
-	1. Sigil (primary objective)
-	2. Props (secondary targets)
-	3. Barricades (player-built obstacles)
-	4. Players (if they get too close or are blocking path)
+	1. Barricades/Props blocking path (highest priority when nearby)
+	2. Sigil (primary objective)
+	3. Players (if they get too close)
 	"""
 
-	# Priority 1: Sigil (always primary target)
-	var sigils = get_tree().get_nodes_in_group("sigil")
-	if sigils.size() > 0:
-		target = sigils[0]
+	# First check if any barricades or props are blocking our path
+	var blocking_target = _find_blocking_target()
+	if blocking_target:
+		target = blocking_target
 		return
 
-	# Priority 2: Props (secondary targets blocking path to sigil)
-	var props = get_tree().get_nodes_in_group("props")
-	if props.size() > 0:
-		var closest_prop = null
-		var closest_distance = INF
-
-		for prop in props:
-			if not is_instance_valid(prop):
-				continue
-			var dist = global_position.distance_to(prop.global_position)
-			if dist < closest_distance and dist < 5.0:  # Only target nearby props
-				closest_distance = dist
-				closest_prop = prop
-
-		if closest_prop:
-			target = closest_prop
+	# Priority: Sigil (primary objective)
+	var sigils = get_tree().get_nodes_in_group("sigil")
+	if sigils.size() > 0:
+		var sigil = sigils[0]
+		if is_instance_valid(sigil):
+			target = sigil
 			return
 
-	# Priority 3: Barricades (player-built obstacles)
-	var barricades = get_tree().get_nodes_in_group("barricades")
-	if barricades.size() > 0:
-		var closest_barricade = null
-		var closest_distance = INF
-
-		for barricade in barricades:
-			if not is_instance_valid(barricade):
-				continue
-			var dist = global_position.distance_to(barricade.global_position)
-			if dist < closest_distance and dist < 5.0:  # Only target nearby barricades
-				closest_distance = dist
-				closest_barricade = barricade
-
-		if closest_barricade:
-			target = closest_barricade
-			return
-
-	# Priority 4: Players (if very close or no other targets)
+	# Fallback: Players (if close or no other targets)
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		var closest_player = null
@@ -303,13 +274,71 @@ func find_target():
 				closest_distance = dist
 				closest_player = player
 
-		# Only target players if they're close (within 10 units)
-		if closest_player and closest_distance < 10.0:
+		if closest_player and closest_distance < 15.0:
 			target = closest_player
 			return
 
-	# Fallback: No valid target found
 	target = null
+
+func _find_blocking_target() -> Node3D:
+	"""Find barricades or props that are blocking our path to the objective"""
+	var blocking_range = 4.0  # Distance to consider something as blocking
+
+	# Check barricaded props first (highest priority - player invested resources)
+	var barricades = get_tree().get_nodes_in_group("barricades")
+	var closest_barricade: Node3D = null
+	var closest_distance = INF
+
+	for barricade in barricades:
+		if not is_instance_valid(barricade):
+			continue
+		var dist = global_position.distance_to(barricade.global_position)
+		if dist < closest_distance and dist < blocking_range:
+			# Check if barricade is between us and sigil
+			if _is_blocking_path(barricade):
+				closest_distance = dist
+				closest_barricade = barricade
+
+	if closest_barricade:
+		return closest_barricade
+
+	# Check regular props
+	var props = get_tree().get_nodes_in_group("props")
+	var closest_prop: Node3D = null
+	closest_distance = INF
+
+	for prop in props:
+		if not is_instance_valid(prop):
+			continue
+		# Skip props already in barricades group (avoid double-targeting)
+		if prop.is_in_group("barricades"):
+			continue
+		var dist = global_position.distance_to(prop.global_position)
+		if dist < closest_distance and dist < blocking_range:
+			if _is_blocking_path(prop):
+				closest_distance = dist
+				closest_prop = prop
+
+	return closest_prop
+
+func _is_blocking_path(obstacle: Node3D) -> bool:
+	"""Check if an obstacle is blocking our path to the sigil"""
+	var sigils = get_tree().get_nodes_in_group("sigil")
+	if sigils.size() == 0:
+		return true  # No sigil, treat everything as potential target
+
+	var sigil = sigils[0]
+	if not is_instance_valid(sigil):
+		return true
+
+	# Direction to sigil
+	var to_sigil = (sigil.global_position - global_position).normalized()
+	# Direction to obstacle
+	var to_obstacle = (obstacle.global_position - global_position).normalized()
+
+	# Check if obstacle is roughly in the same direction as sigil (within 60 degrees)
+	var dot = to_sigil.dot(to_obstacle)
+	return dot > 0.5  # cos(60°) ≈ 0.5
 
 func move_toward_target(delta):
 	if not navigation_agent:
