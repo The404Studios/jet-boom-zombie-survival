@@ -325,9 +325,13 @@ func move_toward_target(delta):
 	if navigation_agent.is_navigation_finished():
 		return
 
-	# Check if navigation is valid
-	if not navigation_agent.is_target_reachable():
-		# Target unreachable, try direct movement
+	# Check if navigation path is valid by checking distance to path
+	var dist_to_target = global_position.distance_to(navigation_agent.target_position)
+	var path_dist = navigation_agent.distance_to_target()
+
+	# If path distance is much larger than direct distance, path might be invalid
+	if path_dist > dist_to_target * 3.0 or path_dist < 0.01:
+		# Target likely unreachable via navigation, try direct movement
 		if target and is_instance_valid(target):
 			var direction = (target.global_position - global_position).normalized()
 			velocity.x = direction.x * move_speed * 0.5  # Slower when off-mesh
@@ -634,3 +638,62 @@ func play_random_growl():
 
 	if randf() < 0.3:  # 30% chance to growl
 		_play_zombie_sound("growl")
+
+# ============================================
+# OBJECT POOLING SUPPORT
+# ============================================
+
+func reset_for_pool():
+	"""Reset zombie state for object pool reuse"""
+	# Reset state
+	is_dead = false
+	is_attacking = false
+	target = null
+	attack_timer = 0.0
+	ability_timer = 0.0
+
+	# Reset stats to defaults
+	current_health = max_health
+	velocity = Vector3.ZERO
+
+	# Reset collision
+	collision_layer = 4  # Zombies layer
+	collision_mask = 0b011111  # Default mask
+
+	# Clear status effects
+	if status_effects and status_effects.has_method("clear_all"):
+		status_effects.clear_all()
+
+	# Reset visual
+	if mesh_instance:
+		mesh_instance.visible = true
+	if model:
+		model.visible = true
+
+	# Re-enable processing
+	process_mode = Node.PROCESS_MODE_INHERIT
+	visible = true
+
+func optimized_update():
+	"""Called by PerformanceOptimizer for distance-based updates"""
+	# Get distance to nearest player
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() == 0:
+		return
+
+	var min_dist = INF
+	for player in players:
+		if is_instance_valid(player):
+			min_dist = min(min_dist, global_position.distance_to(player.global_position))
+
+	# Only do expensive operations if close to player
+	if min_dist < 50.0:
+		play_random_growl()
+
+	# Cull if too far
+	if min_dist > 150.0:
+		visible = false
+		process_mode = Node.PROCESS_MODE_DISABLED
+	else:
+		visible = true
+		process_mode = Node.PROCESS_MODE_INHERIT
