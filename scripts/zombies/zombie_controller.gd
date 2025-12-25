@@ -81,11 +81,64 @@ func _find_animation_player():
 	# Check direct child first
 	if has_node("AnimationPlayer"):
 		animation_player = $AnimationPlayer
+	else:
+		# Search in model
+		if model:
+			animation_player = _search_for_animation_player(model)
+
+	# If no animation player found, create one with procedural animations
+	if not animation_player:
+		animation_player = AnimationPlayer.new()
+		animation_player.name = "AnimationPlayer"
+		add_child(animation_player)
+
+	# Add procedural animations
+	_setup_procedural_animations()
+
+func _setup_procedural_animations():
+	"""Setup procedural animations for zombie"""
+	if not animation_player:
 		return
 
-	# Search in model
-	if model:
-		animation_player = _search_for_animation_player(model)
+	# Use ProceduralAnimation system if available
+	if ProceduralAnimation:
+		ProceduralAnimation.create_zombie_animations(animation_player)
+	else:
+		# Fallback - create basic animations
+		_create_basic_animations()
+
+func _create_basic_animations():
+	"""Create basic animations if ProceduralAnimation not available"""
+	var library = AnimationLibrary.new()
+
+	# Idle animation
+	var idle = Animation.new()
+	idle.length = 2.0
+	idle.loop_mode = Animation.LOOP_LINEAR
+	library.add_animation("idle", idle)
+
+	# Walk animation
+	var walk = Animation.new()
+	walk.length = 1.0
+	walk.loop_mode = Animation.LOOP_LINEAR
+	library.add_animation("walk", walk)
+
+	# Attack animation
+	var attack = Animation.new()
+	attack.length = 0.8
+	library.add_animation("attack", attack)
+
+	# Hurt animation
+	var hurt = Animation.new()
+	hurt.length = 0.3
+	library.add_animation("hurt", hurt)
+
+	# Death animation
+	var death = Animation.new()
+	death.length = 1.5
+	library.add_animation("death", death)
+
+	animation_player.add_animation_library("", library)
 
 func _search_for_animation_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
