@@ -20,6 +20,7 @@ enum ShopCategory {
 	MATERIALS,
 	CONSUMABLES,
 	GEAR,
+	BACKPACKS,
 	AUGMENTS,
 	SERVICES
 }
@@ -577,6 +578,38 @@ func _populate_shop_inventory():
 	aug_boss_killer.item_data = _create_augment_data("boss_damage", 0.30, "+30% damage to bosses and elites.")
 	shop_items["augment_boss_killer"] = aug_boss_killer
 
+	# ============================================
+	# BACKPACKS - Inventory Expansion
+	# ============================================
+	var bp_basic = ShopItem.new("backpack_basic", "Basic Backpack", "A simple canvas backpack. +1 row, +5 weight capacity.", ShopCategory.BACKPACKS, 300)
+	bp_basic.rarity = 0
+	bp_basic.item_data = _create_backpack_data("Basic Backpack", 1, 5.0, Vector2i(2, 2))
+	shop_items["backpack_basic"] = bp_basic
+
+	var bp_military = ShopItem.new("backpack_military", "Military Backpack", "Sturdy military-grade pack. +2 rows, +15 weight capacity.", ShopCategory.BACKPACKS, 800)
+	bp_military.rarity = 1
+	bp_military.level_requirement = 3
+	bp_military.item_data = _create_backpack_data("Military Backpack", 2, 15.0, Vector2i(3, 3))
+	shop_items["backpack_military"] = bp_military
+
+	var bp_tactical = ShopItem.new("backpack_tactical", "Tactical Backpack", "High-capacity tactical pack. +3 rows, +20 weight capacity.", ShopCategory.BACKPACKS, 1500)
+	bp_tactical.rarity = 2
+	bp_tactical.level_requirement = 6
+	bp_tactical.item_data = _create_backpack_data("Tactical Backpack", 3, 20.0, Vector2i(3, 3))
+	shop_items["backpack_tactical"] = bp_tactical
+
+	var bp_survivor = ShopItem.new("backpack_survivor", "Survivor's Pack", "A well-worn pack that has seen many apocalypses. +4 rows, +25 weight.", ShopCategory.BACKPACKS, 3000)
+	bp_survivor.rarity = 3
+	bp_survivor.level_requirement = 10
+	bp_survivor.item_data = _create_backpack_data("Survivor's Pack", 4, 25.0, Vector2i(3, 3))
+	shop_items["backpack_survivor"] = bp_survivor
+
+	var bp_void = ShopItem.new("backpack_void", "Void Carrier", "Rumored to contain a pocket dimension. +5 rows, +40 weight capacity.", ShopCategory.BACKPACKS, 8000)
+	bp_void.rarity = 4
+	bp_void.level_requirement = 15
+	bp_void.item_data = _create_backpack_data("Void Carrier", 5, 40.0, Vector2i(4, 4))
+	shop_items["backpack_void"] = bp_void
+
 func _load_weapon_resource(weapon_name: String) -> Resource:
 	var path = "res://resources/weapons/%s.tres" % weapon_name
 	if ResourceLoader.exists(path):
@@ -654,6 +687,24 @@ func _create_augment_data(stat_type: String, stat_value: float, effect_descripti
 	item.augment_stat_type = stat_type
 	item.augment_stat_value = stat_value
 	item.stack_size = 1
+
+	return item
+
+func _create_backpack_data(bp_name: String, extra_rows: int, extra_weight: float, grid_size: Vector2i) -> Resource:
+	"""Create backpack item data"""
+	var item = ItemDataExtended.new()
+
+	item.item_type = ItemDataExtended.ItemType.MATERIAL  # Backpack treated as material until equipped
+	item.item_name = bp_name
+	item.description = "+%d inventory rows, +%.0f weight capacity" % [extra_rows, extra_weight]
+	item.stack_size = 1
+	item.weight = 2.0
+
+	# Store backpack properties as metadata
+	item.set_meta("is_backpack", true)
+	item.set_meta("extra_rows", extra_rows)
+	item.set_meta("extra_weight", extra_weight)
+	item.set_meta("grid_size", grid_size)
 
 	return item
 
@@ -866,6 +917,7 @@ func get_category_name(category: ShopCategory) -> String:
 		ShopCategory.MATERIALS: return "Materials"
 		ShopCategory.CONSUMABLES: return "Consumables"
 		ShopCategory.GEAR: return "Gear"
+		ShopCategory.BACKPACKS: return "Backpacks"
 		ShopCategory.AUGMENTS: return "Augments"
 		ShopCategory.SERVICES: return "Services"
 	return "Unknown"
