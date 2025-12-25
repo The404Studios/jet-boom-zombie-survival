@@ -57,6 +57,8 @@ func _setup_category_tabs():
 	category_tabs.add_tab("Ammo")
 	category_tabs.add_tab("Materials")
 	category_tabs.add_tab("Consumables")
+	category_tabs.add_tab("Gear")
+	category_tabs.add_tab("Augments")
 	category_tabs.add_tab("Services")
 
 func _find_sigil_shop():

@@ -19,6 +19,9 @@ enum ShopCategory {
 	AMMO,
 	MATERIALS,
 	CONSUMABLES,
+	GEAR,
+	BACKPACKS,
+	AUGMENTS,
 	SERVICES
 }
 
@@ -347,11 +350,363 @@ func _populate_shop_inventory():
 	weapon_repair.rarity = 1
 	shop_items["service_repair"] = weapon_repair
 
+	# ============================================
+	# GEAR - Helmets
+	# ============================================
+	var helmet_basic = ShopItem.new("gear_helmet_basic", "Basic Helmet", "Simple protection for your head. +5 Armor.", ShopCategory.GEAR, 150)
+	helmet_basic.rarity = 0
+	helmet_basic.item_data = _create_gear_data("helmet", "basic", 5, {})
+	shop_items["gear_helmet_basic"] = helmet_basic
+
+	var helmet_military = ShopItem.new("gear_helmet_military", "Military Helmet", "Standard issue military headgear. +12 Armor, +5% Headshot Resistance.", ShopCategory.GEAR, 400)
+	helmet_military.rarity = 1
+	helmet_military.level_requirement = 3
+	helmet_military.item_data = _create_gear_data("helmet", "military", 12, {"headshot_resist": 0.05})
+	shop_items["gear_helmet_military"] = helmet_military
+
+	var helmet_tactical = ShopItem.new("gear_helmet_tactical", "Tactical Helmet", "Advanced tactical headgear. +20 Armor, +10% Headshot Resistance, +5 Stamina.", ShopCategory.GEAR, 800)
+	helmet_tactical.rarity = 2
+	helmet_tactical.level_requirement = 6
+	helmet_tactical.item_data = _create_gear_data("helmet", "tactical", 20, {"headshot_resist": 0.10, "stamina": 5})
+	shop_items["gear_helmet_tactical"] = helmet_tactical
+
+	var helmet_juggernaut = ShopItem.new("gear_helmet_juggernaut", "Juggernaut Helmet", "Heavy duty protection. +35 Armor, +20% Headshot Resistance, -5% Movement Speed.", ShopCategory.GEAR, 1500)
+	helmet_juggernaut.rarity = 3
+	helmet_juggernaut.level_requirement = 10
+	helmet_juggernaut.item_data = _create_gear_data("helmet", "juggernaut", 35, {"headshot_resist": 0.20, "movement_speed": -0.05})
+	shop_items["gear_helmet_juggernaut"] = helmet_juggernaut
+
+	# ============================================
+	# GEAR - Chest Armor
+	# ============================================
+	var chest_vest = ShopItem.new("gear_chest_vest", "Kevlar Vest", "Basic ballistic protection. +10 Armor.", ShopCategory.GEAR, 200)
+	chest_vest.rarity = 0
+	chest_vest.item_data = _create_gear_data("chest", "vest", 10, {})
+	shop_items["gear_chest_vest"] = chest_vest
+
+	var chest_tactical = ShopItem.new("gear_chest_tactical", "Tactical Vest", "Military-grade protection with pouches. +18 Armor, +10 Max Ammo Capacity.", ShopCategory.GEAR, 500)
+	chest_tactical.rarity = 1
+	chest_tactical.level_requirement = 4
+	chest_tactical.item_data = _create_gear_data("chest", "tactical", 18, {"ammo_capacity": 10})
+	shop_items["gear_chest_tactical"] = chest_tactical
+
+	var chest_heavy = ShopItem.new("gear_chest_heavy", "Heavy Body Armor", "Maximum protection. +30 Armor, +20 Health, -10% Movement Speed.", ShopCategory.GEAR, 1000)
+	chest_heavy.rarity = 2
+	chest_heavy.level_requirement = 7
+	chest_heavy.item_data = _create_gear_data("chest", "heavy", 30, {"health": 20, "movement_speed": -0.10})
+	shop_items["gear_chest_heavy"] = chest_heavy
+
+	var chest_exo = ShopItem.new("gear_chest_exo", "Exoskeleton Frame", "Advanced powered armor. +25 Armor, +15 Strength, +10% Movement Speed.", ShopCategory.GEAR, 2500)
+	chest_exo.rarity = 4
+	chest_exo.level_requirement = 12
+	chest_exo.item_data = _create_gear_data("chest", "exo", 25, {"strength": 15, "movement_speed": 0.10})
+	shop_items["gear_chest_exo"] = chest_exo
+
+	# ============================================
+	# GEAR - Gloves
+	# ============================================
+	var gloves_basic = ShopItem.new("gear_gloves_basic", "Work Gloves", "Improved grip. +3% Reload Speed.", ShopCategory.GEAR, 100)
+	gloves_basic.rarity = 0
+	gloves_basic.item_data = _create_gear_data("gloves", "basic", 2, {"reload_speed": 0.03})
+	shop_items["gear_gloves_basic"] = gloves_basic
+
+	var gloves_tactical = ShopItem.new("gear_gloves_tactical", "Tactical Gloves", "Enhanced weapon handling. +8% Reload Speed, +5% Accuracy.", ShopCategory.GEAR, 350)
+	gloves_tactical.rarity = 1
+	gloves_tactical.level_requirement = 3
+	gloves_tactical.item_data = _create_gear_data("gloves", "tactical", 4, {"reload_speed": 0.08, "accuracy": 0.05})
+	shop_items["gear_gloves_tactical"] = gloves_tactical
+
+	var gloves_marksman = ShopItem.new("gear_gloves_marksman", "Marksman Gloves", "Precision shooting gloves. +5% Crit Chance, +10% Accuracy, +5% Headshot Damage.", ShopCategory.GEAR, 700)
+	gloves_marksman.rarity = 2
+	gloves_marksman.level_requirement = 6
+	gloves_marksman.item_data = _create_gear_data("gloves", "marksman", 5, {"crit_chance": 0.05, "accuracy": 0.10, "headshot_damage": 0.05})
+	shop_items["gear_gloves_marksman"] = gloves_marksman
+
+	# ============================================
+	# GEAR - Boots
+	# ============================================
+	var boots_basic = ShopItem.new("gear_boots_basic", "Combat Boots", "Sturdy footwear. +5% Movement Speed.", ShopCategory.GEAR, 150)
+	boots_basic.rarity = 0
+	boots_basic.item_data = _create_gear_data("boots", "basic", 3, {"movement_speed": 0.05})
+	shop_items["gear_boots_basic"] = boots_basic
+
+	var boots_runner = ShopItem.new("gear_boots_runner", "Runner's Boots", "Lightweight speed boots. +12% Movement Speed, +10 Stamina.", ShopCategory.GEAR, 400)
+	boots_runner.rarity = 1
+	boots_runner.level_requirement = 4
+	boots_runner.item_data = _create_gear_data("boots", "runner", 2, {"movement_speed": 0.12, "stamina": 10})
+	shop_items["gear_boots_runner"] = boots_runner
+
+	var boots_tank = ShopItem.new("gear_boots_tank", "Heavy Boots", "Armored boots for survivability. +8 Armor, +5% Poison Resistance, -5% Movement Speed.", ShopCategory.GEAR, 600)
+	boots_tank.rarity = 2
+	boots_tank.level_requirement = 6
+	boots_tank.item_data = _create_gear_data("boots", "tank", 8, {"poison_resist": 0.05, "movement_speed": -0.05})
+	shop_items["gear_boots_tank"] = boots_tank
+
+	# ============================================
+	# GEAR - Accessories (Rings & Amulets)
+	# ============================================
+	var ring_luck = ShopItem.new("gear_ring_luck", "Lucky Ring", "+3 Luck. Increases loot quality.", ShopCategory.GEAR, 300)
+	ring_luck.rarity = 1
+	ring_luck.item_data = _create_gear_data("ring", "luck", 0, {"luck": 3})
+	shop_items["gear_ring_luck"] = ring_luck
+
+	var ring_vitality = ShopItem.new("gear_ring_vitality", "Ring of Vitality", "+5 Vitality. Increases max health.", ShopCategory.GEAR, 350)
+	ring_vitality.rarity = 1
+	ring_vitality.item_data = _create_gear_data("ring", "vitality", 0, {"vitality": 5})
+	shop_items["gear_ring_vitality"] = ring_vitality
+
+	var ring_power = ShopItem.new("gear_ring_power", "Ring of Power", "+5 Strength. Increases melee damage.", ShopCategory.GEAR, 400)
+	ring_power.rarity = 2
+	ring_power.level_requirement = 5
+	ring_power.item_data = _create_gear_data("ring", "power", 0, {"strength": 5})
+	shop_items["gear_ring_power"] = ring_power
+
+	var ring_crit = ShopItem.new("gear_ring_crit", "Critical Strike Ring", "+8% Crit Chance, +15% Crit Damage.", ShopCategory.GEAR, 800)
+	ring_crit.rarity = 3
+	ring_crit.level_requirement = 8
+	ring_crit.item_data = _create_gear_data("ring", "crit", 0, {"crit_chance": 0.08, "crit_damage": 0.15})
+	shop_items["gear_ring_crit"] = ring_crit
+
+	var amulet_regen = ShopItem.new("gear_amulet_regen", "Amulet of Regeneration", "+2 Health Regen/sec. Passive healing.", ShopCategory.GEAR, 450)
+	amulet_regen.rarity = 1
+	amulet_regen.level_requirement = 4
+	amulet_regen.item_data = _create_gear_data("amulet", "regen", 0, {"health_regen": 2.0})
+	shop_items["gear_amulet_regen"] = amulet_regen
+
+	var amulet_protection = ShopItem.new("gear_amulet_protection", "Amulet of Protection", "+10% Damage Reduction from all sources.", ShopCategory.GEAR, 600)
+	amulet_protection.rarity = 2
+	amulet_protection.level_requirement = 6
+	amulet_protection.item_data = _create_gear_data("amulet", "protection", 5, {"damage_reduction": 0.10})
+	shop_items["gear_amulet_protection"] = amulet_protection
+
+	var amulet_berserker = ShopItem.new("gear_amulet_berserker", "Berserker's Pendant", "+15% Damage, -10% Armor. High risk, high reward.", ShopCategory.GEAR, 900)
+	amulet_berserker.rarity = 3
+	amulet_berserker.level_requirement = 8
+	amulet_berserker.item_data = _create_gear_data("amulet", "berserker", -5, {"damage_bonus": 0.15})
+	shop_items["gear_amulet_berserker"] = amulet_berserker
+
+	# ============================================
+	# AUGMENTS - Damage Types
+	# ============================================
+	var aug_fire = ShopItem.new("augment_fire", "Fire Augment", "Adds fire damage to your weapon. Burns enemies over time.", ShopCategory.AUGMENTS, 500)
+	aug_fire.rarity = 2
+	aug_fire.level_requirement = 5
+	aug_fire.item_data = _create_augment_data("fire_damage", 15.0, "Adds 15 fire damage. Burns for 5 damage/sec.")
+	shop_items["augment_fire"] = aug_fire
+
+	var aug_ice = ShopItem.new("augment_ice", "Ice Augment", "Adds ice damage. Slows enemies on hit.", ShopCategory.AUGMENTS, 500)
+	aug_ice.rarity = 2
+	aug_ice.level_requirement = 5
+	aug_ice.item_data = _create_augment_data("ice_damage", 10.0, "Adds 10 ice damage. Slows enemies by 30%.")
+	shop_items["augment_ice"] = aug_ice
+
+	var aug_poison = ShopItem.new("augment_poison", "Poison Augment", "Adds poison damage. Deals damage over time.", ShopCategory.AUGMENTS, 450)
+	aug_poison.rarity = 2
+	aug_poison.level_requirement = 4
+	aug_poison.item_data = _create_augment_data("poison_damage", 8.0, "Adds 8 poison damage/sec for 5 seconds.")
+	shop_items["augment_poison"] = aug_poison
+
+	var aug_bleed = ShopItem.new("augment_bleed", "Bleed Augment", "Causes bleeding. Deals physical damage over time.", ShopCategory.AUGMENTS, 400)
+	aug_bleed.rarity = 1
+	aug_bleed.level_requirement = 3
+	aug_bleed.item_data = _create_augment_data("bleed_damage", 6.0, "Causes 6 bleed damage/sec for 4 seconds.")
+	shop_items["augment_bleed"] = aug_bleed
+
+	var aug_lightning = ShopItem.new("augment_lightning", "Lightning Augment", "Adds lightning damage. Chance to chain to nearby enemies.", ShopCategory.AUGMENTS, 600)
+	aug_lightning.rarity = 3
+	aug_lightning.level_requirement = 7
+	aug_lightning.item_data = _create_augment_data("lightning_damage", 20.0, "Adds 20 lightning damage. 15% chance to chain.")
+	shop_items["augment_lightning"] = aug_lightning
+
+	# ============================================
+	# AUGMENTS - Stat Bonuses
+	# ============================================
+	var aug_damage = ShopItem.new("augment_damage", "Damage Augment", "+10% weapon damage.", ShopCategory.AUGMENTS, 350)
+	aug_damage.rarity = 1
+	aug_damage.level_requirement = 3
+	aug_damage.item_data = _create_augment_data("damage_bonus", 0.10, "+10% base weapon damage.")
+	shop_items["augment_damage"] = aug_damage
+
+	var aug_crit = ShopItem.new("augment_crit", "Critical Augment", "+5% critical hit chance.", ShopCategory.AUGMENTS, 400)
+	aug_crit.rarity = 2
+	aug_crit.level_requirement = 4
+	aug_crit.item_data = _create_augment_data("crit_chance", 0.05, "+5% critical hit chance.")
+	shop_items["augment_crit"] = aug_crit
+
+	var aug_armor_pierce = ShopItem.new("augment_armor_pierce", "Piercing Augment", "Ignores 25% of enemy armor.", ShopCategory.AUGMENTS, 500)
+	aug_armor_pierce.rarity = 2
+	aug_armor_pierce.level_requirement = 6
+	aug_armor_pierce.item_data = _create_augment_data("armor_penetration", 0.25, "Ignores 25% of enemy armor.")
+	shop_items["augment_armor_pierce"] = aug_armor_pierce
+
+	var aug_lifesteal = ShopItem.new("augment_lifesteal", "Vampiric Augment", "Heal 5% of damage dealt.", ShopCategory.AUGMENTS, 700)
+	aug_lifesteal.rarity = 3
+	aug_lifesteal.level_requirement = 8
+	aug_lifesteal.item_data = _create_augment_data("life_steal", 0.05, "Heal for 5% of damage dealt.")
+	shop_items["augment_lifesteal"] = aug_lifesteal
+
+	var aug_headshot = ShopItem.new("augment_headshot", "Precision Augment", "+20% headshot damage.", ShopCategory.AUGMENTS, 450)
+	aug_headshot.rarity = 2
+	aug_headshot.level_requirement = 5
+	aug_headshot.item_data = _create_augment_data("headshot_bonus", 0.20, "+20% damage on headshots.")
+	shop_items["augment_headshot"] = aug_headshot
+
+	# ============================================
+	# AUGMENTS - Special Effects
+	# ============================================
+	var aug_explosive = ShopItem.new("augment_explosive", "Explosive Augment", "15% chance to cause an explosion on hit.", ShopCategory.AUGMENTS, 800)
+	aug_explosive.rarity = 3
+	aug_explosive.level_requirement = 9
+	aug_explosive.item_data = _create_augment_data("explosive_chance", 0.15, "15% chance for 30 damage explosion in 3m.")
+	shop_items["augment_explosive"] = aug_explosive
+
+	var aug_chain = ShopItem.new("augment_chain", "Chain Augment", "Bullets can chain to nearby enemies.", ShopCategory.AUGMENTS, 900)
+	aug_chain.rarity = 3
+	aug_chain.level_requirement = 10
+	aug_chain.item_data = _create_augment_data("chain_chance", 0.20, "20% chance to chain to enemy within 5m for 50% damage.")
+	shop_items["augment_chain"] = aug_chain
+
+	var aug_execute = ShopItem.new("augment_execute", "Executioner Augment", "+50% damage to enemies below 25% HP.", ShopCategory.AUGMENTS, 750)
+	aug_execute.rarity = 3
+	aug_execute.level_requirement = 8
+	aug_execute.item_data = _create_augment_data("execute_bonus", 0.50, "+50% damage to low health enemies.")
+	shop_items["augment_execute"] = aug_execute
+
+	var aug_boss_killer = ShopItem.new("augment_boss_killer", "Slayer Augment", "+30% damage to bosses and elite enemies.", ShopCategory.AUGMENTS, 1000)
+	aug_boss_killer.rarity = 4
+	aug_boss_killer.level_requirement = 12
+	aug_boss_killer.item_data = _create_augment_data("boss_damage", 0.30, "+30% damage to bosses and elites.")
+	shop_items["augment_boss_killer"] = aug_boss_killer
+
+	# ============================================
+	# BACKPACKS - Inventory Expansion
+	# ============================================
+	var bp_basic = ShopItem.new("backpack_basic", "Basic Backpack", "A simple canvas backpack. +1 row, +5 weight capacity.", ShopCategory.BACKPACKS, 300)
+	bp_basic.rarity = 0
+	bp_basic.item_data = _create_backpack_data("Basic Backpack", 1, 5.0, Vector2i(2, 2))
+	shop_items["backpack_basic"] = bp_basic
+
+	var bp_military = ShopItem.new("backpack_military", "Military Backpack", "Sturdy military-grade pack. +2 rows, +15 weight capacity.", ShopCategory.BACKPACKS, 800)
+	bp_military.rarity = 1
+	bp_military.level_requirement = 3
+	bp_military.item_data = _create_backpack_data("Military Backpack", 2, 15.0, Vector2i(3, 3))
+	shop_items["backpack_military"] = bp_military
+
+	var bp_tactical = ShopItem.new("backpack_tactical", "Tactical Backpack", "High-capacity tactical pack. +3 rows, +20 weight capacity.", ShopCategory.BACKPACKS, 1500)
+	bp_tactical.rarity = 2
+	bp_tactical.level_requirement = 6
+	bp_tactical.item_data = _create_backpack_data("Tactical Backpack", 3, 20.0, Vector2i(3, 3))
+	shop_items["backpack_tactical"] = bp_tactical
+
+	var bp_survivor = ShopItem.new("backpack_survivor", "Survivor's Pack", "A well-worn pack that has seen many apocalypses. +4 rows, +25 weight.", ShopCategory.BACKPACKS, 3000)
+	bp_survivor.rarity = 3
+	bp_survivor.level_requirement = 10
+	bp_survivor.item_data = _create_backpack_data("Survivor's Pack", 4, 25.0, Vector2i(3, 3))
+	shop_items["backpack_survivor"] = bp_survivor
+
+	var bp_void = ShopItem.new("backpack_void", "Void Carrier", "Rumored to contain a pocket dimension. +5 rows, +40 weight capacity.", ShopCategory.BACKPACKS, 8000)
+	bp_void.rarity = 4
+	bp_void.level_requirement = 15
+	bp_void.item_data = _create_backpack_data("Void Carrier", 5, 40.0, Vector2i(4, 4))
+	shop_items["backpack_void"] = bp_void
+
 func _load_weapon_resource(weapon_name: String) -> Resource:
 	var path = "res://resources/weapons/%s.tres" % weapon_name
 	if ResourceLoader.exists(path):
 		return load(path)
 	return null
+
+func _create_gear_data(slot_type: String, subtype: String, armor: float, bonuses: Dictionary) -> ItemDataExtended:
+	"""Create gear item data dynamically"""
+	var item = ItemDataExtended.new()
+
+	# Set basic info
+	item.item_name = "%s %s" % [subtype.capitalize(), slot_type.capitalize()]
+
+	# Set item type based on slot
+	match slot_type:
+		"helmet":
+			item.item_type = ItemDataExtended.ItemType.HELMET
+		"chest":
+			item.item_type = ItemDataExtended.ItemType.CHEST_ARMOR
+		"gloves":
+			item.item_type = ItemDataExtended.ItemType.GLOVES
+		"boots":
+			item.item_type = ItemDataExtended.ItemType.BOOTS
+		"ring":
+			item.item_type = ItemDataExtended.ItemType.RING
+		"amulet":
+			item.item_type = ItemDataExtended.ItemType.AMULET
+
+	# Set armor
+	item.armor_value = armor
+
+	# Apply bonuses
+	for key in bonuses:
+		match key:
+			"health": item.health_bonus = bonuses[key]
+			"stamina": item.stamina_bonus = bonuses[key]
+			"strength": item.strength_bonus = bonuses[key]
+			"agility": item.agility_bonus = bonuses[key]
+			"vitality": item.vitality_bonus = bonuses[key]
+			"luck":
+				# Store as metadata since no direct property
+				item.set_meta("luck_bonus", bonuses[key])
+			"crit_chance": item.crit_chance_bonus = bonuses[key]
+			"crit_damage": item.crit_damage_bonus = bonuses[key]
+			"headshot_damage": item.headshot_bonus = bonuses[key]
+			"headshot_resist":
+				item.set_meta("headshot_resist", bonuses[key])
+			"movement_speed": item.movement_speed_bonus = bonuses[key]
+			"attack_speed": item.attack_speed_bonus = bonuses[key]
+			"reload_speed":
+				item.set_meta("reload_speed_bonus", bonuses[key])
+			"accuracy":
+				item.set_meta("accuracy_bonus", bonuses[key])
+			"health_regen": item.health_regen_bonus = bonuses[key]
+			"stamina_regen": item.stamina_regen_bonus = bonuses[key]
+			"damage_reduction":
+				item.set_meta("damage_reduction", bonuses[key])
+			"damage_bonus":
+				item.set_meta("damage_bonus", bonuses[key])
+			"poison_resist": item.poison_resistance = bonuses[key]
+			"fire_resist": item.fire_resistance = bonuses[key]
+			"ice_resist": item.ice_resistance = bonuses[key]
+			"ammo_capacity":
+				item.set_meta("ammo_capacity_bonus", bonuses[key])
+
+	return item
+
+func _create_augment_data(stat_type: String, stat_value: float, effect_description: String) -> ItemDataExtended:
+	"""Create augment item data dynamically"""
+	var item = ItemDataExtended.new()
+
+	item.item_type = ItemDataExtended.ItemType.AUGMENT
+	item.item_name = stat_type.capitalize().replace("_", " ") + " Augment"
+	item.description = effect_description
+	item.augment_stat_type = stat_type
+	item.augment_stat_value = stat_value
+	item.stack_size = 1
+
+	return item
+
+func _create_backpack_data(bp_name: String, extra_rows: int, extra_weight: float, grid_size: Vector2i) -> Resource:
+	"""Create backpack item data"""
+	var item = ItemDataExtended.new()
+
+	item.item_type = ItemDataExtended.ItemType.MATERIAL  # Backpack treated as material until equipped
+	item.item_name = bp_name
+	item.description = "+%d inventory rows, +%.0f weight capacity" % [extra_rows, extra_weight]
+	item.stack_size = 1
+	item.weight = 2.0
+
+	# Store backpack properties as metadata
+	item.set_meta("is_backpack", true)
+	item.set_meta("extra_rows", extra_rows)
+	item.set_meta("extra_weight", extra_weight)
+	item.set_meta("grid_size", grid_size)
+
+	return item
 
 # ============================================
 # SHOP OPERATIONS
@@ -561,6 +916,9 @@ func get_category_name(category: ShopCategory) -> String:
 		ShopCategory.AMMO: return "Ammunition"
 		ShopCategory.MATERIALS: return "Materials"
 		ShopCategory.CONSUMABLES: return "Consumables"
+		ShopCategory.GEAR: return "Gear"
+		ShopCategory.BACKPACKS: return "Backpacks"
+		ShopCategory.AUGMENTS: return "Augments"
 		ShopCategory.SERVICES: return "Services"
 	return "Unknown"
 

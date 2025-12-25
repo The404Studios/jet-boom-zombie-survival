@@ -25,10 +25,23 @@ extends Control
 @onready var damage_indicator = $DamageIndicator if has_node("DamageIndicator") else null
 @onready var wave_announcement = $WaveAnnouncement if has_node("WaveAnnouncement") else null
 
+# Phase timer elements (created dynamically)
+var phase_container: Control = null
+var phase_label: Label = null
+var phase_timer_label: Label = null
+var phase_timer_bar: ProgressBar = null
+var meetup_indicator: Label = null
+
 var player: Node = null
 var current_wave: int = 0
 var current_points: int = 500
 var current_sigils: int = 500
+
+# Phase tracking
+var current_phase_name: String = ""
+var current_phase_timer: float = 0.0
+var max_phase_timer: float = 60.0
+var game_coordinator: Node = null
 
 func _ready():
 	# Add to hud group so arena manager can find us
@@ -55,6 +68,10 @@ func _ready():
 	await get_tree().create_timer(0.1).timeout
 	_connect_arena_manager()
 	_connect_points_system()
+	_connect_game_coordinator()
+
+	# Create phase timer UI
+	_create_phase_timer_ui()
 
 func _connect_points_system():
 	if has_node("/root/PointsSystem"):
@@ -241,3 +258,157 @@ func update_nail_progress(progress: float, is_active: bool):
 			nail_progress.modulate = Color(0.2, 1.0, 0.2)
 		else:
 			nail_progress.modulate = Color(1.0, 0.8, 0.2)
+
+# ============================================
+# GAME COORDINATOR INTEGRATION
+# ============================================
+
+func _connect_game_coordinator():
+	game_coordinator = get_tree().get_first_node_in_group("game_coordinator")
+	if game_coordinator:
+		if game_coordinator.has_signal("game_phase_changed"):
+			if not game_coordinator.game_phase_changed.is_connected(_on_game_phase_changed):
+				game_coordinator.game_phase_changed.connect(_on_game_phase_changed)
+		if game_coordinator.has_signal("meetup_timer_updated"):
+			if not game_coordinator.meetup_timer_updated.is_connected(_on_meetup_timer_updated):
+				game_coordinator.meetup_timer_updated.connect(_on_meetup_timer_updated)
+		if game_coordinator.has_signal("all_players_ready"):
+			if not game_coordinator.all_players_ready.is_connected(_on_all_players_ready):
+				game_coordinator.all_players_ready.connect(_on_all_players_ready)
+
+func _on_game_phase_changed(phase):
+	# phase is GameCoordinator.GamePhase enum
+	if game_coordinator and game_coordinator.has_method("get_phase_name"):
+		current_phase_name = game_coordinator.get_phase_name()
+		_update_phase_display()
+
+func _on_meetup_timer_updated(time_remaining: float):
+	current_phase_timer = time_remaining
+	_update_phase_timer_display()
+
+func _on_all_players_ready():
+	if meetup_indicator:
+		meetup_indicator.text = "ALL PLAYERS READY!"
+		meetup_indicator.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
+
+func _create_phase_timer_ui():
+	# Create container for phase timer at top center
+	phase_container = VBoxContainer.new()
+	phase_container.name = "PhaseContainer"
+	phase_container.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	phase_container.offset_left = -200
+	phase_container.offset_right = 200
+	phase_container.offset_top = 20
+	phase_container.offset_bottom = 120
+	phase_container.add_theme_constant_override("separation", 8)
+	add_child(phase_container)
+
+	# Phase name label
+	phase_label = Label.new()
+	phase_label.name = "PhaseLabel"
+	phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	phase_label.add_theme_font_size_override("font_size", 28)
+	phase_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	phase_container.add_child(phase_label)
+
+	# Timer bar
+	phase_timer_bar = ProgressBar.new()
+	phase_timer_bar.name = "PhaseTimerBar"
+	phase_timer_bar.max_value = 60.0
+	phase_timer_bar.value = 60.0
+	phase_timer_bar.show_percentage = false
+	phase_timer_bar.custom_minimum_size = Vector2(400, 20)
+	phase_container.add_child(phase_timer_bar)
+
+	# Timer label
+	phase_timer_label = Label.new()
+	phase_timer_label.name = "PhaseTimerLabel"
+	phase_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	phase_timer_label.add_theme_font_size_override("font_size", 20)
+	phase_timer_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+	phase_container.add_child(phase_timer_label)
+
+	# Meetup indicator
+	meetup_indicator = Label.new()
+	meetup_indicator.name = "MeetupIndicator"
+	meetup_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	meetup_indicator.add_theme_font_size_override("font_size", 16)
+	meetup_indicator.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	phase_container.add_child(meetup_indicator)
+
+	# Hide by default
+	phase_container.visible = false
+
+func _update_phase_display():
+	if not phase_label:
+		return
+
+	phase_label.text = current_phase_name.to_upper()
+
+	# Color based on phase
+	match current_phase_name:
+		"Meetup":
+			phase_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+			meetup_indicator.text = "Get to the Sigil!"
+			meetup_indicator.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
+			phase_container.visible = true
+		"Wave Active":
+			phase_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+			meetup_indicator.text = "Defend the Sigil!"
+			meetup_indicator.add_theme_color_override("font_color", Color(1.0, 0.5, 0.5))
+			phase_timer_bar.visible = false
+			phase_timer_label.visible = false
+			phase_container.visible = true
+		"Intermission":
+			phase_label.add_theme_color_override("font_color", Color(0.3, 0.8, 1.0))
+			meetup_indicator.text = "Visit the Sigil to shop!"
+			meetup_indicator.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
+			phase_timer_bar.visible = true
+			phase_timer_label.visible = true
+			phase_container.visible = true
+		"Lobby", "Game Over":
+			phase_container.visible = false
+		_:
+			phase_container.visible = true
+
+func _update_phase_timer_display():
+	if not phase_timer_label or not phase_timer_bar:
+		return
+
+	phase_timer_label.text = "%d seconds" % int(current_phase_timer)
+	phase_timer_bar.value = current_phase_timer
+	phase_timer_bar.visible = true
+	phase_timer_label.visible = true
+
+	# Color based on time remaining
+	if current_phase_timer <= 10:
+		phase_timer_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		phase_timer_bar.modulate = Color(1.0, 0.3, 0.3)
+	elif current_phase_timer <= 20:
+		phase_timer_label.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
+		phase_timer_bar.modulate = Color(1.0, 0.7, 0.3)
+	else:
+		phase_timer_label.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0))
+		phase_timer_bar.modulate = Color(1.0, 1.0, 1.0)
+
+func update_phase(phase_name: String, timer: float):
+	"""Update the phase display externally"""
+	current_phase_name = phase_name
+	max_phase_timer = max(timer, 1.0)
+	current_phase_timer = timer
+
+	if phase_timer_bar:
+		phase_timer_bar.max_value = max_phase_timer
+
+	_update_phase_display()
+	if timer > 0:
+		_update_phase_timer_display()
+
+func show_meetup_progress(players_ready: int, players_total: int):
+	"""Show how many players are at the sigil"""
+	if meetup_indicator:
+		meetup_indicator.text = "Players at Sigil: %d/%d" % [players_ready, players_total]
+		if players_ready >= players_total:
+			meetup_indicator.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
+		else:
+			meetup_indicator.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
