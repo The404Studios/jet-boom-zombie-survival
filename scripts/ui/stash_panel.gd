@@ -278,7 +278,45 @@ func unequip_item(slot_name: String) -> ItemDataExtended:
 
 func _refresh_equipment_display():
 	# Update each equipment slot visual
-	pass
+	var equipment_slots = {
+		"first_slot": first_slot,
+		"second_slot": second_slot,
+		"pistol": pistol_slot,
+		"head": head_slot,
+		"face": face_slot,
+		"backpack": backpack_slot,
+		"body": body_slot,
+		"pants": pants_slot,
+		"boots": boots_slot
+	}
+
+	for slot_name in equipment_slots:
+		var slot_node = equipment_slots[slot_name]
+		if not slot_node:
+			continue
+
+		var item = equipped_items.get(slot_name)
+		var icon = slot_node.get_node_or_null("Icon") as TextureRect
+
+		if icon:
+			if item and "icon" in item:
+				icon.texture = item.icon
+			else:
+				icon.texture = null
+
+		# Update slot border color based on item rarity if equipped
+		var style = slot_node.get_theme_stylebox("panel") as StyleBoxFlat
+		if style and item:
+			var rarity_color = Color(0.3, 0.3, 0.3)  # Default gray
+			if "rarity" in item:
+				match item.rarity:
+					0: rarity_color = Color(0.5, 0.5, 0.5)   # Common - gray
+					1: rarity_color = Color(0.2, 0.8, 0.2)   # Uncommon - green
+					2: rarity_color = Color(0.2, 0.4, 1.0)   # Rare - blue
+					3: rarity_color = Color(0.6, 0.2, 0.8)   # Epic - purple
+					4: rarity_color = Color(1.0, 0.6, 0.0)   # Legendary - orange
+					5: rarity_color = Color(1.0, 0.2, 0.2)   # Mythic - red
+			style.border_color = rarity_color
 
 func _recalculate_stats():
 	# Recalculate player stats based on equipped items

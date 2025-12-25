@@ -165,8 +165,17 @@ func _on_play_mode_closed():
 	_close_panel(play_mode_panel)
 
 func _on_lobby_game_started():
-	# Game is starting from lobby
-	pass
+	# Game is starting from lobby - load the multiplayer arena scene
+	_close_panel(lobby_panel)
+
+	# Notify network manager that game is starting if available
+	if has_node("/root/NetworkManager"):
+		var network = get_node("/root/NetworkManager")
+		if network.has_method("on_game_starting"):
+			network.on_game_starting()
+
+	# Load the arena scene for multiplayer
+	get_tree().change_scene_to_file("res://scenes/levels/arena_01.tscn")
 
 func _on_lobby_closed():
 	# Return to main menu

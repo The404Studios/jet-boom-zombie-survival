@@ -45,16 +45,34 @@ var weapon_off: Resource = null
 var total_stat_bonuses: Dictionary = {}
 
 # Reference to character stats
-@onready var character_stats: Node = get_parent().get_node("CharacterStats") if get_parent() and get_parent().has_node("CharacterStats") else null
-@onready var character_attributes: CharacterAttributes = get_parent().get_node("CharacterAttributes") if get_parent() and get_parent().has_node("CharacterAttributes") else null
+var character_stats: Node = null
+var character_attributes: CharacterAttributes = null
 
 func _ready():
 	await get_tree().process_frame
-	if get_parent():
-		if get_parent().has_node("CharacterStats"):
-			character_stats = get_parent().get_node("CharacterStats")
-		if get_parent().has_node("CharacterAttributes"):
-			character_attributes = get_parent().get_node("CharacterAttributes")
+	_find_character_systems()
+
+func _find_character_systems():
+	"""Safely find and cache character system references"""
+	var parent = get_parent()
+	if not parent:
+		return
+
+	# Try to find CharacterStats
+	if parent.has_node("CharacterStats"):
+		character_stats = parent.get_node("CharacterStats")
+	elif has_node("/root/CharacterStats"):
+		character_stats = get_node("/root/CharacterStats")
+
+	# Try to find CharacterAttributes
+	if parent.has_node("CharacterAttributes"):
+		var attr_node = parent.get_node("CharacterAttributes")
+		if attr_node is CharacterAttributes:
+			character_attributes = attr_node
+	elif has_node("/root/CharacterAttributes"):
+		var attr_node = get_node("/root/CharacterAttributes")
+		if attr_node is CharacterAttributes:
+			character_attributes = attr_node
 
 # ============================================
 # EQUIPMENT MANAGEMENT

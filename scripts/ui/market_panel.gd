@@ -124,19 +124,44 @@ func _apply_filters():
 
 	for listing in market_listings:
 		var passes_filter = true
+		var item = listing.get("item")
+
+		if not item:
+			continue
 
 		# Apply each filter
 		if current_filters.utility != "Any" and current_filters.utility != "Option A":
-			# Check utility type
-			pass
+			# Check utility type - filter by item category
+			if "item_category" in item:
+				var category = item.item_category.to_lower() if item.item_category is String else ""
+				if category != current_filters.utility.to_lower():
+					passes_filter = false
 
 		if current_filters.gear != "Any" and current_filters.gear != "Option A":
-			# Check gear type
-			pass
+			# Check gear type - filter by item type for equipment
+			if "item_type" in item:
+				var item_type = ""
+				if item.item_type is int:
+					match item.item_type:
+						0: item_type = "helmet"
+						1: item_type = "chest"
+						2: item_type = "gloves"
+						3: item_type = "boots"
+						4: item_type = "ring"
+						5: item_type = "amulet"
+						_: item_type = "other"
+				else:
+					item_type = str(item.item_type).to_lower()
+
+				if item_type != current_filters.gear.to_lower():
+					passes_filter = false
 
 		if current_filters.weapon != "Any" and current_filters.weapon != "Option A":
-			# Check weapon type
-			pass
+			# Check weapon type - filter by weapon category
+			if "weapon_type" in item:
+				var weapon_type = str(item.weapon_type).to_lower() if item.weapon_type else ""
+				if weapon_type != current_filters.weapon.to_lower():
+					passes_filter = false
 
 		if passes_filter:
 			filtered_listings.append(listing)
