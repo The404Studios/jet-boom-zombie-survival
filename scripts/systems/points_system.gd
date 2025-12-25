@@ -1,5 +1,6 @@
 extends Node
-class_name PointsSystem
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: PointsSystem (the autoload name)
 
 # Worth/Points system like JetBoom's Zombie Survival
 
