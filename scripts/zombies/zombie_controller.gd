@@ -55,8 +55,15 @@ func _ready():
 	# Find animation player (may be in model)
 	_find_animation_player()
 
-	navigation_agent.path_desired_distance = 0.5
-	navigation_agent.target_desired_distance = attack_range
+	# Configure navigation agent
+	if navigation_agent:
+		navigation_agent.path_desired_distance = 0.5
+		navigation_agent.target_desired_distance = attack_range
+		navigation_agent.avoidance_enabled = true
+		navigation_agent.radius = 0.4
+		navigation_agent.neighbor_distance = 5.0
+		navigation_agent.max_neighbors = 10
+		navigation_agent.path_max_distance = 2.0  # Re-path if too far off
 
 	# Apply visual tint
 	apply_visual_tint()
@@ -74,11 +81,64 @@ func _find_animation_player():
 	# Check direct child first
 	if has_node("AnimationPlayer"):
 		animation_player = $AnimationPlayer
+	else:
+		# Search in model
+		if model:
+			animation_player = _search_for_animation_player(model)
+
+	# If no animation player found, create one with procedural animations
+	if not animation_player:
+		animation_player = AnimationPlayer.new()
+		animation_player.name = "AnimationPlayer"
+		add_child(animation_player)
+
+	# Add procedural animations
+	_setup_procedural_animations()
+
+func _setup_procedural_animations():
+	"""Setup procedural animations for zombie"""
+	if not animation_player:
 		return
 
-	# Search in model
-	if model:
-		animation_player = _search_for_animation_player(model)
+	# Use ProceduralAnimation system if available
+	if ProceduralAnimation:
+		ProceduralAnimation.create_zombie_animations(animation_player)
+	else:
+		# Fallback - create basic animations
+		_create_basic_animations()
+
+func _create_basic_animations():
+	"""Create basic animations if ProceduralAnimation not available"""
+	var library = AnimationLibrary.new()
+
+	# Idle animation
+	var idle = Animation.new()
+	idle.length = 2.0
+	idle.loop_mode = Animation.LOOP_LINEAR
+	library.add_animation("idle", idle)
+
+	# Walk animation
+	var walk = Animation.new()
+	walk.length = 1.0
+	walk.loop_mode = Animation.LOOP_LINEAR
+	library.add_animation("walk", walk)
+
+	# Attack animation
+	var attack = Animation.new()
+	attack.length = 0.8
+	library.add_animation("attack", attack)
+
+	# Hurt animation
+	var hurt = Animation.new()
+	hurt.length = 0.3
+	library.add_animation("hurt", hurt)
+
+	# Death animation
+	var death = Animation.new()
+	death.length = 1.5
+	library.add_animation("death", death)
+
+	animation_player.add_animation_library("", library)
 
 func _search_for_animation_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
@@ -252,11 +312,34 @@ func find_target():
 	target = null
 
 func move_toward_target(delta):
+	if not navigation_agent:
+		# Fallback: direct movement if no navigation agent
+		if target and is_instance_valid(target):
+			var direction = (target.global_position - global_position).normalized()
+			velocity.x = direction.x * move_speed
+			velocity.z = direction.z * move_speed
+			if direction.length() > 0:
+				look_at(global_position + direction, Vector3.UP)
+		return
+
 	if navigation_agent.is_navigation_finished():
+		return
+
+	# Check if navigation is valid
+	if not navigation_agent.is_target_reachable():
+		# Target unreachable, try direct movement
+		if target and is_instance_valid(target):
+			var direction = (target.global_position - global_position).normalized()
+			velocity.x = direction.x * move_speed * 0.5  # Slower when off-mesh
+			velocity.z = direction.z * move_speed * 0.5
 		return
 
 	var next_position = navigation_agent.get_next_path_position()
 	var direction = (next_position - global_position).normalized()
+
+	# Apply velocity using navigation agent's safe velocity for avoidance
+	var desired_velocity = direction * move_speed
+	navigation_agent.velocity = desired_velocity
 
 	velocity.x = direction.x * move_speed
 	velocity.z = direction.z * move_speed
@@ -279,6 +362,9 @@ func attack_target():
 
 	if animation_player and animation_player.has_animation("attack"):
 		animation_player.play("attack")
+
+	# Play attack sound
+	_play_zombie_sound("attack")
 
 	await get_tree().create_timer(0.5).timeout
 
@@ -403,6 +489,9 @@ func die():
 	# Reward players
 	reward_nearby_players()
 
+	# Play death sound
+	_play_zombie_sound("death")
+
 	if animation_player and animation_player.has_animation("death"):
 		animation_player.play("death")
 
@@ -511,3 +600,37 @@ func update_animation():
 		if animation_player.has_animation("idle"):
 			if animation_player.current_animation != "idle":
 				animation_player.play("idle")
+
+# ============================================
+# AUDIO
+# ============================================
+
+var _last_growl_time: float = 0.0
+var _growl_interval: float = 5.0
+
+func _play_zombie_sound(sound_type: String):
+	"""Play zombie sounds through AudioManager"""
+	if not has_node("/root/AudioManager"):
+		return
+
+	var audio = get_node("/root/AudioManager")
+
+	# Use zombie sound player if available
+	if audio.has_method("play_zombie_sound"):
+		audio.play_zombie_sound(sound_type, global_position)
+	elif audio.has_method("play_sound_3d"):
+		# Fallback to generic 3D sound
+		var pitch = randf_range(0.8, 1.2)
+		audio.play_sound_3d("zombie_%s" % sound_type, global_position, 0.8, pitch)
+
+func play_random_growl():
+	"""Play random ambient growl sound"""
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - _last_growl_time < _growl_interval:
+		return
+
+	_last_growl_time = current_time
+	_growl_interval = randf_range(3.0, 8.0)  # Random interval
+
+	if randf() < 0.3:  # 30% chance to growl
+		_play_zombie_sound("growl")

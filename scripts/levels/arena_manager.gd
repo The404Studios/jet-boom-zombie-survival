@@ -34,6 +34,9 @@ func _ready():
 	# Add to arena_manager group so other systems can find us
 	add_to_group("arena_manager")
 
+	# Rebake navigation mesh on startup
+	_bake_navigation_mesh()
+
 	# Find spawn points
 	_collect_spawn_points()
 
@@ -65,6 +68,22 @@ func _process(delta):
 
 		if intermission_timer <= 0:
 			start_wave()
+
+func _bake_navigation_mesh():
+	"""Bake navigation mesh to ensure zombies can navigate properly"""
+	var nav_region = get_node_or_null("NavigationRegion3D")
+	if nav_region and nav_region is NavigationRegion3D:
+		# Bake in background to not block game start
+		nav_region.bake_navigation_mesh()
+		print("Navigation mesh baked successfully")
+	else:
+		# Try to find navigation region in scene
+		nav_region = get_tree().get_first_node_in_group("navigation_region")
+		if nav_region and nav_region is NavigationRegion3D:
+			nav_region.bake_navigation_mesh()
+			print("Navigation mesh baked from group")
+		else:
+			push_warning("No NavigationRegion3D found - zombies may not navigate properly!")
 
 func _collect_spawn_points():
 	var spawns = get_node("SpawnPoints")

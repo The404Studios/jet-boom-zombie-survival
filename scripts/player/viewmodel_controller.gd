@@ -55,7 +55,9 @@ func _ready():
 	if not animation_player:
 		animation_player = AnimationPlayer.new()
 		add_child(animation_player)
-		_create_default_animations()
+
+	# Create default animations
+	_create_default_animations()
 
 func _process(delta):
 	if not current_weapon:
@@ -355,26 +357,99 @@ func _play_weapon_sound(sound_type: String):
 # ============================================
 
 func _create_default_animations():
-	# Create basic fire animation
+	# Create comprehensive weapon animations
+	var library = AnimationLibrary.new()
+
+	# Fire animation - weapon recoil
 	var fire_anim = Animation.new()
 	fire_anim.length = 0.2
 
-	# Position track
-	var pos_track = fire_anim.add_track(Animation.TYPE_POSITION_3D)
+	var pos_track = fire_anim.add_track(Animation.TYPE_VALUE)
 	fire_anim.track_set_path(pos_track, "WeaponPivot:position")
 	fire_anim.track_insert_key(pos_track, 0.0, base_position)
-	fire_anim.track_insert_key(pos_track, 0.05, base_position + Vector3(0, 0, 0.05))
+	fire_anim.track_insert_key(pos_track, 0.05, base_position + Vector3(0, 0.02, 0.08))
 	fire_anim.track_insert_key(pos_track, 0.2, base_position)
 
-	# Rotation track
-	var rot_track = fire_anim.add_track(Animation.TYPE_ROTATION_3D)
+	var rot_track = fire_anim.add_track(Animation.TYPE_VALUE)
 	fire_anim.track_set_path(rot_track, "WeaponPivot:rotation")
 	fire_anim.track_insert_key(rot_track, 0.0, base_rotation)
-	fire_anim.track_insert_key(rot_track, 0.05, base_rotation + Vector3(deg_to_rad(-5), 0, 0))
+	fire_anim.track_insert_key(rot_track, 0.05, base_rotation + Vector3(deg_to_rad(-8), deg_to_rad(1), 0))
 	fire_anim.track_insert_key(rot_track, 0.2, base_rotation)
 
-	var library = AnimationLibrary.new()
 	library.add_animation("fire", fire_anim)
+
+	# Reload animation - lower and raise
+	var reload_anim = Animation.new()
+	reload_anim.length = 2.0
+
+	var reload_pos = reload_anim.add_track(Animation.TYPE_VALUE)
+	reload_anim.track_set_path(reload_pos, "WeaponPivot:position")
+	reload_anim.track_insert_key(reload_pos, 0.0, base_position)
+	reload_anim.track_insert_key(reload_pos, 0.3, base_position + Vector3(-0.1, -0.2, 0))
+	reload_anim.track_insert_key(reload_pos, 0.8, base_position + Vector3(-0.1, -0.25, 0.05))
+	reload_anim.track_insert_key(reload_pos, 1.4, base_position + Vector3(-0.1, -0.2, 0))
+	reload_anim.track_insert_key(reload_pos, 2.0, base_position)
+
+	var reload_rot = reload_anim.add_track(Animation.TYPE_VALUE)
+	reload_anim.track_set_path(reload_rot, "WeaponPivot:rotation")
+	reload_anim.track_insert_key(reload_rot, 0.0, base_rotation)
+	reload_anim.track_insert_key(reload_rot, 0.3, base_rotation + Vector3(deg_to_rad(25), deg_to_rad(15), deg_to_rad(-5)))
+	reload_anim.track_insert_key(reload_rot, 1.4, base_rotation + Vector3(deg_to_rad(25), deg_to_rad(-10), deg_to_rad(-5)))
+	reload_anim.track_insert_key(reload_rot, 2.0, base_rotation)
+
+	library.add_animation("reload", reload_anim)
+
+	# Equip animation - bring up from below
+	var equip_anim = Animation.new()
+	equip_anim.length = 0.4
+
+	var equip_pos = equip_anim.add_track(Animation.TYPE_VALUE)
+	equip_anim.track_set_path(equip_pos, "WeaponPivot:position")
+	equip_anim.track_insert_key(equip_pos, 0.0, base_position + Vector3(0, -0.5, 0))
+	equip_anim.track_insert_key(equip_pos, 0.3, base_position + Vector3(0, 0.03, 0))
+	equip_anim.track_insert_key(equip_pos, 0.4, base_position)
+
+	var equip_rot = equip_anim.add_track(Animation.TYPE_VALUE)
+	equip_anim.track_set_path(equip_rot, "WeaponPivot:rotation")
+	equip_anim.track_insert_key(equip_rot, 0.0, base_rotation + Vector3(deg_to_rad(20), 0, 0))
+	equip_anim.track_insert_key(equip_rot, 0.4, base_rotation)
+
+	library.add_animation("equip", equip_anim)
+
+	# Unequip animation - lower
+	var unequip_anim = Animation.new()
+	unequip_anim.length = 0.25
+
+	var unequip_pos = unequip_anim.add_track(Animation.TYPE_VALUE)
+	unequip_anim.track_set_path(unequip_pos, "WeaponPivot:position")
+	unequip_anim.track_insert_key(unequip_pos, 0.0, base_position)
+	unequip_anim.track_insert_key(unequip_pos, 0.25, base_position + Vector3(0, -0.5, 0))
+
+	library.add_animation("unequip", unequip_anim)
+
+	# Melee swing animation
+	var melee_anim = Animation.new()
+	melee_anim.length = 0.5
+
+	var melee_pos = melee_anim.add_track(Animation.TYPE_VALUE)
+	melee_anim.track_set_path(melee_pos, "WeaponPivot:position")
+	melee_anim.track_insert_key(melee_pos, 0.0, base_position)
+	melee_anim.track_insert_key(melee_pos, 0.1, base_position + Vector3(-0.15, 0.1, 0))
+	melee_anim.track_insert_key(melee_pos, 0.25, base_position + Vector3(0.2, -0.1, -0.1))
+	melee_anim.track_insert_key(melee_pos, 0.5, base_position)
+
+	var melee_rot = melee_anim.add_track(Animation.TYPE_VALUE)
+	melee_anim.track_set_path(melee_rot, "WeaponPivot:rotation")
+	melee_anim.track_insert_key(melee_rot, 0.0, base_rotation)
+	melee_anim.track_insert_key(melee_rot, 0.1, base_rotation + Vector3(0, deg_to_rad(-30), deg_to_rad(15)))
+	melee_anim.track_insert_key(melee_rot, 0.25, base_rotation + Vector3(0, deg_to_rad(40), deg_to_rad(-10)))
+	melee_anim.track_insert_key(melee_rot, 0.5, base_rotation)
+
+	library.add_animation("melee", melee_anim)
+
+	# Add to animation player
+	if animation_player.has_animation_library(""):
+		animation_player.remove_animation_library("")
 	animation_player.add_animation_library("", library)
 
 # ============================================

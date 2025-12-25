@@ -17,6 +17,8 @@ extends Control
 
 @onready var interact_label = $BottomRight/InteractLabel if has_node("BottomRight/InteractLabel") else null
 @onready var extraction_label = $BottomRight/ExtractionLabel if has_node("BottomRight/ExtractionLabel") else null
+@onready var nail_progress = $CenterProgress/NailProgressBar if has_node("CenterProgress/NailProgressBar") else null
+@onready var nail_progress_container = $CenterProgress if has_node("CenterProgress") else null
 
 @onready var crosshair = $Crosshair if has_node("Crosshair") else null
 @onready var damage_indicator = $DamageIndicator if has_node("DamageIndicator") else null
@@ -39,6 +41,8 @@ func _ready():
 		interact_label.visible = false
 	if extraction_label:
 		extraction_label.visible = false
+	if nail_progress_container:
+		nail_progress_container.visible = false
 
 	# Initialize display
 	update_wave_info(1, 0, 0)
@@ -181,3 +185,17 @@ func show_damage_indicator(direction: Vector3 = Vector3.ZERO):
 func update_crosshair_spread(spread: float):
 	if crosshair and crosshair.has_method("set_spread"):
 		crosshair.set_spread(spread)
+
+func update_nail_progress(progress: float, is_active: bool):
+	"""Update the nailing progress bar (0.0 - 1.0)"""
+	if nail_progress_container:
+		nail_progress_container.visible = is_active and progress > 0.0
+
+	if nail_progress:
+		nail_progress.value = progress * 100.0
+
+		# Color feedback - green when complete
+		if progress >= 1.0:
+			nail_progress.modulate = Color(0.2, 1.0, 0.2)
+		else:
+			nail_progress.modulate = Color(1.0, 0.8, 0.2)
