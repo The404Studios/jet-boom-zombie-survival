@@ -7,17 +7,17 @@ signal craft_started(recipe: Dictionary)
 signal panel_closed
 
 # UI References
-@onready var merchant_rep_label: Label = $TopBar/MerchantRep
-@onready var currency_label: Label = $TopBar/Currency
-@onready var selling_grid: GridContainer = $LeftPanel/SellingSection/Grid
-@onready var crafting_grid: GridContainer = $LeftPanel/CraftingSection/Grid
-@onready var stash_grid: GridContainer = $RightPanel/ScrollContainer/StashGrid
-@onready var buy_button: Button = $BottomBar/BuyButton
-@onready var sell_button: Button = $BottomBar/SellButton
-@onready var craft_button: Button = $BottomBar/CraftButton
-@onready var back_button: Button = $BottomBar/BackButton
-@onready var rep_progress: ProgressBar = $TopBar/RepProgress
-@onready var item_tooltip: Panel = $ItemTooltip
+@onready var merchant_rep_label: Label = get_node_or_null("TopBar/MerchantRep")
+@onready var currency_label: Label = get_node_or_null("TopBar/Currency")
+@onready var selling_grid: GridContainer = get_node_or_null("LeftPanel/SellingSection/Grid")
+@onready var crafting_grid: GridContainer = get_node_or_null("LeftPanel/CraftingSection/Grid")
+@onready var stash_grid: GridContainer = get_node_or_null("RightPanel/ScrollContainer/StashGrid")
+@onready var buy_button: Button = get_node_or_null("BottomBar/BuyButton")
+@onready var sell_button: Button = get_node_or_null("BottomBar/SellButton")
+@onready var craft_button: Button = get_node_or_null("BottomBar/CraftButton")
+@onready var back_button: Button = get_node_or_null("BottomBar/BackButton")
+@onready var rep_progress: ProgressBar = get_node_or_null("TopBar/RepProgress")
+@onready var item_tooltip: Panel = get_node_or_null("ItemTooltip")
 
 # Merchant data
 var merchant_reputation: int = 0
