@@ -180,13 +180,12 @@ func _send_game_packet(target_steam_id: int, data: PackedByteArray, channel: int
 # MULTIPLAYER PEER EXTENSION OVERRIDES
 # ============================================
 
-func _get_packet_script(r_buffer: PackedByteArray) -> Error:
+func _get_packet() -> PackedByteArray:
 	if incoming_packets.is_empty():
-		return ERR_UNAVAILABLE
+		return PackedByteArray()
 
 	var packet_data = incoming_packets.pop_front()
-	r_buffer.append_array(packet_data.data)
-	return OK
+	return packet_data.data
 
 func _get_packet_channel() -> int:
 	return transfer_channel
@@ -203,7 +202,7 @@ func _get_packet_peer() -> int:
 func _get_available_packet_count() -> int:
 	return incoming_packets.size()
 
-func _put_packet_script(p_buffer: PackedByteArray) -> Error:
+func _put_packet(p_buffer: PackedByteArray) -> Error:
 	if target_peer == 0:
 		# Broadcast to all
 		for peer_id in peer_id_to_steam_id:

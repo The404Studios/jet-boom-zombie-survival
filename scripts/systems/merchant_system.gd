@@ -27,8 +27,8 @@ class ShopItem:
 		currency_type = curr
 		stock = stk
 
-var shop_inventory: Array[ShopItem] = []
-var player_persistence: PlayerPersistence
+var shop_inventory: Array = []
+var player_persistence: Node  # PlayerPersistence autoload
 
 @export var refresh_cost_coins: int = 100
 @export var sell_value_multiplier: float = 0.6

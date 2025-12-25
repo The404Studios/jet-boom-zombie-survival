@@ -501,18 +501,47 @@ func add_experience(amount: int):
 		character_attributes.add_experience(amount)
 	experience_gained.emit(amount)
 
-func add_points(amount: int):
-	"""Add points (for kills, etc.)"""
+func add_points(amount: int, reason: String = ""):
+	"""Add points (for kills, etc.) - integrates with PointsSystem and ArenaManager"""
 	# Forward to points system if available
 	if has_node("/root/PointsSystem"):
 		var points_system = get_node("/root/PointsSystem")
 		if points_system.has_method("add_points"):
-			points_system.add_points(multiplayer.get_unique_id(), amount)
+			points_system.add_points(amount, reason)
 
-	# Also notify arena manager if in arena
+	# Also notify arena manager if in arena (for per-player tracking in multiplayer)
 	var arena_manager = get_tree().get_first_node_in_group("arena_manager")
 	if arena_manager and arena_manager.has_method("add_player_points"):
 		arena_manager.add_player_points(multiplayer.get_unique_id(), amount)
+
+	# Update HUD with new points
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("update_points"):
+		var total_points = 0
+		if has_node("/root/PointsSystem"):
+			total_points = get_node("/root/PointsSystem").get_points()
+		elif arena_manager:
+			total_points = arena_manager.player_points
+		hud.update_points(total_points)
+
+func add_kill_points(zombie_class: String, was_headshot: bool = false):
+	"""Add points for killing a zombie with proper rewards"""
+	if has_node("/root/PointsSystem"):
+		var points_system = get_node("/root/PointsSystem")
+		if points_system.has_method("reward_zombie_kill"):
+			points_system.reward_zombie_kill(zombie_class, was_headshot, false)
+	else:
+		# Fallback point values if no PointsSystem
+		var points = 100
+		match zombie_class.to_lower():
+			"shambler": points = 100
+			"runner": points = 120
+			"tank": points = 200
+			"monster": points = 300
+			"boss": points = 1000
+		if was_headshot:
+			points += 25
+		add_points(points, "Killed " + zombie_class)
 
 func apply_status_effect(effect_type: String, _value: float, duration: float):
 	"""Apply a status effect to the player"""

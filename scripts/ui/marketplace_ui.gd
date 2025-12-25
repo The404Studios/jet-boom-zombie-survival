@@ -1,9 +1,9 @@
 extends Control
 class_name MarketplaceUI
 
-@export var merchant_system: MerchantSystem
-@export var inventory_system: InventorySystem
-@export var player_persistence: PlayerPersistence
+@export var merchant_system: Node  # MerchantSystem
+@export var inventory_system: Node  # InventorySystem
+@export var player_persistence: Node  # PlayerPersistence autoload
 
 @onready var shop_panel: Panel = $ShopPanel
 @onready var shop_grid: GridContainer = $ShopPanel/ScrollContainer/ShopGrid

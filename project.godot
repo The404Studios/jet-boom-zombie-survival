@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameSettings="*res://scripts/systems/game_settings.gd"
 EventBus="*res://scripts/systems/event_bus.gd"
+PointsSystem="*res://scripts/systems/points_system.gd"
 SteamManager="*res://scripts/systems/steam_manager.gd"
 NetworkManager="*res://scripts/systems/network_manager.gd"
 MatchmakingSystem="*res://scripts/systems/matchmaking_system.gd"
