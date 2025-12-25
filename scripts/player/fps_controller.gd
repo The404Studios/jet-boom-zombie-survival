@@ -251,9 +251,10 @@ func _handle_weapons(delta):
 	if Input.is_action_just_pressed("reload"):
 		_reload_weapon()
 
-	# Weapon switching (1-9 keys)
+	# Weapon switching (1-9 keys) - only check actions that exist
 	for i in range(1, 10):
-		if Input.is_action_just_pressed("weapon_%d" % i):
+		var action_name = "weapon_%d" % i
+		if InputMap.has_action(action_name) and Input.is_action_just_pressed(action_name):
 			_switch_weapon(i - 1)
 
 # ============================================
