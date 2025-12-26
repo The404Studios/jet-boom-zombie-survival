@@ -24,6 +24,18 @@ func _ready():
 	visible = false
 	setup_ui()
 
+	# Auto-find dependencies if not set via exports
+	if not player_persistence:
+		player_persistence = get_node_or_null("/root/PlayerPersistence")
+
+	if not inventory_system:
+		# Try to find player's inventory system
+		var player = get_tree().get_first_node_in_group("player")
+		if player:
+			inventory_system = player.get_node_or_null("InventorySystem")
+			if inventory_system:
+				print("[MarketplaceUI] Found player inventory system")
+
 	if merchant_system:
 		merchant_system.shop_refreshed.connect(_on_shop_refreshed)
 		merchant_system.item_purchased.connect(_on_item_purchased)

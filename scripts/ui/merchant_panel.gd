@@ -166,11 +166,20 @@ func _load_player_data():
 		if ps.has_method("get_points"):
 			player_currency = ps.get_points()
 
-	# Get player inventory
-	if has_node("/root/InventorySystem"):
-		var inv = get_node("/root/InventorySystem")
+	# Get player inventory - try player node first, then autoload
+	var inv: Node = null
+	var player = get_tree().get_first_node_in_group("player")
+	if player:
+		inv = player.get_node_or_null("InventorySystem")
+
+	if not inv and has_node("/root/InventorySystem"):
+		inv = get_node("/root/InventorySystem")
+
+	if inv:
 		if inv.has_method("get_items"):
 			player_stash = inv.get_items()
+		elif "inventory" in inv:
+			player_stash = inv.inventory
 		elif "items" in inv:
 			player_stash = inv.items
 

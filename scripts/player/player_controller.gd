@@ -43,6 +43,28 @@ func _ready():
 	# Initialize grid inventory system
 	_setup_grid_inventory()
 
+	# Give player a starting weapon
+	_equip_starting_weapon()
+
+func _equip_starting_weapon():
+	# Load pistol as starting weapon
+	var pistol = load("res://resources/weapons/pistol.tres")
+	if pistol and inventory:
+		inventory.equipped_weapon = {
+			"item": pistol,
+			"current_ammo": pistol.magazine_size,
+			"quantity": 1
+		}
+		print("[Player] Starting weapon equipped: ", pistol.item_name)
+
+		# Try to spawn weapon mesh in weapon holder
+		if weapon_holder and pistol.mesh_scene:
+			var weapon_mesh = pistol.mesh_scene.instantiate()
+			weapon_holder.add_child(weapon_mesh)
+			current_weapon = weapon_mesh
+	else:
+		print("[Player] WARNING: Could not equip starting weapon")
+
 func _setup_grid_inventory():
 	# Create grid inventory if not already exists
 	if not grid_inventory:
