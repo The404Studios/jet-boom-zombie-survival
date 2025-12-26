@@ -2,11 +2,13 @@ extends CharacterBody3D
 class_name Zombie
 
 @export var max_health: float = 50.0
-@export var move_speed: float = 3.0
+@export var walk_speed: float = 2.5
+@export var run_speed: float = 5.0
 @export var attack_damage: float = 10.0
 @export var attack_range: float = 2.0
 @export var attack_cooldown: float = 1.5
 @export var detection_range: float = 20.0
+@export var chase_range: float = 10.0  # Distance at which zombie starts running
 @export var loot_items: Array[ItemData] = []
 
 var current_health: float = 50.0
@@ -14,6 +16,8 @@ var target: Node3D = null
 var attack_timer: float = 0.0
 var is_attacking: bool = false
 var is_dead: bool = false
+var is_running: bool = false
+var move_speed: float = 2.5
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
@@ -87,6 +91,14 @@ func _physics_process(delta):
 		if distance_to_target <= detection_range:
 			navigation_agent.target_position = target.global_position
 
+			# Determine if running or walking based on distance
+			if distance_to_target <= chase_range:
+				is_running = true
+				move_speed = run_speed
+			else:
+				is_running = false
+				move_speed = walk_speed
+
 			# Check if in attack range
 			if distance_to_target <= attack_range:
 				if attack_timer <= 0:
@@ -99,6 +111,8 @@ func _physics_process(delta):
 				move_toward_target(delta)
 		else:
 			# Idle/Wander
+			is_running = false
+			move_speed = walk_speed
 			velocity.x = move_toward(velocity.x, 0, move_speed)
 			velocity.z = move_toward(velocity.z, 0, move_speed)
 
@@ -222,10 +236,23 @@ func update_animation():
 	var vel_length = Vector3(velocity.x, 0, velocity.z).length()
 
 	if vel_length > 0.1:
-		if animation_player.has_animation("walk"):
-			if animation_player.current_animation != "walk":
-				animation_player.play("walk")
+		# Choose run or walk animation based on speed
+		if is_running:
+			if animation_player.has_animation("run"):
+				if animation_player.current_animation != "run":
+					animation_player.play("run")
+			elif animation_player.has_animation("walk"):
+				# Fallback to faster walk if no run animation
+				if animation_player.current_animation != "walk":
+					animation_player.play("walk")
+				animation_player.speed_scale = 1.5
+		else:
+			if animation_player.has_animation("walk"):
+				if animation_player.current_animation != "walk":
+					animation_player.play("walk")
+				animation_player.speed_scale = 1.0
 	else:
 		if animation_player.has_animation("idle"):
 			if animation_player.current_animation != "idle":
 				animation_player.play("idle")
+			animation_player.speed_scale = 1.0
