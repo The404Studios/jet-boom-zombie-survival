@@ -361,7 +361,8 @@ func update_tooltip_content(tooltip: Panel, item):  # item: ItemDataExtended
 		name_label.text = "[b][color=#%s]%s[/color][/b]" % [color_hex, item.item_name]
 
 	if type_label:
-		type_label.text = "%s %s" % [item.get_rarity_name(), ItemDataExtended.ItemType.keys()[item.item_type].capitalize()]
+		var type_name = ItemDataExtended.ItemType.keys()[item.item_type].capitalize() if item.item_type < ItemDataExtended.ItemType.size() else "Unknown"
+		type_label.text = "%s %s" % [item.get_rarity_name(), type_name]
 		type_label.add_theme_color_override("font_color", item.get_rarity_color())
 
 	if stats_label:

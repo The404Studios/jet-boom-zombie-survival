@@ -362,6 +362,8 @@ func can_unlock_skill(skill_id: String) -> bool:
 	# Check prerequisites
 	for req in skill.requires:
 		var parts = req.split(":")
+		if parts.is_empty():
+			continue
 		var req_skill = parts[0]
 		var req_level = int(parts[1]) if parts.size() > 1 else 1
 
