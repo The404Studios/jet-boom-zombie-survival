@@ -1,7 +1,7 @@
 extends Control
 class_name MarketPanel
 
-signal item_listed(item: ItemDataExtended, price: int)
+signal item_listed(item, price: int)  # item: ItemDataExtended
 signal item_purchased(listing_id: int)
 signal trade_requested(player_id: int)
 signal panel_closed
@@ -499,7 +499,7 @@ func _show_message(title: String, message: String):
 	add_child(dialog)
 	dialog.popup_centered()
 
-func list_item(item: ItemDataExtended, price: int, seller_name: String) -> int:
+func list_item(item, price: int, seller_name: String) -> int:  # item: ItemDataExtended
 	var listing = {
 		"id": market_listings.size(),
 		"item": item,

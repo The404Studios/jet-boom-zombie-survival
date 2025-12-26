@@ -36,7 +36,7 @@ var player_persistence: Node = null
 var grid_inventory: GridInventorySystem
 
 var current_weapon: Node3D = null
-var current_weapon_data: ItemDataExtended = null
+var current_weapon_data = null  # ItemDataExtended
 var shoot_timer: float = 0.0
 
 signal health_changed(new_health: float, max_health: float)
