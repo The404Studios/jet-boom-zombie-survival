@@ -35,8 +35,8 @@ var player: Node = null
 var player_points: int = 500  # Starting points
 
 # System references
-var game_coordinator: GameCoordinator = null
-var loot_spawner: LootSpawner = null
+var game_coordinator: Node = null  # GameCoordinator
+var loot_spawner: Node = null  # LootSpawner
 var wave_manager: Node = null
 
 func _ready():
@@ -339,8 +339,15 @@ func _on_zombie_died(zombie: Node, points: int, experience: int):
 		var zombie_type = "shambler"
 		if "zombie_type" in zombie:
 			zombie_type = zombie.zombie_type
-		elif "class_name" in zombie:
-			zombie_type = zombie.class_name
+		elif "zombie_class_data" in zombie and zombie.zombie_class_data:
+			# Use display_name or convert enum to string
+			var class_data = zombie.zombie_class_data
+			if class_data and class_data.display_name and class_data.display_name != "":
+				zombie_type = class_data.display_name.to_lower()
+			elif class_data and "zombie_class" in class_data:
+				var class_index = class_data.zombie_class
+				if class_index >= 0 and class_index < ZombieClassData.ZombieClass.size():
+					zombie_type = ZombieClassData.ZombieClass.keys()[class_index].to_lower()
 		loot_spawner.spawn_zombie_drop(zombie.global_position, zombie_type)
 
 	# Spawn gibs

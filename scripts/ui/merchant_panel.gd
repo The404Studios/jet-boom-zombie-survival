@@ -1,8 +1,8 @@
 extends Control
 class_name MerchantPanel
 
-signal item_purchased(item: ItemDataExtended, cost: int)
-signal item_sold(item: ItemDataExtended, price: int)
+signal item_purchased(item, cost: int)  # item: ItemDataExtended
+signal item_sold(item, price: int)  # item: ItemDataExtended
 signal craft_started(recipe: Dictionary)
 signal panel_closed
 
@@ -669,7 +669,7 @@ func purchase_item(index: int) -> bool:
 	_update_display()
 	return true
 
-func sell_item(item: ItemDataExtended) -> int:
+func sell_item(item) -> int:  # item: ItemDataExtended
 	if not item:
 		return 0
 	var sell_price = _get_sell_price(item.value if "value" in item else 100)

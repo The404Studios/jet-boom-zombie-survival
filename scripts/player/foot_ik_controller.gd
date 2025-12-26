@@ -101,7 +101,7 @@ func _physics_process(delta):
 
 func _update_stepping(_delta):
 	"""Handle foot stepping when moving"""
-	var move_delta = player.global_position - last_body_pos
+	var _move_delta = player.global_position - last_body_pos
 
 	# Check if we need to step
 	if not is_left_moving and not is_right_moving:

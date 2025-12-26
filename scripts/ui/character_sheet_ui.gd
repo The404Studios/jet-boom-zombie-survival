@@ -3,7 +3,7 @@ class_name CharacterSheetUI
 
 @export var character_stats: CharacterStats
 @export var equipment_system: EquipmentSystem
-@export var player_persistence: PlayerPersistence
+var player_persistence: Node = null  # PlayerPersistence autoload - set in _ready
 
 @onready var stats_container: VBoxContainer = $StatsPanel/StatsContainer
 @onready var equipment_panel: Panel = $EquipmentPanel
@@ -20,6 +20,10 @@ signal stat_increased(stat_name: String)
 
 func _ready():
 	visible = false
+
+	# Get PlayerPersistence autoload singleton
+	player_persistence = get_node_or_null("/root/PlayerPersistence")
+
 	setup_ui()
 
 	if character_stats:

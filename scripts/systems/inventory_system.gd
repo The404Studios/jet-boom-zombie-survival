@@ -2,8 +2,8 @@ extends Node
 class_name InventorySystem
 
 signal inventory_changed
-signal item_equipped(item: ItemData)
-signal item_unequipped(item: ItemData)
+signal item_equipped(item)  # item: ItemData
+signal item_unequipped(item)  # item: ItemData
 
 var inventory: Array[Dictionary] = []
 var stash: Array[Dictionary] = []
@@ -29,7 +29,7 @@ func _on_game_started():
 	# Reset inventory state for new game
 	clear_inventory()
 
-func add_item(item: ItemData, quantity: int = 1) -> bool:
+func add_item(item, quantity: int = 1) -> bool:  # item: ItemData
 	# Check if item can stack
 	for i in range(inventory.size()):
 		if inventory[i].item == item and inventory[i].quantity < item.stack_size:
@@ -53,7 +53,7 @@ func add_item(item: ItemData, quantity: int = 1) -> bool:
 
 	return quantity <= 0
 
-func remove_item(item: ItemData, quantity: int = 1) -> bool:
+func remove_item(item, quantity: int = 1) -> bool:  # item: ItemData
 	var remaining = quantity
 	for i in range(inventory.size() - 1, -1, -1):
 		if inventory[i].item == item:
@@ -71,15 +71,15 @@ func remove_item(item: ItemData, quantity: int = 1) -> bool:
 	inventory_changed.emit()
 	return false
 
-func get_item_count(item: ItemData) -> int:
+func get_item_count(item) -> int:  # item: ItemData
 	var count = 0
 	for inv_item in inventory:
 		if inv_item.item == item:
 			count += inv_item.quantity
 	return count
 
-func equip_weapon(item: ItemData) -> bool:
-	if item.item_type != ItemData.ItemType.WEAPON:
+func equip_weapon(item) -> bool:  # item: ItemData
+	if item.item_type != 0:  # ItemData.ItemType.WEAPON = 0
 		return false
 
 	if equipped_weapon:
@@ -90,22 +90,26 @@ func equip_weapon(item: ItemData) -> bool:
 	return true
 
 func unequip_weapon():
-	if equipped_weapon:
-		item_unequipped.emit(equipped_weapon.item)
+	if equipped_weapon and not equipped_weapon.is_empty():
+		var item = equipped_weapon.get("item")
+		if item:
+			item_unequipped.emit(item)
 		equipped_weapon = {}
 
-func equip_armor(item: ItemData) -> bool:
-	if item.item_type != ItemData.ItemType.ARMOR:
+func equip_armor(item) -> bool:  # item: ItemData
+	if item.item_type != 3:  # ItemData.ItemType.ARMOR = 3
 		return false
 
-	if equipped_armor:
-		add_item(equipped_armor.item, 1)
+	if equipped_armor and not equipped_armor.is_empty():
+		var armor_item = equipped_armor.get("item")
+		if armor_item:
+			add_item(armor_item, 1)
 
 	equipped_armor = {"item": item, "quantity": 1}
 	item_equipped.emit(item)
 	return true
 
-func transfer_to_stash(item: ItemData, quantity: int = 1) -> bool:
+func transfer_to_stash(item, quantity: int = 1) -> bool:  # item: ItemData
 	if remove_item(item, quantity):
 		# Add to stash
 		for i in range(stash.size()):
@@ -116,7 +120,7 @@ func transfer_to_stash(item: ItemData, quantity: int = 1) -> bool:
 		return true
 	return false
 
-func transfer_from_stash(item: ItemData, quantity: int = 1) -> bool:
+func transfer_from_stash(item, quantity: int = 1) -> bool:  # item: ItemData
 	# Remove from stash
 	var remaining = quantity
 	for i in range(stash.size() - 1, -1, -1):

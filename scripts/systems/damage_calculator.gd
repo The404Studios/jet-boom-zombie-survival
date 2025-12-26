@@ -19,8 +19,8 @@ class DamageInstance:
 
 static func calculate_damage(
 	base_damage: float,
-	attacker_stats: CharacterStats,
-	weapon: ItemDataExtended,
+	attacker_stats,  # CharacterStats
+	weapon,  # ItemDataExtended
 	is_headshot: bool = false,
 	target_armor: float = 0.0
 ) -> DamageInstance:

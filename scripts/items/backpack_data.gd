@@ -21,7 +21,7 @@ class_name BackpackData
 @export var grid_size: Vector2i = Vector2i(3, 3)
 
 # Item type identifier
-var item_type: int = ItemDataExtended.ItemType.MATERIAL  # Treat as material until equipped
+var item_type: int = 9  # ItemDataExtended.ItemType.MATERIAL - Treat as material until equipped
 
 func get_rarity_color() -> Color:
 	match rarity:

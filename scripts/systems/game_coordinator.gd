@@ -4,10 +4,15 @@ class_name GameCoordinator
 # Game Coordinator - Central hub that wires all game systems together
 # Manages game flow, player spawning, sigil meetup phase, and wave progression
 
+@warning_ignore("unused_signal")
 signal game_phase_changed(phase: GamePhase)
+@warning_ignore("unused_signal")
 signal meetup_timer_updated(time_remaining: float)
+@warning_ignore("unused_signal")
 signal all_players_ready
+@warning_ignore("unused_signal")
 signal game_started
+@warning_ignore("unused_signal")
 signal game_over(victory: bool)
 
 enum GamePhase {

@@ -3,9 +3,13 @@ extends Node
 # Matchmaking system for join-in-progress gameplay
 # Integrates with Steam lobbies for automatic matchmaking
 
+@warning_ignore("unused_signal")
 signal match_found(lobby_id: int)
+@warning_ignore("unused_signal")
 signal matchmaking_started
+@warning_ignore("unused_signal")
 signal matchmaking_stopped
+@warning_ignore("unused_signal")
 signal player_spawned(player: Node)
 
 enum MatchState {
@@ -129,7 +133,9 @@ func _on_lobby_joined(lobby_id: int):
 	# Get match state
 	var state_str = steam_manager.get_lobby_data("match_state")
 	if state_str and state_str.is_valid_int():
-		current_match_state = int(state_str) as MatchState
+		var state_int = int(state_str)
+		if state_int >= 0 and state_int < MatchState.size():
+			current_match_state = state_int as MatchState
 
 	# Stop matchmaking since we found a lobby
 	is_searching = false
@@ -155,7 +161,8 @@ func _on_lobby_joined(lobby_id: int):
 						network_manager.join_server_lan("127.0.0.1")
 
 	match_found.emit(lobby_id)
-	print("Joined match! Lobby: %d, State: %s" % [lobby_id, MatchState.keys()[current_match_state]])
+	var state_name = MatchState.keys()[current_match_state] if current_match_state < MatchState.size() else "UNKNOWN"
+	print("Joined match! Lobby: %d, State: %s" % [lobby_id, state_name])
 
 func _on_lobby_list_received(lobbies: Array):
 	"""Called when lobby search completes"""
@@ -185,7 +192,7 @@ func _on_player_disconnected(peer_id: int):
 	"""Handle player disconnect"""
 	print("Player disconnected: ", peer_id)
 
-func spawn_player(peer_id: int, player_info: Dictionary):
+func spawn_player(peer_id: int, _player_info: Dictionary):
 	"""Spawn a player at the sigil or a spawn point"""
 	var spawn_position = _get_spawn_position()
 

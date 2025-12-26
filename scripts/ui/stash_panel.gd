@@ -1,10 +1,10 @@
 extends Control
 class_name StashPanel
 
-signal item_equipped(item: ItemDataExtended, slot: String)
+signal item_equipped(item, slot: String)  # item: ItemDataExtended
 signal item_unequipped(slot: String)
-signal item_dropped(item: ItemDataExtended)
-signal item_used(item: ItemDataExtended)
+signal item_dropped(item)  # item: ItemDataExtended
+signal item_used(item)  # item: ItemDataExtended
 signal panel_closed
 
 # Equipment slot references
@@ -323,7 +323,7 @@ func _update_currency_display():
 				craft_points = persistence.player_data.get("craft_points", 0)
 		craft_points_label.text = "%d CP" % craft_points
 
-func add_item_to_inventory(item: ItemDataExtended, count: int = 1) -> bool:
+func add_item_to_inventory(item, count: int = 1) -> bool:  # item: ItemDataExtended
 	if not item:
 		return false
 
@@ -354,7 +354,7 @@ func add_item_to_inventory(item: ItemDataExtended, count: int = 1) -> bool:
 
 	return false
 
-func remove_item_from_inventory(item: ItemDataExtended, count: int = 1) -> bool:
+func remove_item_from_inventory(item, count: int = 1) -> bool:  # item: ItemDataExtended
 	if not item:
 		return false
 
@@ -430,7 +430,7 @@ func _get_rarity_color(rarity: int) -> Color:
 		5: return Color(1.0, 0.2, 0.2)   # Mythic - red
 	return Color(0.3, 0.3, 0.3)
 
-func equip_item(item: ItemDataExtended, slot_name: String) -> bool:
+func equip_item(item, slot_name: String) -> bool:  # item: ItemDataExtended
 	if not item:
 		return false
 
@@ -446,7 +446,7 @@ func equip_item(item: ItemDataExtended, slot_name: String) -> bool:
 		return true
 	return false
 
-func unequip_item(slot_name: String) -> ItemDataExtended:
+func unequip_item(slot_name: String):  # Returns ItemDataExtended or null
 	if equipped_items.has(slot_name) and equipped_items[slot_name]:
 		var item = equipped_items[slot_name]
 		equipped_items[slot_name] = null
