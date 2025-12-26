@@ -359,8 +359,8 @@ func _on_zombie_died(zombie: Node, points: int, experience: int):
 	if player and "character_attributes" in player and player.character_attributes:
 		player.character_attributes.add_experience(experience)
 
-func add_player_points(player_id: int, amount: int):
-	"""Add points to a specific player (for multiplayer support)"""
+func add_player_points(_player_id: int, amount: int):
+	# Add points to a specific player (for multiplayer support)
 	# In singleplayer, just add to the main points pool
 	# In multiplayer, would track per-player points
 	if not multiplayer.has_multiplayer_peer():

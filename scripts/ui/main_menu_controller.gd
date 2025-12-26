@@ -670,7 +670,9 @@ func _add_profile_stat(parent: Control, stat_name: String, stat_value: String):
 	parent.add_child(hbox)
 
 func _format_play_time(seconds: int) -> String:
+	@warning_ignore("integer_division")
 	var hours = seconds / 3600
+	@warning_ignore("integer_division")
 	var minutes = (seconds % 3600) / 60
 	return "%dh %dm" % [hours, minutes]
 

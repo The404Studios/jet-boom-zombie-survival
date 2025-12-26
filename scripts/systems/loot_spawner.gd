@@ -284,7 +284,7 @@ func _get_random_spawn_point() -> Node3D:
 		return null
 	return loot_spawn_points[randi() % loot_spawn_points.size()]
 
-func _roll_loot_with_bias(common: float, uncommon: float, rare: float, epic: float, legendary: float) -> Dictionary:
+func _roll_loot_with_bias(_common: float, uncommon: float, rare: float, epic: float, legendary: float) -> Dictionary:
 	var roll = randf()
 	var loot_table: Array[Dictionary]
 

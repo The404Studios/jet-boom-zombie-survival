@@ -312,7 +312,7 @@ func find_target():
 	# Fallback: No valid target found
 	target = null
 
-func move_toward_target(delta):
+func move_toward_target(_delta):
 	if not navigation_agent:
 		# Fallback: direct movement if no navigation agent
 		if target and is_instance_valid(target):
@@ -440,7 +440,7 @@ func apply_buff(buff_type: String, amount: float, duration: float):
 			await get_tree().create_timer(duration).timeout
 			move_speed /= (1.0 + amount)
 
-func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO):
+func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	if is_dead:
 		return
 

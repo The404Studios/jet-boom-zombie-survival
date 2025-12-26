@@ -95,7 +95,7 @@ func find_target():
 		if sigils.size() > 0:
 			target = sigils[0]
 
-func move_toward_target(delta):
+func move_toward_target(_delta):
 	if navigation_agent.is_navigation_finished():
 		return
 
@@ -135,7 +135,7 @@ func attack_target():
 
 	is_attacking = false
 
-func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO):
+func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	if is_dead:
 		return
 

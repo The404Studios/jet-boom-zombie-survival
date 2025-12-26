@@ -244,12 +244,12 @@ func _get_display_name() -> String:
 		return item_data.item_name
 
 	# Generate name from loot data
-	var name = loot_subtype.capitalize().replace("_", " ") if loot_subtype else loot_type.capitalize()
+	var loot_name = loot_subtype.capitalize().replace("_", " ") if loot_subtype else loot_type.capitalize()
 
 	if loot_quantity > 1:
-		name += " x%d" % loot_quantity
+		loot_name += " x%d" % loot_quantity
 
-	return name
+	return loot_name
 
 func set_item_data(data: Resource):
 	item_data = data
@@ -378,7 +378,7 @@ func _give_weapon(player: Node) -> bool:
 		return true
 	return false
 
-func _give_material(player: Node) -> bool:
+func _give_material(_player: Node) -> bool:
 	# Add to player persistence
 	if has_node("/root/PlayerPersistence"):
 		var persistence = get_node("/root/PlayerPersistence")
