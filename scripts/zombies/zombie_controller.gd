@@ -101,8 +101,9 @@ func _setup_procedural_animations():
 		return
 
 	# Use ProceduralAnimation system if available
-	if ProceduralAnimation:
-		ProceduralAnimation.create_zombie_animations(animation_player)
+	var procedural_anim_script = load("res://scripts/systems/procedural_animation.gd")
+	if procedural_anim_script:
+		procedural_anim_script.create_zombie_animations(animation_player)
 	else:
 		# Fallback - create basic animations
 		_create_basic_animations()

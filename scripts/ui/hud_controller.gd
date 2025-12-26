@@ -43,6 +43,9 @@ var current_phase_timer: float = 0.0
 var max_phase_timer: float = 60.0
 var game_coordinator: Node = null
 
+# World tooltip reference
+var world_tooltip: WorldTooltip = null
+
 func _ready():
 	# Add to hud group so arena manager can find us
 	add_to_group("hud")
@@ -72,6 +75,9 @@ func _ready():
 
 	# Create phase timer UI
 	_create_phase_timer_ui()
+
+	# Create world tooltip for ground items
+	_create_world_tooltip()
 
 func _connect_points_system():
 	if has_node("/root/PointsSystem"):
@@ -412,3 +418,37 @@ func show_meetup_progress(players_ready: int, players_total: int):
 			meetup_indicator.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
 		else:
 			meetup_indicator.add_theme_color_override("font_color", Color(1.0, 0.8, 0.3))
+
+# ============================================
+# WORLD TOOLTIP
+# ============================================
+
+func _create_world_tooltip():
+	"""Create world tooltip for ground item inspection"""
+	world_tooltip = WorldTooltip.new()
+	world_tooltip.name = "WorldTooltip"
+	add_child(world_tooltip)
+
+func show_notification(text: String):
+	"""Show a temporary notification message"""
+	var notification = Label.new()
+	notification.text = text
+	notification.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	notification.add_theme_font_size_override("font_size", 18)
+	notification.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	notification.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+	notification.add_theme_constant_override("shadow_offset_x", 1)
+	notification.add_theme_constant_override("shadow_offset_y", 1)
+
+	# Position at top center
+	notification.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	notification.position.y = 150
+	add_child(notification)
+
+	# Animate and remove
+	var tween = create_tween()
+	tween.tween_property(notification, "position:y", 130, 0.3)
+	tween.parallel().tween_property(notification, "modulate:a", 1.0, 0.2)
+	tween.tween_interval(1.5)
+	tween.tween_property(notification, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(notification.queue_free)
