@@ -353,10 +353,11 @@ func drop_item(item_data: Resource, quantity: int = 1):
 
 func place_barricade(spot: Node3D):
 	# Check if player has barricade material in inventory
-	var material_item: ItemData = null
+	var material_item = null  # ItemData
 	for inv_item in inventory.inventory:
-		if inv_item.item.item_type == ItemData.ItemType.MATERIAL:
-			material_item = inv_item.item
+		var item = inv_item.get("item")
+		if item and item.item_type == 5:  # ItemData.ItemType.MATERIAL = 5
+			material_item = item
 			break
 
 	# If no material, check if spot has existing barricade to repair
