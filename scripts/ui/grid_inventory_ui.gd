@@ -946,7 +946,11 @@ func _show_item_at_cell(x: int, y: int):
 
 	var item_entry = grid_inventory.get_item_at(Vector2i(x, y))
 	if not item_entry.is_empty():
-		var cell = grid_cells[y][x] if y < grid_cells.size() and x < grid_cells[y].size() else null
+		var cell = null
+		if y >= 0 and y < grid_cells.size():
+			var row = grid_cells[y]
+			if row and x >= 0 and x < row.size():
+				cell = row[x]
 		if cell:
 			_show_tooltip(item_entry.item, cell.global_position)
 

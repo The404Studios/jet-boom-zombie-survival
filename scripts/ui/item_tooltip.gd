@@ -94,10 +94,12 @@ func hide_tooltip():
 	current_item = null
 
 func _set_content(text: String):
-	if content_label:
+	if content_label and is_instance_valid(content_label):
 		content_label.text = text
 		# Force size update
 		await get_tree().process_frame
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
 		custom_minimum_size = Vector2(250, 0)
 		size = Vector2.ZERO
 

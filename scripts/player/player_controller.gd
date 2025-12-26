@@ -120,13 +120,15 @@ func shoot():
 	if not inventory.equipped_weapon or inventory.equipped_weapon.is_empty():
 		return
 
-	var weapon_data = inventory.equipped_weapon.item
-	if inventory.equipped_weapon.current_ammo <= 0:
+	var weapon_data = inventory.equipped_weapon.get("item")
+	if not weapon_data:
+		return
+	if inventory.equipped_weapon.get("current_ammo", 0) <= 0:
 		# Auto reload
 		reload_weapon()
 		return
 
-	inventory.equipped_weapon.current_ammo -= 1
+	inventory.equipped_weapon["current_ammo"] = inventory.equipped_weapon.get("current_ammo", 1) - 1
 
 	# Raycast for hit detection
 	var space_state = get_world_3d().direct_space_state
@@ -154,8 +156,10 @@ func reload_weapon():
 	if not inventory.equipped_weapon or inventory.equipped_weapon.is_empty():
 		return
 
-	var weapon_data = inventory.equipped_weapon.item
-	if inventory.equipped_weapon.current_ammo >= weapon_data.magazine_size:
+	var weapon_data = inventory.equipped_weapon.get("item")
+	if not weapon_data:
+		return
+	if inventory.equipped_weapon.get("current_ammo", 0) >= weapon_data.magazine_size:
 		return
 
 	is_reloading = true
@@ -170,7 +174,7 @@ func reload_weapon():
 		is_reloading = false
 		return
 
-	inventory.equipped_weapon.current_ammo = weapon_data.magazine_size
+	inventory.equipped_weapon["current_ammo"] = weapon_data.magazine_size
 	is_reloading = false
 
 func interact():

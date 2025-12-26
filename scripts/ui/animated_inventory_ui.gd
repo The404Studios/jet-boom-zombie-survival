@@ -166,7 +166,7 @@ func _on_equipment_slot_hover(slot_name: String):
 	match slot_name:
 		"weapon":
 			if inventory_system and inventory_system.equipped_weapon and inventory_system.equipped_weapon.has("item"):
-				item = inventory_system.equipped_weapon.item
+				item = inventory_system.equipped_weapon.get("item")
 
 	if item:
 		var slot = equipment_panel.get_node_or_null("EquipmentSlots/" + slot_name.capitalize() + "Slot")
@@ -182,7 +182,9 @@ func refresh_equipment():
 		var icon = weapon_slot.get_node_or_null("Icon") as TextureRect
 		if icon:
 			if inventory_system.equipped_weapon and inventory_system.equipped_weapon.has("item"):
-				icon.texture = inventory_system.equipped_weapon.item.icon
+				var weapon_item = inventory_system.equipped_weapon.get("item")
+				if weapon_item:
+					icon.texture = weapon_item.icon
 			else:
 				icon.texture = null
 
@@ -348,17 +350,19 @@ func refresh_stats():
 		# Add bonuses from equipped items
 		if inventory_system:
 			if inventory_system.equipped_weapon and inventory_system.equipped_weapon.has("item"):
-				var weapon = inventory_system.equipped_weapon.item  # ItemDataExtended
-				stats["Strength"] += weapon.strength_bonus
-				stats["Dexterity"] += weapon.dexterity_bonus
-				stats["CritChance"] += weapon.crit_chance_bonus
-				stats["CritDamage"] += weapon.crit_damage_bonus
+				var weapon = inventory_system.equipped_weapon.get("item")  # ItemDataExtended
+				if weapon:
+					stats["Strength"] += weapon.strength_bonus
+					stats["Dexterity"] += weapon.dexterity_bonus
+					stats["CritChance"] += weapon.crit_chance_bonus
+					stats["CritDamage"] += weapon.crit_damage_bonus
 
 			if inventory_system.equipped_armor and inventory_system.equipped_armor.has("item"):
-				var armor = inventory_system.equipped_armor.item  # ItemDataExtended
-				stats["Armor"] += armor.armor_value
-				stats["Vitality"] += armor.vitality_bonus
-				stats["Health"] += armor.health_bonus
+				var armor = inventory_system.equipped_armor.get("item")  # ItemDataExtended
+				if armor:
+					stats["Armor"] += armor.armor_value
+					stats["Vitality"] += armor.vitality_bonus
+					stats["Health"] += armor.health_bonus
 
 	# Update UI labels
 	for stat_name in stats:

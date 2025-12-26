@@ -90,16 +90,20 @@ func equip_weapon(item) -> bool:  # item: ItemData
 	return true
 
 func unequip_weapon():
-	if equipped_weapon:
-		item_unequipped.emit(equipped_weapon.item)
+	if equipped_weapon and not equipped_weapon.is_empty():
+		var item = equipped_weapon.get("item")
+		if item:
+			item_unequipped.emit(item)
 		equipped_weapon = {}
 
 func equip_armor(item) -> bool:  # item: ItemData
 	if item.item_type != 3:  # ItemData.ItemType.ARMOR = 3
 		return false
 
-	if equipped_armor:
-		add_item(equipped_armor.item, 1)
+	if equipped_armor and not equipped_armor.is_empty():
+		var armor_item = equipped_armor.get("item")
+		if armor_item:
+			add_item(armor_item, 1)
 
 	equipped_armor = {"item": item, "quantity": 1}
 	item_equipped.emit(item)
