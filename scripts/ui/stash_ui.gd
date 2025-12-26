@@ -1,7 +1,7 @@
 extends Control
 class_name StashUI
 
-@export var player_persistence: PlayerPersistence
+var player_persistence: Node = null  # PlayerPersistence autoload - set in _ready
 @export var inventory_system: InventorySystem
 
 @onready var stash_panel: Panel = $StashPanel
@@ -20,6 +20,10 @@ signal item_transferred
 
 func _ready():
 	visible = false
+
+	# Get PlayerPersistence autoload singleton
+	player_persistence = get_node_or_null("/root/PlayerPersistence")
+
 	setup_ui()
 
 func setup_ui():
@@ -154,7 +158,7 @@ func refresh_inventory():
 		else:
 			clear_slot(slot)
 
-func update_slot(slot: Panel, item: ItemDataExtended, quantity: int):
+func update_slot(slot: Panel, item, quantity: int):  # item: ItemDataExtended
 	if not item:
 		clear_slot(slot)
 		return
@@ -264,7 +268,7 @@ func animate_item_transfer(to_inventory: bool):
 
 func _on_slot_hover(index: int, is_stash: bool):
 	# Get item data based on source
-	var item: ItemDataExtended = null
+	var item = null  # ItemDataExtended
 	var slot: Panel = null
 
 	if is_stash:
@@ -289,7 +293,7 @@ func _on_slot_hover(index: int, is_stash: bool):
 func _on_slot_exit():
 	hide_tooltip()
 
-func show_tooltip(item: ItemDataExtended, position: Vector2):
+func show_tooltip(item, position: Vector2):  # item: ItemDataExtended
 	var tooltip = get_node_or_null("ItemTooltip")
 	if not tooltip:
 		tooltip = create_tooltip()
@@ -375,7 +379,7 @@ func create_tooltip() -> Panel:
 
 	return panel
 
-func update_tooltip(tooltip: Panel, item: ItemDataExtended):
+func update_tooltip(tooltip: Panel, item):  # item: ItemDataExtended
 	var content = tooltip.get_node("Content")
 	if not content:
 		return

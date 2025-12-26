@@ -27,8 +27,10 @@ var magazine_size: int = 30
 @onready var character_stats: CharacterStats = $CharacterStats
 @onready var equipment_system: EquipmentSystem = $EquipmentSystem
 @onready var status_effects: StatusEffectSystem = $StatusEffectSystem
-@onready var player_persistence: PlayerPersistence = $PlayerPersistence
 @onready var ui: Control = $UI
+
+# PlayerPersistence is an autoload singleton, access via get_node
+var player_persistence: Node = null
 
 # Grid-based inventory (optional - for grid UI system)
 var grid_inventory: GridInventorySystem
@@ -46,6 +48,9 @@ signal critical_hit(target: Node, damage: float)
 func _ready():
 	add_to_group("player")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	# Get PlayerPersistence autoload singleton
+	player_persistence = get_node_or_null("/root/PlayerPersistence")
 
 	# Initialize grid inventory system
 	_setup_grid_inventory()

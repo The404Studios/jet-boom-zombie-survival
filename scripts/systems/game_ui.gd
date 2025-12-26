@@ -8,14 +8,14 @@ class_name GameUI
 @onready var inventory_panel: Panel = $InventoryPanel if has_node("InventoryPanel") else null
 @onready var crosshair: Control = $HUD/Crosshair if has_node("HUD/Crosshair") else null
 
-var player: Player = null
+var player: Node = null  # Player type - use Node for load order safety
 var inventory_open: bool = false
 
 func _ready():
 	if inventory_panel:
 		inventory_panel.visible = false
 
-func setup(p: Player):
+func setup(p: Node):  # p: Player
 	player = p
 	if player:
 		player.health_changed.connect(_on_health_changed)
