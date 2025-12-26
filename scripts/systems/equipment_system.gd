@@ -64,14 +64,13 @@ func _find_character_systems():
 	elif has_node("/root/CharacterStats"):
 		character_stats = get_node("/root/CharacterStats")
 
-	# Try to find CharacterAttributes
-	if parent.has_node("CharacterAttributes"):
-		var attr_node = parent.get_node("CharacterAttributes")
-		if attr_node is CharacterAttributes:
-			character_attributes = attr_node
+	# Try to find CharacterAttributes - use get_node_or_null for safety
+	var attr_node = parent.get_node_or_null("CharacterAttributes")
+	if attr_node and is_instance_valid(attr_node):
+		character_attributes = attr_node
 	elif has_node("/root/CharacterAttributes"):
-		var attr_node = get_node("/root/CharacterAttributes")
-		if attr_node is CharacterAttributes:
+		attr_node = get_node_or_null("/root/CharacterAttributes")
+		if attr_node and is_instance_valid(attr_node):
 			character_attributes = attr_node
 
 # ============================================

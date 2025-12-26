@@ -228,7 +228,8 @@ func get_tooltip_text() -> String:
 
 		if projectile_count > 1:
 			text += "  Pellets: [color=orange]x%d[/color]\n" % projectile_count
-			text += "  Damage/Pellet: [color=red]%.1f[/color]\n" % (damage / projectile_count)
+			if projectile_count > 0:
+				text += "  Damage/Pellet: [color=red]%.1f[/color]\n" % (damage / projectile_count)
 
 		if fire_rate > 0:
 			text += "  Fire Rate: [color=cyan]%.1f/s[/color]\n" % (1.0 / fire_rate)

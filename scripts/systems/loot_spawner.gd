@@ -36,19 +36,27 @@ var arena: Node = null
 func _ready():
 	add_to_group("loot_spawner")
 
-	# Load default scenes
+	# Load default scenes with null verification
 	if not loot_item_scene:
 		if ResourceLoader.exists("res://scenes/items/loot_item.tscn"):
-			loot_item_scene = load("res://scenes/items/loot_item.tscn")
+			var loaded = load("res://scenes/items/loot_item.tscn")
+			if loaded:
+				loot_item_scene = loaded
 	if not weapon_pickup_scene:
 		if ResourceLoader.exists("res://scenes/items/weapon_pickup.tscn"):
-			weapon_pickup_scene = load("res://scenes/items/weapon_pickup.tscn")
+			var loaded = load("res://scenes/items/weapon_pickup.tscn")
+			if loaded:
+				weapon_pickup_scene = loaded
 	if not ammo_pickup_scene:
 		if ResourceLoader.exists("res://scenes/items/ammo_pickup.tscn"):
-			ammo_pickup_scene = load("res://scenes/items/ammo_pickup.tscn")
+			var loaded = load("res://scenes/items/ammo_pickup.tscn")
+			if loaded:
+				ammo_pickup_scene = loaded
 	if not health_pickup_scene:
 		if ResourceLoader.exists("res://scenes/items/health_pickup.tscn"):
-			health_pickup_scene = load("res://scenes/items/health_pickup.tscn")
+			var loaded = load("res://scenes/items/health_pickup.tscn")
+			if loaded:
+				health_pickup_scene = loaded
 
 	# Initialize loot tables
 	_initialize_loot_tables()

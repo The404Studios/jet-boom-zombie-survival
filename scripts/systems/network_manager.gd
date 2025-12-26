@@ -107,7 +107,14 @@ func _setup_steam_host(lobby_id: int):
 	"""Set up Steam P2P hosting after lobby is created"""
 	# Create Steam P2P peer
 	var SteamP2PPeerClass = load("res://scripts/systems/steam_p2p_peer.gd")
+	if not SteamP2PPeerClass:
+		push_error("Failed to load steam_p2p_peer.gd")
+		return
+
 	steam_p2p_peer = SteamP2PPeerClass.new()
+	if not steam_p2p_peer:
+		push_error("Failed to instantiate SteamP2PPeer")
+		return
 
 	var result = steam_p2p_peer.create_host(MAX_PLAYERS)
 	if result != OK:
@@ -143,7 +150,16 @@ func _setup_steam_client(lobby_id: int):
 
 	# Create Steam P2P peer as client
 	var SteamP2PPeerClass = load("res://scripts/systems/steam_p2p_peer.gd")
+	if not SteamP2PPeerClass:
+		push_error("Failed to load steam_p2p_peer.gd")
+		connection_failed.emit()
+		return
+
 	steam_p2p_peer = SteamP2PPeerClass.new()
+	if not steam_p2p_peer:
+		push_error("Failed to instantiate SteamP2PPeer")
+		connection_failed.emit()
+		return
 
 	var result = steam_p2p_peer.create_client(host_steam_id)
 	if result != OK:

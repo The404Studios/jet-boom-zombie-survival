@@ -342,10 +342,12 @@ func _on_zombie_died(zombie: Node, points: int, experience: int):
 		elif "zombie_class_data" in zombie and zombie.zombie_class_data:
 			# Use display_name or convert enum to string
 			var class_data = zombie.zombie_class_data
-			if class_data.display_name:
+			if class_data and class_data.display_name and class_data.display_name != "":
 				zombie_type = class_data.display_name.to_lower()
-			else:
-				zombie_type = ZombieClassData.ZombieClass.keys()[class_data.zombie_class].to_lower()
+			elif class_data and "zombie_class" in class_data:
+				var class_index = class_data.zombie_class
+				if class_index >= 0 and class_index < ZombieClassData.ZombieClass.size():
+					zombie_type = ZombieClassData.ZombieClass.keys()[class_index].to_lower()
 		loot_spawner.spawn_zombie_drop(zombie.global_position, zombie_type)
 
 	# Spawn gibs
