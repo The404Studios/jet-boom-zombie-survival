@@ -1,12 +1,34 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_pistol001"]
+[gd_scene load_steps=5 format=3 uid="uid://weapon_pistol001"]
 
-[sub_resource type="BoxMesh" id="BoxMesh_pistol"]
-size = Vector3(0.05, 0.1, 0.15)
+[sub_resource type="BoxMesh" id="BoxMesh_grip"]
+size = Vector3(0.03, 0.08, 0.04)
+
+[sub_resource type="BoxMesh" id="BoxMesh_slide"]
+size = Vector3(0.025, 0.035, 0.12)
+
+[sub_resource type="StandardMaterial3D" id="Material_gun_dark"]
+albedo_color = Color(0.15, 0.15, 0.18, 1)
+metallic = 0.8
+roughness = 0.3
+
+[sub_resource type="StandardMaterial3D" id="Material_gun_light"]
+albedo_color = Color(0.25, 0.25, 0.28, 1)
+metallic = 0.6
+roughness = 0.4
 
 [node name="WeaponPistol" type="Node3D"]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_pistol")
+[node name="Grip" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0.02)
+mesh = SubResource("BoxMesh_grip")
+surface_material_override/0 = SubResource("Material_gun_dark")
+
+[node name="Slide" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.02)
+mesh = SubResource("BoxMesh_slide")
+surface_material_override/0 = SubResource("Material_gun_light")
 
 [node name="MuzzlePoint" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.15)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.02, -0.08)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]

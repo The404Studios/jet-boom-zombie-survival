@@ -1,18 +1,17 @@
-[gd_scene load_steps=16 format=3 uid="uid://main001"]
+[gd_scene load_steps=25 format=3 uid="uid://main001"]
 
 [ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/player.tscn" id="1"]
 [ext_resource type="PackedScene" uid="uid://zombie001" path="res://scenes/zombies/zombie.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://sigil001" path="res://scenes/environment/sigil.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://barricade_spot001" path="res://scenes/environment/barricade_spot.tscn" id="4"]
 [ext_resource type="Script" path="res://scripts/systems/game_manager.gd" id="5"]
-[ext_resource type="Shader" path="res://shaders/psx_post_process.gdshader" id="6"]
 [ext_resource type="Script" path="res://scripts/systems/main_scene.gd" id="7"]
-[ext_resource type="Script" path="res://scripts/systems/fps_limiter.gd" id="8"]
+[ext_resource type="Script" path="res://scripts/systems/prop_system.gd" id="8"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
-sky_top_color = Color(0.385, 0.454, 0.55, 1)
-sky_horizon_color = Color(0.646, 0.656, 0.67, 1)
-ground_horizon_color = Color(0.646, 0.656, 0.67, 1)
+sky_top_color = Color(0.2, 0.25, 0.35, 1)
+sky_horizon_color = Color(0.5, 0.45, 0.4, 1)
+ground_horizon_color = Color(0.3, 0.25, 0.2, 1)
 
 [sub_resource type="Sky" id="Sky_1"]
 sky_material = SubResource("ProceduralSkyMaterial_1")
@@ -21,33 +20,57 @@ sky_material = SubResource("ProceduralSkyMaterial_1")
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_color = Color(0.6, 0.6, 0.7, 1)
-ambient_light_energy = 0.5
+ambient_light_color = Color(0.4, 0.4, 0.5, 1)
+ambient_light_energy = 0.4
 tonemap_mode = 2
-ssao_enabled = false
-glow_enabled = false
+fog_enabled = true
+fog_light_color = Color(0.5, 0.5, 0.55, 1)
+fog_density = 0.01
+volumetric_fog_enabled = false
 
 [sub_resource type="NavigationMesh" id="NavigationMesh_1"]
-vertices = PackedVector3Array(-50, 0.1, -50, -50, 0.1, 50, 50, 0.1, 50, 50, 0.1, -50)
-polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+agent_radius = 0.4
+agent_height = 1.8
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
-size = Vector2(100, 100)
+size = Vector2(150, 150)
 
 [sub_resource type="StandardMaterial3D" id="Material_ground"]
-albedo_color = Color(0.3, 0.4, 0.3, 1)
-texture_filter = 0
+albedo_color = Color(0.25, 0.3, 0.2, 1)
+roughness = 0.9
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_ground"]
-size = Vector3(100, 0.2, 100)
+size = Vector3(150, 0.2, 150)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_post"]
-shader = ExtResource("6")
-shader_parameter/dither_amount = 0.3
-shader_parameter/color_depth = 16.0
-shader_parameter/enable_dithering = true
-shader_parameter/enable_scanlines = false
-shader_parameter/scanline_intensity = 0.2
+[sub_resource type="BoxMesh" id="BoxMesh_wall"]
+size = Vector3(1, 3, 8)
+
+[sub_resource type="StandardMaterial3D" id="Material_wall"]
+albedo_color = Color(0.5, 0.45, 0.4, 1)
+roughness = 0.85
+
+[sub_resource type="BoxMesh" id="BoxMesh_floor"]
+size = Vector3(16, 0.2, 16)
+
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+albedo_color = Color(0.35, 0.32, 0.28, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_crate"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="Material_crate"]
+albedo_color = Color(0.5, 0.35, 0.2, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_barrel"]
+top_radius = 0.4
+bottom_radius = 0.45
+height = 1.2
+
+[sub_resource type="StandardMaterial3D" id="Material_barrel"]
+albedo_color = Color(0.3, 0.35, 0.25, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_prop"]
+size = Vector3(1, 1, 1)
 
 [node name="Main" type="Node3D"]
 script = ExtResource("7")
@@ -56,8 +79,9 @@ script = ExtResource("7")
 environment = SubResource("Environment_1")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 20, 0)
-light_color = Color(1, 0.95, 0.9, 1)
+transform = Transform3D(0.866, -0.433, 0.25, 0, 0.5, 0.866, -0.5, -0.75, 0.433, 0, 30, 0)
+light_color = Color(1, 0.9, 0.8, 1)
+light_energy = 0.8
 shadow_enabled = true
 
 [node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
@@ -75,72 +99,232 @@ surface_material_override/0 = SubResource("Material_ground")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.1, 0)
 shape = SubResource("BoxShape3D_ground")
 
+[node name="Buildings" type="Node3D" parent="."]
+
+[node name="CentralBase" type="Node3D" parent="Buildings"]
+
+[node name="Floor" type="MeshInstance3D" parent="Buildings/CentralBase"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="WallNorth" type="StaticBody3D" parent="Buildings/CentralBase"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, -7.5)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="Buildings/CentralBase/WallNorth"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="Collision" type="CollisionShape3D" parent="Buildings/CentralBase/WallNorth"]
+shape = SubResource("BoxShape3D_ground")
+
+[node name="WallSouth" type="StaticBody3D" parent="Buildings/CentralBase"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 7.5)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="Buildings/CentralBase/WallSouth"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallEast" type="StaticBody3D" parent="Buildings/CentralBase"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 7.5, 1.5, 0)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="Buildings/CentralBase/WallEast"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="WallWest" type="StaticBody3D" parent="Buildings/CentralBase"]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -7.5, 1.5, 0)
+collision_layer = 1
+
+[node name="Mesh" type="MeshInstance3D" parent="Buildings/CentralBase/WallWest"]
+mesh = SubResource("BoxMesh_wall")
+surface_material_override/0 = SubResource("Material_wall")
+
+[node name="Building2" type="Node3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 0)
+
+[node name="Floor2" type="MeshInstance3D" parent="Buildings/Building2"]
+transform = Transform3D(0.75, 0, 0, 0, 1, 0, 0, 0, 0.75, 0, 0.1, 0)
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="Building3" type="Node3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, 0)
+
+[node name="Floor3" type="MeshInstance3D" parent="Buildings/Building3"]
+transform = Transform3D(0.75, 0, 0, 0, 1, 0, 0, 0, 0.75, 0, 0.1, 0)
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
+[node name="Building4" type="Node3D" parent="Buildings"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 25)
+
+[node name="Floor4" type="MeshInstance3D" parent="Buildings/Building4"]
+transform = Transform3D(0.6, 0, 0, 0, 1, 0, 0, 0, 0.8, 0, 0.1, 0)
+mesh = SubResource("BoxMesh_floor")
+surface_material_override/0 = SubResource("Material_floor")
+
 [node name="Player" parent="." instance=ExtResource("1")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="Sigil" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+
+[node name="Sigil2" parent="." instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.1, 0)
 
 [node name="GameManager" type="Node" parent="."]
 script = ExtResource("5")
 zombie_scene = ExtResource("2")
 zombies_per_wave = 5
 wave_delay = 20.0
-max_zombies_alive = 25
+max_zombies_alive = 30
 
 [node name="ZombieSpawnPoints" type="Node3D" parent="."]
 
 [node name="Spawn1" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 30)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.5, 40)
 
 [node name="Spawn2" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 30)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0.5, 40)
 
 [node name="Spawn3" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, -30)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.5, -40)
 
 [node name="Spawn4" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, -30)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0.5, -40)
 
 [node name="Spawn5" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0.5, 0)
 
 [node name="Spawn6" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0.5, 0)
 
 [node name="Spawn7" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 50)
 
 [node name="Spawn8" type="Marker3D" parent="ZombieSpawnPoints"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, -50)
 
 [node name="BarricadeSpots" type="Node3D" parent="."]
 
 [node name="Spot1" parent="BarricadeSpots" instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, 3)
 
 [node name="Spot2" parent="BarricadeSpots" instance=ExtResource("4")]
-transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 10, 0, -10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.5, 0, -3)
 
 [node name="Spot3" parent="BarricadeSpots" instance=ExtResource("4")]
-transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, -10, 0, 10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0, 3)
 
 [node name="Spot4" parent="BarricadeSpots" instance=ExtResource("4")]
-transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, -10, 0, -10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.5, 0, -3)
+
+[node name="Spot5" parent="BarricadeSpots" instance=ExtResource("4")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, 3, 0, 7.5)
+
+[node name="Spot6" parent="BarricadeSpots" instance=ExtResource("4")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -3, 0, 7.5)
 
 [node name="Props" type="Node3D" parent="."]
 
-[node name="PSXPostProcess" type="ColorRect" parent="."]
-material = SubResource("ShaderMaterial_post")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="FPSLimit" type="Node" parent="."]
+[node name="Crate1" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, 5)
+collision_layer = 4
 script = ExtResource("8")
-target_fps = 144
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Crate1"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Material_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Crate1"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Crate2" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.5, 5)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Crate2"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Material_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Crate2"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Crate3" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0.5, -5)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Crate3"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Material_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Crate3"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Barrel1" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5, 0.6, -5)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Barrel1"]
+mesh = SubResource("CylinderMesh_barrel")
+surface_material_override/0 = SubResource("Material_barrel")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Barrel1"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Barrel2" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.6, 0)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Barrel2"]
+mesh = SubResource("CylinderMesh_barrel")
+surface_material_override/0 = SubResource("Material_barrel")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Barrel2"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Barrel3" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.6, 0)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Barrel3"]
+mesh = SubResource("CylinderMesh_barrel")
+surface_material_override/0 = SubResource("Material_barrel")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Barrel3"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Crate4" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.5, 3)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Crate4"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Material_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Crate4"]
+shape = SubResource("BoxShape3D_prop")
+
+[node name="Crate5" type="StaticBody3D" parent="Props" groups=["prop", "nailable"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0.5, -3)
+collision_layer = 4
+script = ExtResource("8")
+
+[node name="Mesh" type="MeshInstance3D" parent="Props/Crate5"]
+mesh = SubResource("BoxMesh_crate")
+surface_material_override/0 = SubResource("Material_crate")
+
+[node name="Collision" type="CollisionShape3D" parent="Props/Crate5"]
+shape = SubResource("BoxShape3D_prop")
 
 [editable path="Player"]
