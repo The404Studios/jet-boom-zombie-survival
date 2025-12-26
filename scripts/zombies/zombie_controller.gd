@@ -37,7 +37,7 @@ var buff_amount: float = 0.2
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var model: Node3D = $Model if has_node("Model") else null
-@onready var status_effects: StatusEffectSystem = $StatusEffectSystem if has_node("StatusEffectSystem") else null
+@onready var status_effects = $StatusEffectSystem if has_node("StatusEffectSystem") else null  # StatusEffectSystem
 @onready var mesh_instance: MeshInstance3D = $Model/MeshInstance3D if has_node("Model/MeshInstance3D") else null
 var animation_player: AnimationPlayer = null
 

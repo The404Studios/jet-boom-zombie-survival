@@ -361,13 +361,13 @@ func update_tooltip_content(tooltip: Panel, item):  # item: ItemDataExtended
 		name_label.text = "[b][color=#%s]%s[/color][/b]" % [color_hex, item.item_name]
 
 	if type_label:
-		var type_name = ItemDataExtended.ItemType.keys()[item.item_type].capitalize() if item.item_type < ItemDataExtended.ItemType.size() else "Unknown"
+		var type_name = _get_item_type_name(item.item_type)
 		type_label.text = "%s %s" % [item.get_rarity_name(), type_name]
 		type_label.add_theme_color_override("font_color", item.get_rarity_color())
 
 	if stats_label:
 		var stats_text = ""
-		if item.item_type == ItemDataExtended.ItemType.WEAPON:
+		if item.item_type == 0:  # WEAPON
 			stats_text += "[color=white]Damage:[/color] %.1f\n" % item.damage
 			stats_text += "[color=white]Fire Rate:[/color] %.2f/s\n" % (1.0 / max(item.fire_rate, 0.01))
 			stats_text += "[color=white]Magazine:[/color] %d\n" % item.magazine_size
@@ -455,3 +455,20 @@ func spawn_coin_particles(amount: int):
 func _input(event):
 	if is_open and event.is_action_pressed("ui_cancel"):
 		close()
+
+# Helper function to get item type name without referencing external class at parse time
+func _get_item_type_name(type_id: int) -> String:
+	match type_id:
+		0: return "Weapon"
+		1: return "Ammo"
+		2: return "Helmet"
+		3: return "Chest"
+		4: return "Legs"
+		5: return "Boots"
+		6: return "Gloves"
+		7: return "Backpack"
+		8: return "Accessory"
+		9: return "Consumable"
+		10: return "Material"
+		11: return "Quest Item"
+		_: return "Unknown"

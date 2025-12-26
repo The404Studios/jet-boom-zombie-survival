@@ -26,7 +26,7 @@ var magazine_size: int = 30
 @onready var inventory: InventorySystem = $InventorySystem
 @onready var character_stats: CharacterStats = $CharacterStats
 @onready var equipment_system: EquipmentSystem = $EquipmentSystem
-@onready var status_effects: StatusEffectSystem = $StatusEffectSystem
+@onready var status_effects = $StatusEffectSystem  # StatusEffectSystem
 @onready var ui: Control = $UI
 
 # PlayerPersistence is an autoload singleton, access via get_node

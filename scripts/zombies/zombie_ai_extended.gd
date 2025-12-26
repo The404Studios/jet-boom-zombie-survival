@@ -8,7 +8,7 @@ class_name ZombieExtended
 @export var attack_cooldown: float = 1.5
 @export var detection_range: float = 20.0
 @export var armor: float = 0.0
-@export var loot_items: Array[ItemDataExtended] = []
+@export var loot_items: Array = []  # Array of ItemDataExtended
 @export var experience_reward: int = 50
 
 var current_health: float = 50.0
@@ -21,7 +21,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var animation_player: AnimationPlayer = $AnimationPlayer if has_node("AnimationPlayer") else null
 @onready var model: Node3D = $Model if has_node("Model") else null
-@onready var status_effects: StatusEffectSystem = $StatusEffectSystem if has_node("StatusEffectSystem") else null
+@onready var status_effects = $StatusEffectSystem if has_node("StatusEffectSystem") else null  # StatusEffectSystem
 @onready var head_hitbox: Area3D = $HeadHitbox if has_node("HeadHitbox") else null
 
 signal zombie_died(zombie: ZombieExtended)
@@ -219,19 +219,20 @@ func drop_loot():
 			var random_item = loot_items[randi() % loot_items.size()]
 
 			# Rarity affects drop chance
+			# Rarity enum: COMMON=0, UNCOMMON=1, RARE=2, EPIC=3, LEGENDARY=4, MYTHIC=5
 			var rarity_mult = 1.0
 			match random_item.rarity:
-				ItemDataExtended.ItemRarity.COMMON: rarity_mult = 1.0
-				ItemDataExtended.ItemRarity.UNCOMMON: rarity_mult = 0.7
-				ItemDataExtended.ItemRarity.RARE: rarity_mult = 0.4
-				ItemDataExtended.ItemRarity.EPIC: rarity_mult = 0.2
-				ItemDataExtended.ItemRarity.LEGENDARY: rarity_mult = 0.05
-				ItemDataExtended.ItemRarity.MYTHIC: rarity_mult = 0.01
+				0: rarity_mult = 1.0    # COMMON
+				1: rarity_mult = 0.7    # UNCOMMON
+				2: rarity_mult = 0.4    # RARE
+				3: rarity_mult = 0.2    # EPIC
+				4: rarity_mult = 0.05   # LEGENDARY
+				5: rarity_mult = 0.01   # MYTHIC
 
 			if randf() < rarity_mult:
 				spawn_loot_item(random_item)
 
-func spawn_loot_item(item_data: ItemDataExtended):
+func spawn_loot_item(item_data):  # ItemDataExtended
 	# Create loot node
 	var loot = preload("res://scenes/items/loot_item.tscn").instantiate()
 	get_parent().add_child(loot)

@@ -32,7 +32,7 @@ var next_peer_id: int = 2  # Start at 2 (1 is always server)
 var incoming_packets: Array = []
 var target_peer: int = 0
 var transfer_channel: int = 0
-var transfer_mode: int = MultiplayerPeer.TRANSFER_MODE_RELIABLE  # MultiplayerPeer.TransferMode
+var transfer_mode: int = 2  # MultiplayerPeer.TRANSFER_MODE_RELIABLE = 2
 
 # Send channels (Steam networking uses channels 0-31)
 const CHANNEL_RELIABLE: int = 0
