@@ -118,14 +118,15 @@ func _execute_task(task: TaskData):
 	var result = null
 	var error = ""
 
-	try:
+	# Validate callable before execution
+	if not task.callable.is_valid():
+		error = "Invalid callable"
+		stats.tasks_failed += 1
+	else:
 		if task.args.size() > 0:
 			result = task.callable.callv(task.args)
 		else:
 			result = task.callable.call()
-	except:
-		error = "Task execution failed"
-		stats.tasks_failed += 1
 
 	# Handle callback
 	if error == "":
