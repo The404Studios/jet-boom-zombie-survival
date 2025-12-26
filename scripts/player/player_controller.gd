@@ -15,12 +15,16 @@ var is_sprinting: bool = false
 var can_shoot: bool = true
 var is_reloading: bool = false
 var reserve_ammo: int = 90
+var is_phasing: bool = false  # For phasing through props with Z key
 
 @onready var camera: Camera3D = $Camera3D
 @onready var weapon_holder: Node3D = $Camera3D/WeaponHolder
 @onready var interact_ray: RayCast3D = $Camera3D/InteractRay
 @onready var inventory: InventorySystem = $InventorySystem
 @onready var ui: Control = $UI
+
+# Weapon controller for animations
+var weapon_controller: WeaponController = null
 
 # Grid-based inventory (optional - for grid UI system)
 var grid_inventory: GridInventorySystem
@@ -43,8 +47,18 @@ func _ready():
 	# Initialize grid inventory system
 	_setup_grid_inventory()
 
+	# Setup weapon controller
+	_setup_weapon_controller()
+
 	# Give player a starting weapon
 	_equip_starting_weapon()
+
+func _setup_weapon_controller():
+	# Create weapon controller if not exists
+	if weapon_holder:
+		weapon_controller = WeaponController.new()
+		weapon_controller.name = "WeaponController"
+		weapon_holder.add_child(weapon_controller)
 
 func _equip_starting_weapon():
 	# Load pistol as starting weapon
@@ -57,8 +71,12 @@ func _equip_starting_weapon():
 		}
 		print("[Player] Starting weapon equipped: ", pistol.item_name)
 
-		# Try to spawn weapon mesh in weapon holder
-		if weapon_holder and pistol.mesh_scene:
+		# Use weapon controller if available
+		if weapon_controller:
+			weapon_controller.equip_weapon(pistol)
+			current_weapon = weapon_controller.weapon_mesh
+		elif weapon_holder and pistol.mesh_scene:
+			# Fallback: spawn weapon mesh directly
 			var weapon_mesh = pistol.mesh_scene.instantiate()
 			weapon_holder.add_child(weapon_mesh)
 			current_weapon = weapon_mesh
@@ -85,9 +103,21 @@ func _input(event):
 	if event.is_action_pressed("extract"):
 		attempt_extract()
 
-	# Drop item with G key (if action exists)
+	# Drop weapon with G key
+	if event.is_action_pressed("link_sigil"):  # G key - also drops weapon when not near sigil
+		if not _is_near_sigil():
+			drop_equipped_weapon()
+
+	# Drop item with Q key (if action exists)
 	if InputMap.has_action("drop_item") and event.is_action_pressed("drop_item"):
 		drop_held_item()
+
+	# Phase through props with Z key
+	if InputMap.has_action("phase_props"):
+		if event.is_action_pressed("phase_props"):
+			_start_phasing()
+		elif event.is_action_released("phase_props"):
+			_stop_phasing()
 
 func _physics_process(delta):
 	# Stamina regeneration
@@ -168,8 +198,10 @@ func shoot():
 	# Set fire rate cooldown
 	shoot_timer = weapon_data.fire_rate
 
-	# Weapon animation and effects would go here
-	if current_weapon and current_weapon.has_method("play_shoot_animation"):
+	# Weapon animation and effects
+	if weapon_controller:
+		weapon_controller.play_shoot_animation()
+	elif current_weapon and current_weapon.has_method("play_shoot_animation"):
 		current_weapon.play_shoot_animation()
 
 	can_shoot = true
@@ -186,7 +218,11 @@ func reload_weapon():
 
 	is_reloading = true
 
-	# Animation would play here
+	# Play reload animation
+	if weapon_controller:
+		weapon_controller.play_reload_animation()
+
+	# Wait for reload time
 	await get_tree().create_timer(weapon_data.reload_time).timeout
 
 	# Validate after await - player or weapon may have changed/been freed
@@ -433,13 +469,88 @@ func attempt_extract():
 				collider.extract(self)
 
 func equip_weapon_item(weapon_data: ItemData):
-	# Clear current weapon visual
-	for child in weapon_holder.get_children():
-		child.queue_free()
+	# Use weapon controller if available
+	if weapon_controller:
+		weapon_controller.equip_weapon(weapon_data)
+		current_weapon = weapon_controller.weapon_mesh
+	else:
+		# Clear current weapon visual
+		for child in weapon_holder.get_children():
+			child.queue_free()
 
-	# Instantiate new weapon model
-	if weapon_data.mesh_scene:
-		current_weapon = weapon_data.mesh_scene.instantiate()
-		weapon_holder.add_child(current_weapon)
+		# Instantiate new weapon model
+		if weapon_data.mesh_scene:
+			current_weapon = weapon_data.mesh_scene.instantiate()
+			weapon_holder.add_child(current_weapon)
 
 	inventory.equip_weapon(weapon_data)
+
+func drop_equipped_weapon():
+	"""Drop the currently equipped weapon"""
+	if not inventory.equipped_weapon or inventory.equipped_weapon.is_empty():
+		show_pickup_message("No weapon to drop")
+		return
+
+	var weapon_data = inventory.equipped_weapon.get("item")
+	if not weapon_data:
+		return
+
+	# Calculate drop position
+	var drop_position = global_position + (-global_transform.basis.z * 1.5) + Vector3(0, 0.5, 0)
+
+	# Create dropped weapon in world
+	var loot_scene = load("res://scenes/items/loot_item.tscn")
+	if loot_scene:
+		var loot = loot_scene.instantiate()
+		get_parent().add_child(loot)
+		loot.global_position = drop_position
+
+		if loot.has_method("set_item_data"):
+			loot.set_item_data(weapon_data)
+		elif "item_data" in loot:
+			loot.item_data = weapon_data
+
+		# Give it some physics impulse
+		if loot is RigidBody3D:
+			loot.linear_velocity = -global_transform.basis.z * 3 + Vector3(0, 2, 0)
+
+	# Clear equipped weapon
+	inventory.equipped_weapon = {}
+
+	# Clear weapon visuals
+	if weapon_controller:
+		weapon_controller.unequip_weapon()
+	elif current_weapon:
+		current_weapon.queue_free()
+		current_weapon = null
+
+	show_pickup_message("Dropped: %s" % (weapon_data.item_name if "item_name" in weapon_data else "Weapon"))
+
+func _is_near_sigil() -> bool:
+	"""Check if player is near a sigil"""
+	for sigil in get_tree().get_nodes_in_group("sigil"):
+		if is_instance_valid(sigil):
+			var dist = global_position.distance_to(sigil.global_position)
+			if dist < 15.0:  # Within sigil range
+				return true
+	return false
+
+func _start_phasing():
+	"""Start phasing through props (collision disabled with props layer)"""
+	is_phasing = true
+	# Disable collision with props layer (layer 4 = Items)
+	set_collision_mask_value(4, false)
+
+	# Visual feedback - slight transparency
+	var tween = create_tween()
+	tween.tween_property(self, "modulate", Color(1, 1, 1, 0.7), 0.2)
+
+func _stop_phasing():
+	"""Stop phasing through props"""
+	is_phasing = false
+	# Re-enable collision with props layer
+	set_collision_mask_value(4, true)
+
+	# Reset visual
+	var tween = create_tween()
+	tween.tween_property(self, "modulate", Color(1, 1, 1, 1), 0.2)

@@ -81,6 +81,8 @@ var inventory_system: Node = null
 var equipment_system: Node = null
 
 func _ready():
+	add_to_group("sigil_shop")
+
 	# Get persistence reference
 	if has_node("/root/PlayerPersistence"):
 		player_persistence = get_node("/root/PlayerPersistence")
@@ -352,6 +354,88 @@ func _populate_shop_inventory():
 	weapon_repair.stock = -1
 	weapon_repair.rarity = 1
 	shop_items["service_repair"] = weapon_repair
+
+	# Turrets
+	var turret_basic = ShopItem.new("service_turret_basic", "Basic Turret", "Deploy a basic auto-turret. Targets zombies automatically.", ShopCategory.SERVICES, 300)
+	turret_basic.rarity = 1
+	turret_basic.stock = -1
+	shop_items["service_turret_basic"] = turret_basic
+
+	var turret_heavy = ShopItem.new("service_turret_heavy", "Heavy Turret", "Deploy a heavy turret with increased damage and armor.", ShopCategory.SERVICES, 600)
+	turret_heavy.rarity = 2
+	turret_heavy.level_requirement = 5
+	turret_heavy.stock = -1
+	shop_items["service_turret_heavy"] = turret_heavy
+
+	var turret_flame = ShopItem.new("service_turret_flame", "Flame Turret", "Deploy a flamethrower turret. Burns nearby enemies.", ShopCategory.SERVICES, 500)
+	turret_flame.rarity = 2
+	turret_flame.level_requirement = 4
+	turret_flame.stock = -1
+	shop_items["service_turret_flame"] = turret_flame
+
+	var turret_tesla = ShopItem.new("service_turret_tesla", "Tesla Turret", "Deploy a tesla turret. Chain lightning to multiple enemies.", ShopCategory.SERVICES, 800)
+	turret_tesla.rarity = 3
+	turret_tesla.level_requirement = 8
+	turret_tesla.stock = -1
+	shop_items["service_turret_tesla"] = turret_tesla
+
+	# Friendly AI Summons
+	var summon_soldier = ShopItem.new("service_summon_soldier", "Summon Soldier", "Summon a friendly soldier to fight alongside you for 60 seconds.", ShopCategory.SERVICES, 250)
+	summon_soldier.rarity = 1
+	summon_soldier.stock = -1
+	shop_items["service_summon_soldier"] = summon_soldier
+
+	var summon_sniper = ShopItem.new("service_summon_sniper", "Summon Sniper", "Summon a sniper for long-range support. 60 second duration.", ShopCategory.SERVICES, 400)
+	summon_sniper.rarity = 2
+	summon_sniper.level_requirement = 5
+	summon_sniper.stock = -1
+	shop_items["service_summon_sniper"] = summon_sniper
+
+	var summon_medic = ShopItem.new("service_summon_medic", "Summon Medic", "Summon a medic to heal you and allies. 60 second duration.", ShopCategory.SERVICES, 350)
+	summon_medic.rarity = 2
+	summon_medic.level_requirement = 4
+	summon_medic.stock = -1
+	shop_items["service_summon_medic"] = summon_medic
+
+	var summon_tank = ShopItem.new("service_summon_tank", "Summon Tank", "Summon a heavily armored tank unit. 60 second duration.", ShopCategory.SERVICES, 600)
+	summon_tank.rarity = 3
+	summon_tank.level_requirement = 8
+	summon_tank.stock = -1
+	shop_items["service_summon_tank"] = summon_tank
+
+	# Weapon Upgrades (uses WeaponUpgradeSystem)
+	var upgrade_damage = ShopItem.new("service_upgrade_damage", "Damage Upgrade", "Increase equipped weapon damage by 15%.", ShopCategory.SERVICES, 100)
+	upgrade_damage.rarity = 1
+	upgrade_damage.stock = -1
+	shop_items["service_upgrade_damage"] = upgrade_damage
+
+	var upgrade_fire_rate = ShopItem.new("service_upgrade_fire_rate", "Fire Rate Upgrade", "Increase equipped weapon fire rate by 10%.", ShopCategory.SERVICES, 80)
+	upgrade_fire_rate.rarity = 1
+	upgrade_fire_rate.stock = -1
+	shop_items["service_upgrade_fire_rate"] = upgrade_fire_rate
+
+	var upgrade_magazine = ShopItem.new("service_upgrade_magazine", "Magazine Upgrade", "Increase equipped weapon magazine size by 25%.", ShopCategory.SERVICES, 60)
+	upgrade_magazine.rarity = 0
+	upgrade_magazine.stock = -1
+	shop_items["service_upgrade_magazine"] = upgrade_magazine
+
+	var upgrade_elemental_fire = ShopItem.new("service_upgrade_fire", "Incendiary Rounds", "Add fire damage to equipped weapon. Burns enemies.", ShopCategory.SERVICES, 200)
+	upgrade_elemental_fire.rarity = 2
+	upgrade_elemental_fire.level_requirement = 5
+	upgrade_elemental_fire.stock = -1
+	shop_items["service_upgrade_fire"] = upgrade_elemental_fire
+
+	var upgrade_elemental_ice = ShopItem.new("service_upgrade_ice", "Cryo Rounds", "Add ice damage to equipped weapon. Slows enemies.", ShopCategory.SERVICES, 200)
+	upgrade_elemental_ice.rarity = 2
+	upgrade_elemental_ice.level_requirement = 5
+	upgrade_elemental_ice.stock = -1
+	shop_items["service_upgrade_ice"] = upgrade_elemental_ice
+
+	var upgrade_elemental_electric = ShopItem.new("service_upgrade_electric", "Tesla Rounds", "Add electric damage. Chance to chain to nearby enemies.", ShopCategory.SERVICES, 250)
+	upgrade_elemental_electric.rarity = 3
+	upgrade_elemental_electric.level_requirement = 7
+	upgrade_elemental_electric.stock = -1
+	shop_items["service_upgrade_electric"] = upgrade_elemental_electric
 
 	# ============================================
 	# GEAR - Helmets
@@ -877,6 +961,99 @@ func _apply_service(item: ShopItem, player: Node):
 			if "current_weapon_data" in player and player.current_weapon_data:
 				if "durability" in player.current_weapon_data and "max_durability" in player.current_weapon_data:
 					player.current_weapon_data.durability = player.current_weapon_data.max_durability
+		# Turrets
+		"service_turret_basic":
+			_spawn_turret(player, Turret.TurretType.BASIC)
+		"service_turret_heavy":
+			_spawn_turret(player, Turret.TurretType.HEAVY)
+		"service_turret_flame":
+			_spawn_turret(player, Turret.TurretType.FLAME)
+		"service_turret_tesla":
+			_spawn_turret(player, Turret.TurretType.TESLA)
+		# Friendly AI Summons
+		"service_summon_soldier":
+			_spawn_ally(player, FriendlyAI.AIType.SOLDIER)
+		"service_summon_sniper":
+			_spawn_ally(player, FriendlyAI.AIType.SNIPER)
+		"service_summon_medic":
+			_spawn_ally(player, FriendlyAI.AIType.MEDIC)
+		"service_summon_tank":
+			_spawn_ally(player, FriendlyAI.AIType.TANK)
+		# Weapon Upgrades
+		"service_upgrade_damage":
+			_apply_weapon_upgrade(player, WeaponUpgradeSystem.UpgradeType.DAMAGE)
+		"service_upgrade_fire_rate":
+			_apply_weapon_upgrade(player, WeaponUpgradeSystem.UpgradeType.FIRE_RATE)
+		"service_upgrade_magazine":
+			_apply_weapon_upgrade(player, WeaponUpgradeSystem.UpgradeType.MAGAZINE_SIZE)
+		"service_upgrade_fire":
+			_apply_weapon_upgrade(player, WeaponUpgradeSystem.UpgradeType.ELEMENTAL_FIRE)
+		"service_upgrade_ice":
+			_apply_weapon_upgrade(player, WeaponUpgradeSystem.UpgradeType.ELEMENTAL_ICE)
+		"service_upgrade_electric":
+			_apply_weapon_upgrade(player, WeaponUpgradeSystem.UpgradeType.ELEMENTAL_ELECTRIC)
+
+func _spawn_turret(player: Node, turret_type: int):
+	"""Spawn a turret in front of the player"""
+	var spawn_pos = player.global_position + (-player.global_transform.basis.z * 2)
+	spawn_pos.y = player.global_position.y
+
+	var turret = Turret.create_turret(turret_type as Turret.TurretType)
+	turret.global_position = spawn_pos
+	get_tree().current_scene.add_child(turret)
+
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("Turret deployed!")
+
+func _spawn_ally(player: Node, ally_type: int):
+	"""Spawn a friendly AI ally"""
+	var spawn_pos = player.global_position + (player.global_transform.basis.x * 2)
+	spawn_pos.y = player.global_position.y
+
+	var ally = FriendlyAI.spawn_ally(ally_type as FriendlyAI.AIType, spawn_pos, player)
+	get_tree().current_scene.add_child(ally)
+
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("Ally summoned: %s" % ally.ai_name)
+
+func _apply_weapon_upgrade(player: Node, upgrade_type: int):
+	"""Apply a weapon upgrade to the player's equipped weapon"""
+	if not player or not "inventory" in player:
+		return
+
+	var equipped = player.inventory.equipped_weapon if player.inventory else null
+	if not equipped or equipped.is_empty():
+		if has_node("/root/ChatSystem"):
+			get_node("/root/ChatSystem").emit_system_message("No weapon equipped to upgrade!")
+		# Refund sigils
+		add_sigils(shop_items.values().filter(func(i): return i.id.contains("upgrade")).front().cost, "Refund")
+		return
+
+	var weapon_data = equipped.get("item")
+	if not weapon_data:
+		return
+
+	# Get or create weapon upgrade system
+	var upgrade_system = get_tree().get_first_node_in_group("weapon_upgrade_system")
+	if not upgrade_system:
+		upgrade_system = WeaponUpgradeSystem.new()
+		upgrade_system.name = "WeaponUpgradeSystem"
+		get_tree().current_scene.add_child(upgrade_system)
+
+	# Apply upgrade (cost already deducted by shop)
+	if upgrade_system.can_upgrade(weapon_data, upgrade_type as WeaponUpgradeSystem.UpgradeType):
+		var weapon_id = str(weapon_data.get_instance_id())
+		if weapon_id not in upgrade_system.weapon_upgrades:
+			upgrade_system.weapon_upgrades[weapon_id] = {}
+		var current_level = upgrade_system.weapon_upgrades[weapon_id].get(upgrade_type, 0)
+		upgrade_system.weapon_upgrades[weapon_id][upgrade_type] = current_level + 1
+
+		if has_node("/root/ChatSystem"):
+			var weapon_name = weapon_data.item_name if "item_name" in weapon_data else "Weapon"
+			get_node("/root/ChatSystem").emit_system_message("%s upgraded!" % weapon_name)
+	else:
+		if has_node("/root/ChatSystem"):
+			get_node("/root/ChatSystem").emit_system_message("Cannot upgrade further!")
 
 # ============================================
 # SIGIL CURRENCY MANAGEMENT
