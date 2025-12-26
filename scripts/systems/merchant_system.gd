@@ -3,8 +3,8 @@ class_name MerchantSystem
 
 signal shop_opened
 signal shop_closed
-signal item_purchased(item: ItemDataExtended, cost: int)
-signal item_sold(item: ItemDataExtended, price: int)
+signal item_purchased(item, cost: int)  # item is ItemDataExtended
+signal item_sold(item, price: int)  # item is ItemDataExtended
 signal shop_refreshed
 
 enum CurrencyType {
@@ -14,14 +14,14 @@ enum CurrencyType {
 }
 
 class ShopItem:
-	var item: ItemDataExtended
+	var item  # ItemDataExtended - type hint removed for load order compatibility
 	var cost: int
-	var currency_type: CurrencyType
+	var currency_type: int  # CurrencyType enum
 	var stock: int = -1  # -1 = infinite
 	var sold_out: bool = false
 	var unlock_required: String = ""
 
-	func _init(itm: ItemDataExtended, price: int, curr: CurrencyType = CurrencyType.COINS, stk: int = -1):
+	func _init(itm, price: int, curr: int = 0, stk: int = -1):  # CurrencyType.COINS = 0
 		item = itm
 		cost = price
 		currency_type = curr
@@ -54,14 +54,14 @@ func refresh_shop():
 		return true
 	return false
 
-func can_afford(shop_item: ShopItem) -> bool:
+func can_afford(shop_item) -> bool:  # shop_item: ShopItem
 	if not player_persistence:
 		return false
 
 	var currency_name = get_currency_name(shop_item.currency_type)
 	return player_persistence.get_currency(currency_name) >= shop_item.cost
 
-func purchase_item(shop_item: ShopItem, inventory_system: InventorySystem) -> bool:
+func purchase_item(shop_item, inventory_system) -> bool:  # shop_item: ShopItem, inventory_system: InventorySystem
 	if not can_afford(shop_item):
 		return false
 
@@ -89,7 +89,7 @@ func purchase_item(shop_item: ShopItem, inventory_system: InventorySystem) -> bo
 
 	return false
 
-func sell_item(item: ItemDataExtended, quantity: int, inventory_system: InventorySystem) -> bool:
+func sell_item(item, quantity: int, inventory_system) -> bool:  # item: ItemDataExtended, inventory_system: InventorySystem
 	if not inventory_system or not player_persistence:
 		return false
 
@@ -119,26 +119,26 @@ func get_currency_icon(type: CurrencyType) -> String:
 		CurrencyType.SCRAP: return "🔧"
 	return "💰"
 
-func filter_shop_by_type(item_type: ItemDataExtended.ItemType) -> Array[ShopItem]:
-	var filtered: Array[ShopItem] = []
+func filter_shop_by_type(item_type: int) -> Array:  # item_type: ItemDataExtended.ItemType
+	var filtered: Array = []
 	for shop_item in shop_inventory:
 		if shop_item.item.item_type == item_type:
 			filtered.append(shop_item)
 	return filtered
 
-func filter_shop_by_rarity(rarity: ItemDataExtended.ItemRarity) -> Array[ShopItem]:
-	var filtered: Array[ShopItem] = []
+func filter_shop_by_rarity(rarity: int) -> Array:  # rarity: ItemDataExtended.ItemRarity
+	var filtered: Array = []
 	for shop_item in shop_inventory:
 		if shop_item.item.rarity == rarity:
 			filtered.append(shop_item)
 	return filtered
 
-func get_daily_deals() -> Array[ShopItem]:
+func get_daily_deals() -> Array:
 	# Would generate special rotating deals
-	var deals: Array[ShopItem] = []
+	var deals: Array = []
 	# Implementation here
 	return deals
 
-func add_shop_item(item: ItemDataExtended, cost: int, currency: CurrencyType = CurrencyType.COINS, stock: int = -1):
+func add_shop_item(item, cost: int, currency: int = 0, stock: int = -1):  # item: ItemDataExtended, currency: CurrencyType
 	shop_inventory.append(ShopItem.new(item, cost, currency, stock))
 	shop_refreshed.emit()

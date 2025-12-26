@@ -261,7 +261,7 @@ func _on_shop_item_exit(slot: Panel):
 	var tween = create_tween()
 	tween.tween_property(slot, "scale", Vector2(1.0, 1.0), 0.1)
 
-func show_item_tooltip(item: ItemDataExtended, position: Vector2):
+func show_item_tooltip(item, position: Vector2):  # item: ItemDataExtended
 	# Create tooltip if it doesn't exist
 	var tooltip = get_node_or_null("ItemTooltip")
 	if not tooltip:
@@ -346,7 +346,7 @@ func create_tooltip_panel() -> Panel:
 
 	return panel
 
-func update_tooltip_content(tooltip: Panel, item: ItemDataExtended):
+func update_tooltip_content(tooltip: Panel, item):  # item: ItemDataExtended
 	var content = tooltip.get_node("Content")
 	if not content:
 		return
@@ -423,7 +423,7 @@ func _on_refresh_pressed():
 func _on_shop_refreshed():
 	refresh_shop_display()
 
-func _on_item_purchased(item: ItemDataExtended, cost: int):
+func _on_item_purchased(item, cost: int):  # item: ItemDataExtended
 	# Additional visual feedback - coin particles flying
 	spawn_coin_particles(cost)
 

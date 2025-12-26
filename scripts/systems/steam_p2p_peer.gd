@@ -31,7 +31,7 @@ var next_peer_id: int = 2  # Start at 2 (1 is always server)
 var incoming_packets: Array = []
 var target_peer: int = 0
 var transfer_channel: int = 0
-var transfer_mode: MultiplayerPeer.TransferMode = MultiplayerPeer.TRANSFER_MODE_RELIABLE
+var transfer_mode: int = MultiplayerPeer.TRANSFER_MODE_RELIABLE  # MultiplayerPeer.TransferMode
 
 # Send channels (Steam networking uses channels 0-31)
 const CHANNEL_RELIABLE: int = 0
@@ -193,8 +193,8 @@ func _get_packet() -> PackedByteArray:
 func _get_packet_channel() -> int:
 	return transfer_channel
 
-func _get_packet_mode() -> MultiplayerPeer.TransferMode:
-	return transfer_mode as MultiplayerPeer.TransferMode
+func _get_packet_mode() -> int:  # Returns MultiplayerPeer.TransferMode
+	return transfer_mode
 
 func _get_packet_peer() -> int:
 	if incoming_packets.is_empty():
@@ -260,11 +260,11 @@ func _set_transfer_channel(p_channel: int):
 func _get_transfer_channel() -> int:
 	return transfer_channel
 
-func _set_transfer_mode(p_mode: MultiplayerPeer.TransferMode):
+func _set_transfer_mode(p_mode: int):  # p_mode: MultiplayerPeer.TransferMode
 	transfer_mode = p_mode
 
-func _get_transfer_mode() -> MultiplayerPeer.TransferMode:
-	return transfer_mode as MultiplayerPeer.TransferMode
+func _get_transfer_mode() -> int:  # Returns MultiplayerPeer.TransferMode
+	return transfer_mode
 
 func _is_server() -> bool:
 	return is_server
