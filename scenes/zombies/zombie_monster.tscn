@@ -1,13 +1,19 @@
 [gd_scene load_steps=5 format=3 uid="uid://zombie_monster001"]
 
 [ext_resource type="Script" path="res://scripts/zombies/zombie_controller.gd" id="1"]
-[ext_resource type="PackedScene" path="res://Characters_psx/Models/Killers/Character_Monster.fbx" id="2"]
 [ext_resource type="Resource" path="res://resources/zombies/boss_behemoth.tres" id="3"]
 [ext_resource type="Script" path="res://scripts/systems/status_effect_system.gd" id="4"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.6
 height = 2.5
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_1"]
+radius = 0.6
+height = 2.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.4, 0.2, 0.2, 1)
 
 [node name="ZombieMonster" type="CharacterBody3D" groups=["zombies"]]
 collision_layer = 4
@@ -19,8 +25,10 @@ zombie_class_data = ExtResource("3")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.25, 0)
 shape = SubResource("CapsuleShape3D_1")
 
-[node name="Model" parent="." instance=ExtResource("2")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+[node name="Model" type="MeshInstance3D" parent="."]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 1.25, 0)
+mesh = SubResource("CapsuleMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5
