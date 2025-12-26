@@ -1,19 +1,23 @@
 extends Node3D
 
-@onready var game_manager: GameManager = $GameManager
-@onready var player: Player = $Player
-@onready var zombie_spawn_points: Node3D = $ZombieSpawnPoints
+# Note: Using Node type hints for safety - GameManager and Player may have load order issues
+@onready var game_manager: Node = $GameManager if has_node("GameManager") else null
+@onready var player: Node = $Player if has_node("Player") else null  # Player type
+@onready var zombie_spawn_points: Node3D = $ZombieSpawnPoints if has_node("ZombieSpawnPoints") else null
 
 func _ready():
 	# Setup game manager with spawn points
-	if game_manager:
+	if game_manager and zombie_spawn_points:
 		for child in zombie_spawn_points.get_children():
 			if child is Marker3D:
-				game_manager.zombie_spawn_points.append(child)
+				if "zombie_spawn_points" in game_manager:
+					game_manager.zombie_spawn_points.append(child)
 
-	# Setup player UI
-	if player and player.ui:
-		player.ui.setup(player)
+	# Setup player UI - check if player has UI node
+	if player:
+		var player_ui = player.get_node_or_null("UI")
+		if player_ui and player_ui.has_method("setup"):
+			player_ui.setup(player)
 
 	print("Game Started!")
 	print("Controls:")
