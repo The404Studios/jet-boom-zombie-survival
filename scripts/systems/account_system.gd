@@ -183,7 +183,9 @@ func add_playtime(seconds: float):
 
 func get_playtime_formatted() -> String:
 	var total_seconds: int = account_data.playtime_seconds
+	@warning_ignore("integer_division")
 	var hours: int = total_seconds / 3600
+	@warning_ignore("integer_division")
 	var minutes: int = (total_seconds % 3600) / 60
 	return "%dh %dm" % [hours, minutes]
 

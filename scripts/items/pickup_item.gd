@@ -70,7 +70,7 @@ func _pickup(_player: Node):
 		_pickup_networked.rpc_id(1, get_path())
 
 @rpc("any_peer", "call_local")
-func _pickup_networked(item_path: NodePath):
+func _pickup_networked(_item_path: NodePath):
 	if is_picked_up:
 		return
 

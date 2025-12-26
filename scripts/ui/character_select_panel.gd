@@ -131,31 +131,11 @@ func _load_character(index: int):
 		current_model.queue_free()
 		current_model = null
 
-	# Load new model - try .tscn first, then .glb fallback
-	var model_path = char_data["model_path"]
-	var model_scene = null
-
-	if ResourceLoader.exists(model_path):
-		model_scene = load(model_path)
-	elif char_data.has("glb_fallback") and ResourceLoader.exists(char_data["glb_fallback"]):
-		model_scene = load(char_data["glb_fallback"])
-		print("[CharacterSelect] Using GLB fallback for: ", char_id)
-
-	if model_scene:
-		current_model = model_scene.instantiate()
-		if character_holder:
-			character_holder.add_child(current_model)
-
-			# Auto-scale based on model bounds
-			var scale_factor = _calculate_model_scale(current_model)
-			current_model.scale = Vector3(scale_factor, scale_factor, scale_factor)
-			current_model.position = Vector3.ZERO
-			current_model.rotation = Vector3.ZERO
-
-			# Try to play idle animation if available
-			_play_idle_animation(current_model)
-	else:
-		print("[CharacterSelect] Failed to load model for: ", char_id)
+	# Always use placeholder models - the original character assets have broken/missing dependencies
+	# This prevents 1000+ errors from cascading resource load failures
+	current_model = _create_placeholder_model(char_id, char_data)
+	if character_holder and current_model:
+		character_holder.add_child(current_model)
 
 	# Update UI
 	_update_character_info(char_data)
@@ -259,3 +239,66 @@ func get_selected_character() -> String:
 
 func get_selected_character_data() -> Dictionary:
 	return CHARACTERS[character_keys[current_index]]
+
+func _create_placeholder_model(char_id: String, _char_data: Dictionary) -> Node3D:
+	# Create a simple humanoid placeholder using capsules
+	var root = Node3D.new()
+	root.name = "PlaceholderModel"
+
+	# Generate a unique color based on character ID
+	var color_seed = char_id.hash()
+	var hue = fmod(float(color_seed) / 100000.0, 1.0)
+	var base_color = Color.from_hsv(hue, 0.6, 0.8)
+
+	# Body (torso)
+	var body_mesh = CapsuleMesh.new()
+	body_mesh.radius = 0.25
+	body_mesh.height = 0.8
+	var body = MeshInstance3D.new()
+	body.mesh = body_mesh
+	body.position = Vector3(0, 1.2, 0)
+	var body_mat = StandardMaterial3D.new()
+	body_mat.albedo_color = base_color
+	body.material_override = body_mat
+	root.add_child(body)
+
+	# Head
+	var head_mesh = SphereMesh.new()
+	head_mesh.radius = 0.2
+	head_mesh.height = 0.4
+	var head = MeshInstance3D.new()
+	head.mesh = head_mesh
+	head.position = Vector3(0, 1.85, 0)
+	var head_mat = StandardMaterial3D.new()
+	head_mat.albedo_color = base_color.lightened(0.2)
+	head.material_override = head_mat
+	root.add_child(head)
+
+	# Legs
+	var leg_mesh = CapsuleMesh.new()
+	leg_mesh.radius = 0.1
+	leg_mesh.height = 0.7
+	for i in range(2):
+		var leg = MeshInstance3D.new()
+		leg.mesh = leg_mesh
+		leg.position = Vector3(0.15 if i == 0 else -0.15, 0.4, 0)
+		var leg_mat = StandardMaterial3D.new()
+		leg_mat.albedo_color = base_color.darkened(0.2)
+		leg.material_override = leg_mat
+		root.add_child(leg)
+
+	# Arms
+	var arm_mesh = CapsuleMesh.new()
+	arm_mesh.radius = 0.08
+	arm_mesh.height = 0.5
+	for i in range(2):
+		var arm = MeshInstance3D.new()
+		arm.mesh = arm_mesh
+		arm.position = Vector3(0.35 if i == 0 else -0.35, 1.1, 0)
+		arm.rotation_degrees = Vector3(0, 0, 15 if i == 0 else -15)
+		var arm_mat = StandardMaterial3D.new()
+		arm_mat.albedo_color = base_color.lightened(0.1)
+		arm.material_override = arm_mat
+		root.add_child(arm)
+
+	return root

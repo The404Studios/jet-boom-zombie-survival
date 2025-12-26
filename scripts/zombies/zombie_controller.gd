@@ -37,7 +37,7 @@ var buff_amount: float = 0.2
 
 @onready var navigation_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var model: Node3D = $Model if has_node("Model") else null
-@onready var status_effects: StatusEffectSystem = $StatusEffectSystem if has_node("StatusEffectSystem") else null
+@onready var status_effects = $StatusEffectSystem if has_node("StatusEffectSystem") else null  # StatusEffectSystem
 @onready var mesh_instance: MeshInstance3D = $Model/MeshInstance3D if has_node("Model/MeshInstance3D") else null
 var animation_player: AnimationPlayer = null
 
@@ -312,7 +312,7 @@ func find_target():
 	# Fallback: No valid target found
 	target = null
 
-func move_toward_target(delta):
+func move_toward_target(_delta):
 	if not navigation_agent:
 		# Fallback: direct movement if no navigation agent
 		if target and is_instance_valid(target):
@@ -440,7 +440,7 @@ func apply_buff(buff_type: String, amount: float, duration: float):
 			await get_tree().create_timer(duration).timeout
 			move_speed /= (1.0 + amount)
 
-func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO):
+func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	if is_dead:
 		return
 

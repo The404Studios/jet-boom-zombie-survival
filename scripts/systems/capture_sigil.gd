@@ -212,7 +212,7 @@ func _on_body_exited(body):
 		if body == players_on_sigil.size() == 0:
 			_hide_sigil_ui()
 
-func _show_sigil_ui(player: Node):
+func _show_sigil_ui(_player: Node):
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_interact_prompt"):
 		var prompt = "[HOLD E] Capture Sigil"
@@ -312,7 +312,7 @@ func can_link_to(other_sigil: CaptureSigil) -> bool:
 		return false
 	return true
 
-func link_to(other_sigil: CaptureSigil, player: Node = null) -> bool:
+func link_to(other_sigil: CaptureSigil, _player: Node = null) -> bool:
 	if not can_link_to(other_sigil):
 		return false
 

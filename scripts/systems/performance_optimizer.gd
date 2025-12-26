@@ -106,7 +106,7 @@ func _auto_adjust_quality():
 			if min_fps > target_fps:
 				set_quality_level(current_quality + 1)
 
-func _process_update_groups(delta):
+func _process_update_groups(_delta):
 	"""Process registered update groups at their intervals"""
 	var current_time = Time.get_ticks_msec() / 1000.0
 
@@ -178,7 +178,7 @@ func set_quality_level(level: int):
 	if level == current_quality:
 		return
 
-	current_quality = level
+	current_quality = level as QualityLevel
 	_apply_quality_settings()
 	quality_level_changed.emit(current_quality)
 
@@ -281,8 +281,8 @@ func can_afford_operation(estimated_ms: float) -> bool:
 
 func get_remaining_frame_budget() -> float:
 	"""Get remaining frame budget in milliseconds"""
-	var current_frame_time = 1000.0 / current_fps if current_fps > 0 else 0
-	return max(0, frame_budget_ms - current_frame_time)
+	var current_frame_time = 1000.0 / current_fps if current_fps > 0 else 0.0
+	return max(0.0, frame_budget_ms - current_frame_time)
 
 # ============================================
 # STATS & DEBUG

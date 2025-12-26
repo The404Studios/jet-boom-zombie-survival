@@ -496,7 +496,7 @@ func update_tooltip_content(item):  # item: ItemDataExtended
 
 	if stats_label:
 		var stats_text = ""
-		if item.item_type == ItemDataExtended.ItemType.WEAPON:
+		if item.item_type == 0:  # WEAPON
 			stats_text += "Damage: %.1f\n" % item.damage
 			stats_text += "Fire Rate: %.2f/s\n" % (1.0 / max(item.fire_rate, 0.01))
 			stats_text += "Magazine: %d\n" % item.magazine_size
@@ -526,29 +526,30 @@ func _input(event):
 		toggle()
 
 func _get_item_type_name(item_type: int) -> String:
-	"""Convert ItemType enum value to display name"""
+	# Convert ItemType enum value to display name
+	# Uses integers to avoid parse-time class reference
 	match item_type:
-		ItemDataExtended.ItemType.WEAPON:
+		0:  # WEAPON
 			return "Weapon"
-		ItemDataExtended.ItemType.AMMO:
+		1:  # AMMO
 			return "Ammo"
-		ItemDataExtended.ItemType.HELMET:
+		2:  # HELMET
 			return "Helmet"
-		ItemDataExtended.ItemType.CHEST_ARMOR:
+		3:  # CHEST_ARMOR
 			return "Chest Armor"
-		ItemDataExtended.ItemType.GLOVES:
+		4:  # GLOVES
 			return "Gloves"
-		ItemDataExtended.ItemType.BOOTS:
+		5:  # BOOTS
 			return "Boots"
-		ItemDataExtended.ItemType.RING:
+		6:  # RING
 			return "Ring"
-		ItemDataExtended.ItemType.AMULET:
+		7:  # AMULET
 			return "Amulet"
-		ItemDataExtended.ItemType.CONSUMABLE:
+		8:  # CONSUMABLE
 			return "Consumable"
-		ItemDataExtended.ItemType.MATERIAL:
+		9:  # MATERIAL
 			return "Material"
-		ItemDataExtended.ItemType.AUGMENT:
+		10:  # AUGMENT
 			return "Augment"
 		_:
 			return "Unknown"

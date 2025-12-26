@@ -253,7 +253,7 @@ func _on_lobby_join_failed(reason: String):
 func _on_lobby_list_received(lobbies: Array):
 	_populate_lobby_browser(lobbies)
 
-func _on_member_joined(member_id: int, member_name: String):
+func _on_member_joined(_member_id: int, member_name: String):
 	_update_status(member_name + " joined the lobby")
 	_refresh_player_list()
 

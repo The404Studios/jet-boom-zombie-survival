@@ -105,8 +105,10 @@ func _on_system_message(message: String):
 	add_chat_message("System", message, false, true)
 
 func add_chat_message(sender_name: String, message: String, is_team: bool, is_system: bool):
-	var message_label = Label.new()
-	message_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	var message_label = RichTextLabel.new()
+	message_label.bbcode_enabled = true
+	message_label.fit_content = true
+	message_label.scroll_active = false
 
 	# Format message
 	var formatted_text = ""
@@ -118,7 +120,6 @@ func add_chat_message(sender_name: String, message: String, is_team: bool, is_sy
 		formatted_text = "[color=white]%s:[/color] %s" % [sender_name, message]
 
 	message_label.text = formatted_text
-	message_label.bbcode_enabled = true
 
 	chat_container.add_child(message_label)
 

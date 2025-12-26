@@ -238,7 +238,7 @@ func hide_extraction_prompt():
 	if extraction_label:
 		extraction_label.visible = false
 
-func show_damage_indicator(direction: Vector3 = Vector3.ZERO):
+func show_damage_indicator(_direction: Vector3 = Vector3.ZERO):
 	if damage_indicator:
 		damage_indicator.visible = true
 		# Flash effect
@@ -282,8 +282,8 @@ func _connect_game_coordinator():
 			if not game_coordinator.all_players_ready.is_connected(_on_all_players_ready):
 				game_coordinator.all_players_ready.connect(_on_all_players_ready)
 
-func _on_game_phase_changed(phase):
-	# phase is GameCoordinator.GamePhase enum
+func _on_game_phase_changed(_phase):
+	# _phase is GameCoordinator.GamePhase enum
 	if game_coordinator and game_coordinator.has_method("get_phase_name"):
 		current_phase_name = game_coordinator.get_phase_name()
 		_update_phase_display()
