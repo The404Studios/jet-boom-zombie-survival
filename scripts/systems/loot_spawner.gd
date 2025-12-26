@@ -432,7 +432,8 @@ func _spawn_generic(position: Vector3, data: Dictionary) -> Node3D:
 		loot.add_child(area)
 
 		# Add script behavior
-		loot.set_script(preload("res://scripts/items/loot_item.gd") if ResourceLoader.exists("res://scripts/items/loot_item.gd") else null)
+		if ResourceLoader.exists("res://scripts/items/loot_item.gd"):
+			loot.set_script(load("res://scripts/items/loot_item.gd"))
 
 	_add_to_arena(loot)
 	loot.global_position = position

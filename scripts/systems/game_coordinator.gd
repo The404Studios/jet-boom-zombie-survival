@@ -211,6 +211,9 @@ func start_game():
 	game_started.emit()
 
 func _initialize_player(player: Node):
+	if not is_instance_valid(player):
+		return
+
 	# Give starting sigils
 	if player.has_node("SigilShop"):
 		var shop = player.get_node("SigilShop")
@@ -330,16 +333,18 @@ func _award_wave_completion_bonus(wave_number: int):
 
 	# Award to all players at sigil
 	for player in all_players:
-		if is_instance_valid(player):
-			# Sigils
-			if player.has_node("SigilShop"):
-				player.get_node("SigilShop").add_sigils(sigil_bonus, "Wave %d complete" % wave_number)
-			elif has_node("/root/PlayerPersistence"):
-				get_node("/root/PlayerPersistence").add_currency("sigils", sigil_bonus)
+		if not is_instance_valid(player):
+			continue
 
-			# Experience
-			if "character_attributes" in player and player.character_attributes:
-				player.character_attributes.add_experience(100 * wave_number)
+		# Sigils
+		if player.has_node("SigilShop"):
+			player.get_node("SigilShop").add_sigils(sigil_bonus, "Wave %d complete" % wave_number)
+		elif has_node("/root/PlayerPersistence"):
+			get_node("/root/PlayerPersistence").add_currency("sigils", sigil_bonus)
+
+		# Experience
+		if "character_attributes" in player and player.character_attributes:
+			player.character_attributes.add_experience(100 * wave_number)
 
 	# Points
 	if points_system:
