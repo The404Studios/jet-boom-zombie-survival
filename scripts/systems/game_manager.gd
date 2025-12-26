@@ -14,10 +14,15 @@ var zombies_killed: int = 0
 var is_wave_active: bool = false
 var wave_timer: float = 0.0
 
+@warning_ignore("unused_signal")
 signal wave_started(wave_number: int)
+@warning_ignore("unused_signal")
 signal wave_completed(wave_number: int)
+@warning_ignore("unused_signal")
 signal zombie_spawned(zombie: Node)
+@warning_ignore("unused_signal")
 signal game_started
+@warning_ignore("unused_signal")
 signal game_over(victory: bool)
 
 func _ready():

@@ -3,6 +3,7 @@ extends Node
 # Visual effects manager with network replication
 # Handles muzzle flashes, impacts, explosions, and other VFX
 
+@warning_ignore("unused_signal")
 signal effect_spawned(effect_type: String, position: Vector3)
 
 # VFX pools

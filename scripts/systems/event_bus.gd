@@ -2,94 +2,144 @@ extends Node
 
 # EventBus - Central signal hub for decoupled game event communication
 # Use this instead of direct node-to-node signal connections for global events
+# Note: These signals are intentionally emitted from external code, not within this class
 
 # ============================================
 # PLAYER EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal player_spawned(player: Node, peer_id: int)
+@warning_ignore("unused_signal")
 signal player_died(player: Node, peer_id: int, killer_id: int)
+@warning_ignore("unused_signal")
 signal player_respawned(player: Node, peer_id: int)
+@warning_ignore("unused_signal")
 signal player_damaged(player: Node, damage: float, source: Node)
+@warning_ignore("unused_signal")
 signal player_healed(player: Node, amount: float)
+@warning_ignore("unused_signal")
 signal player_score_changed(peer_id: int, new_score: int)
 
 # ============================================
 # WEAPON EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal weapon_fired(player: Node, weapon_name: String, position: Vector3, direction: Vector3)
+@warning_ignore("unused_signal")
 signal weapon_reloaded(player: Node, weapon_name: String)
+@warning_ignore("unused_signal")
 signal weapon_switched(player: Node, old_weapon: String, new_weapon: String)
+@warning_ignore("unused_signal")
 signal ammo_changed(player: Node, current: int, reserve: int)
 
 # ============================================
 # ZOMBIE EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal zombie_spawned(zombie: Node, zombie_type: String)
+@warning_ignore("unused_signal")
 signal zombie_died(zombie: Node, killer: Node, position: Vector3)
+@warning_ignore("unused_signal")
 signal zombie_damaged(zombie: Node, damage: float, source: Node)
+@warning_ignore("unused_signal")
 signal zombie_reached_target(zombie: Node, target: Node)
 
 # ============================================
 # WAVE EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal wave_started(wave_number: int)
+@warning_ignore("unused_signal")
 signal wave_completed(wave_number: int)
+@warning_ignore("unused_signal")
 signal wave_failed(wave_number: int)
+@warning_ignore("unused_signal")
 signal intermission_started(duration: float)
+@warning_ignore("unused_signal")
 signal all_waves_completed
 
 # ============================================
 # GAME STATE EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal game_started
+@warning_ignore("unused_signal")
 signal game_paused
+@warning_ignore("unused_signal")
 signal game_resumed
+@warning_ignore("unused_signal")
 signal game_over(victory: bool)
+@warning_ignore("unused_signal")
 signal match_found(lobby_id: int)
+@warning_ignore("unused_signal")
 signal loading_started
+@warning_ignore("unused_signal")
 signal loading_completed
 
 # ============================================
 # NETWORK EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal peer_connected(peer_id: int, player_info: Dictionary)
+@warning_ignore("unused_signal")
 signal peer_disconnected(peer_id: int)
+@warning_ignore("unused_signal")
 signal server_started
+@warning_ignore("unused_signal")
 signal server_stopped
+@warning_ignore("unused_signal")
 signal connected_to_server
+@warning_ignore("unused_signal")
 signal disconnected_from_server
+@warning_ignore("unused_signal")
 signal connection_failed
 
 # ============================================
 # ECONOMY EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal currency_changed(peer_id: int, new_amount: int)
+@warning_ignore("unused_signal")
 signal item_purchased(peer_id: int, item_id: String, cost: int)
+@warning_ignore("unused_signal")
 signal item_sold(peer_id: int, item_id: String, value: int)
+@warning_ignore("unused_signal")
 signal trade_started(trade_id: int, player1_id: int, player2_id: int)
+@warning_ignore("unused_signal")
 signal trade_completed(trade_id: int)
+@warning_ignore("unused_signal")
 signal trade_cancelled(trade_id: int)
 
 # ============================================
 # UI EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal notification_requested(message: String, type: String, duration: float)
+@warning_ignore("unused_signal")
 signal popup_requested(title: String, message: String, buttons: Array)
+@warning_ignore("unused_signal")
 signal popup_closed(result: int)
+@warning_ignore("unused_signal")
 signal menu_opened(menu_name: String)
+@warning_ignore("unused_signal")
 signal menu_closed(menu_name: String)
 
 # ============================================
 # PICKUP EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal pickup_collected(player: Node, pickup_type: String, amount: float)
+@warning_ignore("unused_signal")
 signal loot_dropped(position: Vector3, item_data: Resource)
+@warning_ignore("unused_signal")
 signal loot_collected(player: Node, item_data: Resource)
 
 # ============================================
 # AUDIO/VFX EVENTS
 # ============================================
+@warning_ignore("unused_signal")
 signal vfx_requested(effect_type: String, position: Vector3, params: Dictionary)
+@warning_ignore("unused_signal")
 signal audio_requested(sound_name: String, position: Vector3, volume: float)
 
 # ============================================

@@ -86,7 +86,9 @@ func _create_default_spawn_points():
 	if sigil:
 		center = sigil.global_position
 
+	@warning_ignore("integer_division")
 	for x in range(-grid_size / 2, grid_size / 2):
+		@warning_ignore("integer_division")
 		for z in range(-grid_size / 2, grid_size / 2):
 			# Skip center area (near sigil)
 			if abs(x) < 2 and abs(z) < 2:

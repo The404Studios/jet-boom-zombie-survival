@@ -68,9 +68,9 @@ func request_trade(from_player: int, to_player: int) -> int:
 	return trade.id
 
 @rpc("authority", "call_local", "reliable")
-func _request_trade_rpc(trade_id: int, from_player: int, to_player: int):
+func _request_trade_rpc(_trade_id: int, from_player: int, _to_player: int):
 	# Client-side handling of trade request
-	if multiplayer.get_unique_id() == to_player:
+	if multiplayer.get_unique_id() == _to_player:
 		# Show trade request UI to target player
 		print("Trade request from player %d" % from_player)
 

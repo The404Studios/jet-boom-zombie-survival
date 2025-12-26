@@ -3,9 +3,13 @@ extends Node
 # Matchmaking system for join-in-progress gameplay
 # Integrates with Steam lobbies for automatic matchmaking
 
+@warning_ignore("unused_signal")
 signal match_found(lobby_id: int)
+@warning_ignore("unused_signal")
 signal matchmaking_started
+@warning_ignore("unused_signal")
 signal matchmaking_stopped
+@warning_ignore("unused_signal")
 signal player_spawned(player: Node)
 
 enum MatchState {
@@ -185,7 +189,7 @@ func _on_player_disconnected(peer_id: int):
 	"""Handle player disconnect"""
 	print("Player disconnected: ", peer_id)
 
-func spawn_player(peer_id: int, player_info: Dictionary):
+func spawn_player(peer_id: int, _player_info: Dictionary):
 	"""Spawn a player at the sigil or a spawn point"""
 	var spawn_position = _get_spawn_position()
 
