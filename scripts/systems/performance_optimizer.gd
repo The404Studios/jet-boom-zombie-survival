@@ -1,5 +1,6 @@
 extends Node
-class_name PerformanceOptimizer
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: PerformanceOptimizer (the autoload name)
 
 # Performance optimization manager
 # Handles LOD, culling, update frequency management, and performance monitoring

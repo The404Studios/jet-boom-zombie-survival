@@ -1,5 +1,6 @@
 extends Node
-class_name GarbageCollector
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: GarbageCollector (the autoload name)
 
 # Automatic garbage collection and memory management system
 # Handles cleanup of orphaned nodes, old loot, distant entities, etc.

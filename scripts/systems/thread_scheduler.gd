@@ -1,5 +1,6 @@
 extends Node
-class_name ThreadScheduler
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: ThreadScheduler (the autoload name)
 
 # Thread scheduler for distributing heavy operations across frames and threads
 # Prevents frame hitches by spreading work over multiple frames

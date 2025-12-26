@@ -1,5 +1,6 @@
 extends Node
-class_name ObjectPoolManager
+# Note: Do not use class_name here - this script is an autoload singleton
+# Access via: ObjectPoolManager (the autoload name)
 
 # High-performance object pooling system
 # Reduces garbage collection and allocation overhead
