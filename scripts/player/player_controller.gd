@@ -14,6 +14,7 @@ var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var is_sprinting: bool = false
 var can_shoot: bool = true
 var is_reloading: bool = false
+var reserve_ammo: int = 90
 
 @onready var camera: Camera3D = $Camera3D
 @onready var weapon_holder: Node3D = $Camera3D/WeaponHolder

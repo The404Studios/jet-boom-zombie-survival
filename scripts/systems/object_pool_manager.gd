@@ -43,20 +43,18 @@ func _ready():
 
 func _setup_default_pools():
 	"""Setup commonly used object pools"""
-	# Zombie pool
-	register_pool("zombie", "res://scenes/enemies/zombie.tscn", 20, 100)
+	# Zombie pool - use correct path
+	register_pool("zombie", "res://scenes/zombies/zombie.tscn", 20, 100)
 
 	# Projectile pools
-	register_pool("bullet", "res://scenes/projectiles/bullet.tscn", 50, 200)
 	register_pool("acid_projectile", "res://scenes/projectiles/acid_projectile.tscn", 10, 50)
 
 	# Loot item pool
 	register_pool("loot_item", "res://scenes/items/loot_item.tscn", 20, 100)
 
-	# VFX pools
-	register_pool("muzzle_flash", "res://scenes/vfx/muzzle_flash.tscn", 10, 50)
-	register_pool("blood_splat", "res://scenes/vfx/blood_splat.tscn", 20, 100)
-	register_pool("impact_effect", "res://scenes/vfx/impact_effect.tscn", 30, 150)
+	# Pickup pools
+	register_pool("ammo_pickup", "res://scenes/items/ammo_pickup.tscn", 10, 50)
+	register_pool("health_pickup", "res://scenes/items/health_pickup.tscn", 10, 50)
 
 func register_pool(pool_name: String, scene_path: String, initial_size: int = 10, max_size: int = 100, grow_size: int = 5):
 	"""Register a new object pool"""
