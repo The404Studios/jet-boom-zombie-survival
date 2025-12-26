@@ -241,7 +241,7 @@ func _get_unique_id() -> int:
 
 	return 0
 
-func _get_connection_status() -> MultiplayerPeer.ConnectionStatus:
+func _get_connection_status() -> int:  # Returns MultiplayerPeer.ConnectionStatus
 	match connection_state:
 		ConnectionState.NONE:
 			return MultiplayerPeer.CONNECTION_DISCONNECTED
