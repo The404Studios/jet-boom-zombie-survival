@@ -1,5 +1,6 @@
 extends RefCounted
-class_name SteamP2PPeer
+# Note: class_name removed to avoid load order issues
+# Access this script via: load("res://scripts/systems/steam_p2p_peer.gd")
 
 # Steam P2P Multiplayer Peer using GodotSteam Networking Sockets
 # Wraps Steam's P2P networking for seamless multiplayer

@@ -1,5 +1,5 @@
 extends Control
-class_name MarketplaceUI
+# Note: class_name removed to avoid load order issues
 
 @export var merchant_system: Node  # MerchantSystem
 @export var inventory_system: Node  # InventorySystem
