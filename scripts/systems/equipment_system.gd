@@ -46,7 +46,7 @@ var total_stat_bonuses: Dictionary = {}
 
 # Reference to character stats
 var character_stats: Node = null
-var character_attributes: CharacterAttributes = null
+var character_attributes: Node = null  # CharacterAttributes
 
 func _ready():
 	await get_tree().process_frame

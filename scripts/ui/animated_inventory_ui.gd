@@ -1,9 +1,9 @@
 extends Control
 class_name AnimatedInventoryUI
 
-@export var inventory_system: InventorySystem
-@export var equipment_system: EquipmentSystem
-@export var character_stats: CharacterStats
+@export var inventory_system: Node  # InventorySystem
+@export var equipment_system: Node  # EquipmentSystem
+@export var character_stats: Node  # CharacterStats
 
 @onready var inventory_panel: Panel = $InventoryPanel
 @onready var inventory_grid: GridContainer = $InventoryPanel/ScrollContainer/InventoryGrid
@@ -12,7 +12,7 @@ class_name AnimatedInventoryUI
 @onready var item_tooltip: Panel = $ItemTooltip
 
 var is_open: bool = false
-var selected_item: ItemDataExtended = null
+var selected_item = null  # ItemDataExtended
 var inventory_slots: Array[Control] = []
 
 const SLOT_SCENE = preload("res://scenes/ui/inventory_slot.tscn")
@@ -162,7 +162,7 @@ func _on_equipment_slot_hover(slot_name: String):
 	if not equipment_system:
 		return
 
-	var item: ItemDataExtended = null
+	var item = null  # ItemDataExtended
 	match slot_name:
 		"weapon":
 			if inventory_system and inventory_system.equipped_weapon and inventory_system.equipped_weapon.has("item"):
@@ -304,7 +304,7 @@ func refresh_inventory():
 
 		if i < inventory_system.inventory.size():
 			var item_data = inventory_system.inventory[i]
-			var item: ItemDataExtended = item_data.item
+			var item = item_data.item  # ItemDataExtended
 			if icon and item.icon:
 				icon.texture = item.icon
 			if count_label:
@@ -348,14 +348,14 @@ func refresh_stats():
 		# Add bonuses from equipped items
 		if inventory_system:
 			if inventory_system.equipped_weapon and inventory_system.equipped_weapon.has("item"):
-				var weapon: ItemDataExtended = inventory_system.equipped_weapon.item
+				var weapon = inventory_system.equipped_weapon.item  # ItemDataExtended
 				stats["Strength"] += weapon.strength_bonus
 				stats["Dexterity"] += weapon.dexterity_bonus
 				stats["CritChance"] += weapon.crit_chance_bonus
 				stats["CritDamage"] += weapon.crit_damage_bonus
 
 			if inventory_system.equipped_armor and inventory_system.equipped_armor.has("item"):
-				var armor: ItemDataExtended = inventory_system.equipped_armor.item
+				var armor = inventory_system.equipped_armor.item  # ItemDataExtended
 				stats["Armor"] += armor.armor_value
 				stats["Vitality"] += armor.vitality_bonus
 				stats["Health"] += armor.health_bonus
@@ -385,14 +385,14 @@ func _on_inventory_changed():
 		refresh_inventory()
 
 func _on_slot_mouse_entered(slot: Control, index: int):
-	if index < inventory_system.inventory.size():
-		var item: ItemDataExtended = inventory_system.inventory[index].item
+	if inventory_system and index < inventory_system.inventory.size():
+		var item = inventory_system.inventory[index].item  # ItemDataExtended
 		show_tooltip(item, slot.global_position)
 
 func _on_slot_mouse_exited(slot: Control):
 	hide_tooltip()
 
-func show_tooltip(item: ItemDataExtended, position: Vector2):
+func show_tooltip(item, position: Vector2):  # item: ItemDataExtended
 	# Create tooltip if it doesn't exist
 	if not item_tooltip:
 		item_tooltip = create_tooltip_panel()
@@ -468,7 +468,7 @@ func create_tooltip_panel() -> Panel:
 
 	return panel
 
-func update_tooltip_content(item: ItemDataExtended):
+func update_tooltip_content(item):  # item: ItemDataExtended
 	if not item_tooltip:
 		return
 

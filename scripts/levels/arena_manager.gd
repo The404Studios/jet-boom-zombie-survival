@@ -35,8 +35,8 @@ var player: Node = null
 var player_points: int = 500  # Starting points
 
 # System references
-var game_coordinator: GameCoordinator = null
-var loot_spawner: LootSpawner = null
+var game_coordinator: Node = null  # GameCoordinator
+var loot_spawner: Node = null  # LootSpawner
 var wave_manager: Node = null
 
 func _ready():
