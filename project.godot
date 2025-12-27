@@ -41,6 +41,8 @@ ObjectPoolManager="*res://scripts/systems/object_pool_manager.gd"
 PerformanceOptimizer="*res://scripts/systems/performance_optimizer.gd"
 ThreadScheduler="*res://scripts/systems/thread_scheduler.gd"
 GarbageCollector="*res://scripts/systems/garbage_collector.gd"
+ECSManager="*res://scripts/ecs/ecs_manager.gd"
+ECSGameBridge="*res://scripts/ecs/ecs_game_bridge.gd"
 
 [display]
 
