@@ -59,29 +59,69 @@ func _setup_weapon_controller():
 		weapon_controller = WeaponController.new()
 		weapon_controller.name = "WeaponController"
 		weapon_holder.add_child(weapon_controller)
+		print("[Player] WeaponController created")
 
 func _equip_starting_weapon():
 	# Load pistol as starting weapon
 	var pistol = load("res://resources/weapons/pistol.tres")
-	if pistol and inventory:
-		inventory.equipped_weapon = {
-			"item": pistol,
-			"current_ammo": pistol.magazine_size,
-			"quantity": 1
-		}
-		print("[Player] Starting weapon equipped: ", pistol.item_name)
+	if not pistol:
+		push_error("[Player] Failed to load pistol.tres!")
+		_create_fallback_weapon_visual()
+		return
 
-		# Use weapon controller if available
-		if weapon_controller:
-			weapon_controller.equip_weapon(pistol)
-			current_weapon = weapon_controller.weapon_mesh
-		elif weapon_holder and pistol.mesh_scene:
-			# Fallback: spawn weapon mesh directly
+	if not inventory:
+		push_error("[Player] No inventory system!")
+		return
+
+	# Set equipped weapon in inventory
+	inventory.equipped_weapon = {
+		"item": pistol,
+		"current_ammo": pistol.magazine_size,
+		"quantity": 1
+	}
+
+	reserve_ammo = pistol.magazine_size * 3  # Start with 3 extra mags
+
+	print("[Player] Starting weapon: ", pistol.item_name)
+
+	# Equip weapon visually
+	if weapon_controller:
+		weapon_controller.equip_weapon(pistol)
+		current_weapon = weapon_controller.weapon_mesh
+		print("[Player] Weapon equipped via controller")
+	elif weapon_holder:
+		# Fallback: spawn weapon mesh directly
+		if pistol.mesh_scene:
 			var weapon_mesh = pistol.mesh_scene.instantiate()
 			weapon_holder.add_child(weapon_mesh)
 			current_weapon = weapon_mesh
-	else:
-		print("[Player] WARNING: Could not equip starting weapon")
+			print("[Player] Weapon mesh spawned directly")
+		else:
+			# Create a simple visual if no mesh scene
+			_create_fallback_weapon_visual()
+			print("[Player] Created fallback weapon visual")
+
+func _create_fallback_weapon_visual():
+	"""Create a simple box weapon if no mesh is available"""
+	if not weapon_holder:
+		return
+
+	var weapon_mesh = MeshInstance3D.new()
+	weapon_mesh.name = "FallbackWeapon"
+
+	var box = BoxMesh.new()
+	box.size = Vector3(0.05, 0.08, 0.2)
+	weapon_mesh.mesh = box
+
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.2, 0.25)
+	mat.metallic = 0.8
+	mat.roughness = 0.3
+	weapon_mesh.material_override = mat
+
+	weapon_holder.add_child(weapon_mesh)
+	weapon_mesh.position = Vector3(0, 0, -0.1)
+	current_weapon = weapon_mesh
 
 func _setup_grid_inventory():
 	# Create grid inventory if not already exists

@@ -30,15 +30,34 @@ func _ready():
 	if not zombie_scene:
 		zombie_scene = load("res://scenes/zombies/zombie.tscn")
 		if zombie_scene:
-			print("[GameManager] Loaded zombie scene")
+			print("[GameManager] Loaded zombie scene: ", zombie_scene.resource_path)
 		else:
 			push_error("[GameManager] Failed to load zombie scene!")
 
 	# Emit game started signal
 	game_started.emit()
 
-	# Start first wave after delay
-	await get_tree().create_timer(5.0).timeout
+	# Wait for scene to be ready and spawn points to be added
+	await get_tree().create_timer(2.0).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+
+	# Wait for spawn points (main_scene.gd sets them)
+	var wait_time = 0.0
+	while zombie_spawn_points.is_empty() and wait_time < 5.0:
+		await get_tree().create_timer(0.5).timeout
+		wait_time += 0.5
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+
+	if zombie_spawn_points.is_empty():
+		push_warning("[GameManager] No spawn points after waiting! Zombies won't spawn.")
+		return
+
+	print("[GameManager] Ready with %d spawn points" % zombie_spawn_points.size())
+
+	# Start first wave after additional delay
+	await get_tree().create_timer(3.0).timeout
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	start_next_wave()
@@ -66,28 +85,41 @@ func spawn_wave(count: int):
 
 func spawn_zombie():
 	if not zombie_scene:
-		print("[GameManager] No zombie scene set!")
+		push_error("[GameManager] No zombie scene set!")
 		return
 	if zombie_spawn_points.is_empty():
-		print("[GameManager] No spawn points set!")
+		push_error("[GameManager] No spawn points set!")
 		return
 
 	if zombies_alive >= max_zombies_alive:
+		print("[GameManager] Max zombies reached (%d/%d)" % [zombies_alive, max_zombies_alive])
 		return
 
+	# Get valid spawn point
 	var spawn_point = zombie_spawn_points[randi() % zombie_spawn_points.size()]
+	if not is_instance_valid(spawn_point):
+		push_warning("[GameManager] Invalid spawn point!")
+		return
+
+	# Instantiate zombie
 	var zombie = zombie_scene.instantiate()
 	if not zombie:
-		print("[GameManager] Failed to instantiate zombie!")
+		push_error("[GameManager] Failed to instantiate zombie!")
 		return
+
+	# Add to scene
 	var scene = get_tree().current_scene
 	if not scene:
 		zombie.queue_free()
-		print("[GameManager] No current scene!")
+		push_error("[GameManager] No current scene!")
 		return
+
 	scene.add_child(zombie)
-	zombie.global_position = spawn_point.global_position
-	print("[GameManager] Spawned zombie at ", spawn_point.global_position)
+	zombie.global_position = spawn_point.global_position + Vector3(0, 0.5, 0)
+
+	# Ensure zombie is in correct group
+	if not zombie.is_in_group("zombie"):
+		zombie.add_to_group("zombie")
 
 	# Connect zombie died signal if it exists
 	if zombie.has_signal("zombie_died"):
@@ -95,6 +127,7 @@ func spawn_zombie():
 
 	zombies_alive += 1
 	zombie_spawned.emit(zombie)
+	print("[GameManager] Spawned zombie #%d at %v (Wave %d)" % [zombies_alive, spawn_point.global_position, current_wave])
 
 func _on_zombie_died(_zombie: Node, _points: int = 0, _experience: int = 0):
 	zombies_alive -= 1

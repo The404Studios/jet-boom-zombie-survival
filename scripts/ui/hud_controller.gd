@@ -99,6 +99,7 @@ func _on_sigils_changed(new_sigils: int):
 	update_sigils(new_sigils)
 
 func _connect_arena_manager():
+	# Try arena manager first
 	var arena = get_tree().get_first_node_in_group("arena_manager")
 	if arena:
 		if arena.has_signal("wave_started"):
@@ -107,6 +108,28 @@ func _connect_arena_manager():
 		if arena.has_signal("wave_completed"):
 			if not arena.wave_completed.is_connected(_on_wave_completed):
 				arena.wave_completed.connect(_on_wave_completed)
+
+	# Also connect to GameManager autoload
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		if game_manager.has_signal("wave_started"):
+			if not game_manager.wave_started.is_connected(_on_wave_started):
+				game_manager.wave_started.connect(_on_wave_started)
+		if game_manager.has_signal("wave_completed"):
+			if not game_manager.wave_completed.is_connected(_on_wave_completed):
+				game_manager.wave_completed.connect(_on_wave_completed)
+		if game_manager.has_signal("zombie_spawned"):
+			if not game_manager.zombie_spawned.is_connected(_on_zombie_spawned):
+				game_manager.zombie_spawned.connect(_on_zombie_spawned)
+		print("[HUD] Connected to GameManager signals")
+
+func _on_zombie_spawned(_zombie: Node):
+	# Update zombie count display
+	var game_manager = get_node_or_null("/root/GameManager")
+	if game_manager:
+		var zombies_alive = game_manager.zombies_alive if "zombies_alive" in game_manager else 0
+		var wave = game_manager.current_wave if "current_wave" in game_manager else 1
+		update_wave_info(wave, zombies_alive, zombies_alive)
 
 func _on_wave_started(wave_number: int):
 	current_wave = wave_number
@@ -170,25 +193,36 @@ func _update_weapon_info():
 	if not player:
 		return
 
+	# Get weapon from inventory
+	var weapon_data = null
+	var current_ammo = 0
+	var reserve_ammo = 0
+
+	if "inventory" in player and player.inventory:
+		var inv = player.inventory
+		if "equipped_weapon" in inv and inv.equipped_weapon:
+			weapon_data = inv.equipped_weapon.get("item")
+			current_ammo = inv.equipped_weapon.get("current_ammo", 0)
+
+	# Get reserve ammo from player
+	if "reserve_ammo" in player:
+		reserve_ammo = player.reserve_ammo
+
+	# Update weapon name label
 	if weapon_label:
-		if "current_weapon_data" in player:
-			var weapon = player.current_weapon_data
-			if weapon and "item_name" in weapon:
-				weapon_label.text = weapon.item_name
-			elif "current_weapon_name" in player:
-				weapon_label.text = player.current_weapon_name
-			else:
-				weapon_label.text = "Unarmed"
+		if weapon_data and "item_name" in weapon_data:
+			weapon_label.text = weapon_data.item_name
 		elif "current_weapon_name" in player:
 			weapon_label.text = player.current_weapon_name
 		else:
 			weapon_label.text = "Unarmed"
 
+	# Update ammo label
 	if ammo_label:
-		if "current_ammo" in player and "reserve_ammo" in player:
-			ammo_label.text = "%d / %d" % [player.current_ammo, player.reserve_ammo]
-		elif "current_ammo" in player and "max_ammo" in player:
-			ammo_label.text = "%d / %d" % [player.current_ammo, player.max_ammo]
+		if weapon_data:
+			ammo_label.text = "%d / %d" % [current_ammo, reserve_ammo]
+		else:
+			ammo_label.text = "-- / --"
 
 func update_wave_info(wave: int, zombies_alive: int, zombies_total: int):
 	current_wave = wave
