@@ -70,6 +70,16 @@ func _init_backend():
 		if backend.has_signal("profile_updated"):
 			backend.profile_updated.connect(_on_profile_updated)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if backend:
+		if backend.has_signal("logged_in") and backend.logged_in.is_connected(_on_backend_logged_in):
+			backend.logged_in.disconnect(_on_backend_logged_in)
+		if backend.has_signal("logged_out") and backend.logged_out.is_connected(_on_backend_logged_out):
+			backend.logged_out.disconnect(_on_backend_logged_out)
+		if backend.has_signal("profile_updated") and backend.profile_updated.is_connected(_on_profile_updated):
+			backend.profile_updated.disconnect(_on_profile_updated)
+
 func _on_backend_logged_in(player_data: Dictionary):
 	"""Sync account from backend on login"""
 	is_logged_in = true

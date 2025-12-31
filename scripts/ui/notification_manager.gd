@@ -86,6 +86,30 @@ func _setup_backend_integration():
 		if websocket_hub.has_signal("player_left"):
 			websocket_hub.player_left.connect(_on_player_left_backend)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if websocket_hub:
+		if websocket_hub.has_signal("notification_received") and websocket_hub.notification_received.is_connected(_on_backend_notification):
+			websocket_hub.notification_received.disconnect(_on_backend_notification)
+		if websocket_hub.has_signal("friend_request_received") and websocket_hub.friend_request_received.is_connected(_on_friend_request):
+			websocket_hub.friend_request_received.disconnect(_on_friend_request)
+		if websocket_hub.has_signal("game_invite_received") and websocket_hub.game_invite_received.is_connected(_on_game_invite):
+			websocket_hub.game_invite_received.disconnect(_on_game_invite)
+		if websocket_hub.has_signal("achievement_unlocked") and websocket_hub.achievement_unlocked.is_connected(_on_achievement_unlocked):
+			websocket_hub.achievement_unlocked.disconnect(_on_achievement_unlocked)
+		if websocket_hub.has_signal("trade_request_received") and websocket_hub.trade_request_received.is_connected(_on_trade_request):
+			websocket_hub.trade_request_received.disconnect(_on_trade_request)
+		if websocket_hub.has_signal("player_joined") and websocket_hub.player_joined.is_connected(_on_player_joined_backend):
+			websocket_hub.player_joined.disconnect(_on_player_joined_backend)
+		if websocket_hub.has_signal("player_left") and websocket_hub.player_left.is_connected(_on_player_left_backend):
+			websocket_hub.player_left.disconnect(_on_player_left_backend)
+
+	# Clean up active notifications
+	for notification in active_notifications:
+		if is_instance_valid(notification):
+			notification.queue_free()
+	active_notifications.clear()
+
 func _setup_containers():
 	# Create notification container if not exists
 	if not notification_container:

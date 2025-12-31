@@ -94,6 +94,20 @@ func _init_backend():
 	backend = get_node_or_null("/root/Backend")
 	websocket_hub = get_node_or_null("/root/WebSocketHub")
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if wave_manager:
+		if wave_manager.has_signal("wave_completed") and wave_manager.wave_completed.is_connected(_on_wave_completed):
+			wave_manager.wave_completed.disconnect(_on_wave_completed)
+		if wave_manager.has_signal("all_waves_completed") and wave_manager.all_waves_completed.is_connected(_on_all_waves_completed):
+			wave_manager.all_waves_completed.disconnect(_on_all_waves_completed)
+
+	if player_manager:
+		if player_manager.has_signal("all_players_dead") and player_manager.all_players_dead.is_connected(_on_all_players_dead):
+			player_manager.all_players_dead.disconnect(_on_all_players_dead)
+		if player_manager.has_signal("player_died") and player_manager.player_died.is_connected(_on_player_died):
+			player_manager.player_died.disconnect(_on_player_died)
+
 func _process(delta):
 	match current_state:
 		RoundState.WAITING:
