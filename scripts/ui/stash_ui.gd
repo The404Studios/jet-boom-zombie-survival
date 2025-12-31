@@ -1,6 +1,8 @@
 extends Control
 class_name StashUI
 
+# Enhanced Stash UI with quick transfer, search, sorting, and smooth animations
+
 var player_persistence: Node = null  # PlayerPersistence autoload - set in _ready
 @export var inventory_system: InventorySystem
 
@@ -13,6 +15,12 @@ var player_persistence: Node = null  # PlayerPersistence autoload - set in _read
 var stash_slots: Array[Control] = []
 var inventory_slots: Array[Control] = []
 var is_open: bool = false
+
+# Enhanced features
+var search_bar: LineEdit
+var search_filter: String = ""
+var sort_button: Button
+var current_sort_mode: int = 0
 
 signal stash_opened
 signal stash_closed
@@ -427,3 +435,152 @@ func hide_tooltip():
 func _input(event):
 	if is_open and event.is_action_pressed("ui_cancel"):
 		close()
+
+# ============================================
+# ENHANCED FEATURES
+# ============================================
+
+func _on_slot_clicked_enhanced(index: int, is_stash: bool, event: InputEvent):
+	"""Enhanced click handler with shift+click quick transfer"""
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if is_stash:
+			transfer_from_stash(index)
+		else:
+			transfer_to_stash(index)
+
+func transfer_all_to_stash():
+	"""Transfer all inventory items to stash"""
+	if not inventory_system:
+		return
+
+	var transferred = 0
+	for i in range(inventory_system.inventory.size() - 1, -1, -1):
+		var item_data = inventory_system.inventory[i]
+		if inventory_system.transfer_to_stash(item_data.item, item_data.quantity):
+			transferred += 1
+
+	if transferred > 0:
+		item_transferred.emit()
+		refresh_all()
+		_show_feedback("%d items transferred to stash!" % transferred, Color(0.5, 1.0, 0.5))
+		_play_bulk_transfer_animation(true)
+
+func transfer_all_from_stash():
+	"""Transfer all stash items to inventory"""
+	if not player_persistence or not inventory_system:
+		return
+
+	var stash_items = player_persistence.player_data.stash
+	var transferred = 0
+
+	for i in range(stash_items.size() - 1, -1, -1):
+		var item_data = stash_items[i]
+		if inventory_system.transfer_from_stash(item_data.item, item_data.quantity):
+			transferred += 1
+		else:
+			break  # Inventory probably full
+
+	if transferred > 0:
+		item_transferred.emit()
+		refresh_all()
+		_show_feedback("%d items transferred to inventory!" % transferred, Color(0.5, 1.0, 0.5))
+		_play_bulk_transfer_animation(false)
+
+func _play_bulk_transfer_animation(to_stash: bool):
+	"""Visual feedback for bulk transfer"""
+	var arrow = Label.new()
+	arrow.text = ">>>" if to_stash else "<<<"
+	arrow.add_theme_font_size_override("font_size", 48)
+	arrow.modulate = Color(1, 1, 0.5, 0.8)
+	arrow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	arrow.set_anchors_preset(Control.PRESET_CENTER)
+	add_child(arrow)
+
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(arrow, "scale", Vector2(1.5, 1.5), 0.3).from(Vector2(0.5, 0.5)).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(arrow, "modulate:a", 0.0, 0.5).set_delay(0.3)
+	tween.tween_callback(arrow.queue_free).set_delay(0.8)
+
+func _show_feedback(message: String, color: Color):
+	"""Show feedback message"""
+	var label = Label.new()
+	label.text = message
+	label.add_theme_font_size_override("font_size", 18)
+	label.add_theme_color_override("font_color", color)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	label.position.y = 30
+	add_child(label)
+
+	var tween = create_tween()
+	tween.tween_property(label, "position:y", label.position.y - 20, 0.3)
+	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.5)
+	tween.tween_callback(label.queue_free)
+
+func sort_stash():
+	"""Sort stash items by rarity"""
+	if not player_persistence:
+		return
+
+	var stash = player_persistence.player_data.stash
+	stash.sort_custom(func(a, b):
+		var rarity_a = a.item.rarity if a.item and "rarity" in a.item else 0
+		var rarity_b = b.item.rarity if b.item and "rarity" in b.item else 0
+		return rarity_a > rarity_b
+	)
+
+	refresh_stash()
+	_animate_stash_sort()
+
+func _animate_stash_sort():
+	"""Animate stash items after sorting"""
+	var delay = 0.0
+	for slot in stash_slots:
+		var icon = slot.get_node_or_null("Icon") as TextureRect
+		if icon and icon.texture:
+			slot.modulate.a = 0
+			slot.scale = Vector2(0.8, 0.8)
+
+			var tween = create_tween()
+			tween.set_parallel(true)
+			tween.tween_property(slot, "modulate:a", 1.0, 0.2).set_delay(delay)
+			tween.tween_property(slot, "scale", Vector2.ONE, 0.2).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			delay += 0.02
+
+func search_items(query: String):
+	"""Filter displayed items by search query"""
+	search_filter = query.to_lower()
+	_apply_search_filter()
+
+func _apply_search_filter():
+	"""Apply search filter to all slots"""
+	if not player_persistence:
+		return
+
+	var stash_items = player_persistence.player_data.stash
+
+	for i in range(stash_slots.size()):
+		var slot = stash_slots[i]
+		if i < stash_items.size():
+			var item = stash_items[i].item
+			if _item_matches_search(item):
+				slot.modulate = Color.WHITE
+			else:
+				slot.modulate = Color(0.3, 0.3, 0.3, 0.5)
+		else:
+			slot.modulate = Color.WHITE
+
+func _item_matches_search(item) -> bool:
+	"""Check if item matches search filter"""
+	if search_filter.is_empty():
+		return true
+
+	if not item:
+		return false
+
+	var item_name = item.item_name if "item_name" in item else ""
+	if item_name.to_lower().contains(search_filter):
+		return true
+
+	return false

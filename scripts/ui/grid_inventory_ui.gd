@@ -3,6 +3,7 @@ class_name GridInventoryUI
 
 # Grid-based inventory UI with item sizes, drag-drop, and equipment slots
 # Supports items from 1x1 to 5x5 in size
+# Enhanced with quick-transfer, sorting, search, and smooth animations
 
 @export var grid_inventory: GridInventorySystem
 
@@ -13,6 +14,9 @@ var stats_panel: Panel
 var backpack_panel: Panel
 var item_tooltip: Panel
 var drag_preview: Control
+var search_bar: LineEdit
+var sort_button: Button
+var quick_actions_panel: Panel
 
 # Grid configuration
 const CELL_SIZE: int = 50
@@ -35,6 +39,9 @@ var drag_from_stash: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var grid_cells: Array = []
 var equipment_slots: Dictionary = {}
+var search_filter: String = ""
+var current_sort_mode: int = 0  # 0=none, 1=type, 2=rarity, 3=name, 4=weight
+var item_displays: Dictionary = {}  # For animation tracking
 
 signal inventory_opened
 signal inventory_closed
@@ -141,11 +148,71 @@ func _create_grid_panel() -> Panel:
 
 	header.add_spacer(false)
 
+	# Search bar
+	search_bar = LineEdit.new()
+	search_bar.name = "SearchBar"
+	search_bar.placeholder_text = "Search..."
+	search_bar.custom_minimum_size = Vector2(120, 24)
+	search_bar.text_changed.connect(_on_search_changed)
+	var search_style = StyleBoxFlat.new()
+	search_style.bg_color = Color(0.08, 0.08, 0.1, 0.9)
+	search_style.border_color = Color(0.3, 0.4, 0.5)
+	search_style.set_border_width_all(1)
+	search_style.set_corner_radius_all(4)
+	search_bar.add_theme_stylebox_override("normal", search_style)
+	header.add_child(search_bar)
+
+	# Sort button
+	sort_button = Button.new()
+	sort_button.name = "SortButton"
+	sort_button.text = "Sort"
+	sort_button.custom_minimum_size = Vector2(60, 24)
+	sort_button.pressed.connect(_on_sort_pressed)
+	sort_button.tooltip_text = "Click to cycle sort modes"
+	var btn_style = StyleBoxFlat.new()
+	btn_style.bg_color = Color(0.15, 0.2, 0.3, 0.9)
+	btn_style.border_color = Color(0.3, 0.5, 0.7)
+	btn_style.set_border_width_all(1)
+	btn_style.set_corner_radius_all(4)
+	sort_button.add_theme_stylebox_override("normal", btn_style)
+	header.add_child(sort_button)
+
+	header.add_spacer(false)
+
 	var weight_label = Label.new()
 	weight_label.name = "WeightLabel"
 	weight_label.text = "Weight: 0 / 50"
 	weight_label.add_theme_font_size_override("font_size", 14)
 	header.add_child(weight_label)
+
+	# Quick actions row
+	var actions_row = HBoxContainer.new()
+	actions_row.add_theme_constant_override("separation", 5)
+	vbox.add_child(actions_row)
+
+	var transfer_all_btn = Button.new()
+	transfer_all_btn.text = "Transfer All"
+	transfer_all_btn.custom_minimum_size = Vector2(90, 22)
+	transfer_all_btn.pressed.connect(_on_transfer_all_pressed)
+	transfer_all_btn.add_theme_font_size_override("font_size", 11)
+	transfer_all_btn.add_theme_stylebox_override("normal", btn_style.duplicate())
+	actions_row.add_child(transfer_all_btn)
+
+	var sort_inv_btn = Button.new()
+	sort_inv_btn.text = "Auto-Stack"
+	sort_inv_btn.custom_minimum_size = Vector2(80, 22)
+	sort_inv_btn.pressed.connect(_on_auto_stack_pressed)
+	sort_inv_btn.add_theme_font_size_override("font_size", 11)
+	sort_inv_btn.add_theme_stylebox_override("normal", btn_style.duplicate())
+	actions_row.add_child(sort_inv_btn)
+
+	actions_row.add_spacer(false)
+
+	var hint_label = Label.new()
+	hint_label.text = "[Shift+Click] Quick Transfer  |  [R] Rotate"
+	hint_label.add_theme_font_size_override("font_size", 10)
+	hint_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	actions_row.add_child(hint_label)
 
 	# Grid container
 	var grid_container = Control.new()
@@ -544,6 +611,13 @@ func _on_cell_gui_input(event: InputEvent, cell: Panel, x: int, y: int):
 		var grid_pos = Vector2i(x, y)
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			# Quick transfer with Shift+Click
+			if Input.is_key_pressed(KEY_SHIFT):
+				var item_entry = grid_inventory.get_item_at(grid_pos)
+				if not item_entry.is_empty():
+					_quick_transfer_to_stash(item_entry, grid_pos)
+					return
+
 			if dragging:
 				# Try to place item
 				_try_place_drag_item(grid_pos)
@@ -769,6 +843,7 @@ func _draw_items():
 		return
 
 	var items = grid_inventory.get_all_items(false)
+	var delay_index = 0
 	for entry in items:
 		var item = entry.item
 		var pos = entry.position as Vector2i
@@ -784,6 +859,20 @@ func _draw_items():
 		display.name = "ItemDisplay_%d_%d" % [pos.x, pos.y]
 		display.position = Vector2(pos.x * CELL_SIZE, pos.y * CELL_SIZE)
 		display.set_meta("item_entry", entry)
+
+		# Apply search filter - dim non-matching items
+		if not search_filter.is_empty() and not _item_matches_filter(item):
+			display.modulate = Color(0.3, 0.3, 0.3, 0.5)
+		else:
+			# Staggered appear animation
+			display.modulate.a = 0
+			display.scale = Vector2(0.9, 0.9)
+			var tween = create_tween()
+			tween.set_parallel(true)
+			tween.tween_property(display, "modulate:a", 1.0, 0.15).set_delay(delay_index * 0.02)
+			tween.tween_property(display, "scale", Vector2.ONE, 0.15).set_delay(delay_index * 0.02)
+			delay_index += 1
+
 		grid_container.add_child(display)
 
 func _create_item_display(item: Resource, size: Vector2i, quantity: int) -> Control:
@@ -1090,3 +1179,261 @@ func _animate_close():
 	tween.set_parallel(true)
 	tween.tween_property(self, "modulate:a", 0.0, 0.2)
 	tween.tween_property(self, "scale", Vector2(0.95, 0.95), 0.2)
+
+# ============================================
+# QUICK TRANSFER
+# ============================================
+
+func _quick_transfer_to_stash(item_entry: Dictionary, grid_pos: Vector2i):
+	"""Shift+Click to quickly move item to stash"""
+	if not grid_inventory:
+		return
+
+	var item = item_entry.item
+	var quantity = item_entry.quantity
+
+	# Remove from inventory
+	grid_inventory.remove_item_at(grid_pos, false)
+
+	# Try to add to stash
+	if grid_inventory.add_item(item, quantity, true):
+		_play_transfer_animation(grid_pos, true)
+		_refresh_display()
+	else:
+		# Failed, put back
+		grid_inventory.place_item(item, grid_pos, item_entry.rotated, quantity, false)
+		_show_error_feedback("Stash full!")
+
+func _quick_transfer_from_stash(item_entry: Dictionary, grid_pos: Vector2i):
+	"""Quickly move item from stash to inventory"""
+	if not grid_inventory:
+		return
+
+	var item = item_entry.item
+	var quantity = item_entry.quantity
+
+	# Remove from stash
+	grid_inventory.remove_item_at(grid_pos, true)
+
+	# Try to add to inventory
+	if grid_inventory.add_item(item, quantity, false):
+		_play_transfer_animation(grid_pos, false)
+		_refresh_display()
+	else:
+		# Failed, put back
+		grid_inventory.place_item(item, grid_pos, item_entry.rotated, quantity, true)
+		_show_error_feedback("Inventory full!")
+
+func _play_transfer_animation(from_pos: Vector2i, to_stash: bool):
+	"""Visual feedback for quick transfer"""
+	var indicator = Label.new()
+	indicator.text = "→ Stash" if to_stash else "← Inv"
+	indicator.add_theme_font_size_override("font_size", 14)
+	indicator.modulate = Color(0.5, 1.0, 0.5)
+	add_child(indicator)
+
+	var start_pos = Vector2(from_pos.x * CELL_SIZE + GRID_PADDING, from_pos.y * CELL_SIZE + GRID_PADDING)
+	indicator.position = start_pos + grid_panel.position
+
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(indicator, "position:y", indicator.position.y - 40, 0.4)
+	tween.tween_property(indicator, "modulate:a", 0.0, 0.4)
+	tween.tween_callback(indicator.queue_free).set_delay(0.4)
+
+func _show_error_feedback(message: String):
+	"""Show error message"""
+	var label = Label.new()
+	label.text = message
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color.RED)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	label.position.y = 50
+	add_child(label)
+
+	var tween = create_tween()
+	tween.tween_property(label, "modulate:a", 0.0, 1.0).set_delay(0.5)
+	tween.tween_callback(label.queue_free)
+
+# ============================================
+# SORTING
+# ============================================
+
+func _on_sort_pressed():
+	"""Cycle through sort modes"""
+	current_sort_mode = (current_sort_mode + 1) % 5
+	var sort_names = ["None", "Type", "Rarity", "Name", "Weight"]
+	sort_button.text = "Sort: " + sort_names[current_sort_mode]
+
+	if current_sort_mode > 0:
+		_sort_inventory()
+
+func _sort_inventory():
+	"""Sort inventory items based on current mode"""
+	if not grid_inventory:
+		return
+
+	var all_items = grid_inventory.get_all_items(false)
+	if all_items.is_empty():
+		return
+
+	# Clear current placements
+	for entry in all_items:
+		grid_inventory.remove_item_at(entry.position, false)
+
+	# Sort items
+	var sorted_items = all_items.duplicate()
+	sorted_items.sort_custom(_compare_items)
+
+	# Re-place items in order
+	for entry in sorted_items:
+		var placed = grid_inventory.add_item(entry.item, entry.quantity, false)
+		if not placed:
+			push_warning("Could not place item during sort: ", entry.item.item_name if "item_name" in entry.item else "unknown")
+
+	_refresh_display()
+	_play_sort_animation()
+
+func _compare_items(a: Dictionary, b: Dictionary) -> bool:
+	"""Compare items for sorting"""
+	var item_a = a.item
+	var item_b = b.item
+
+	match current_sort_mode:
+		1:  # Type
+			var type_a = item_a.item_type if "item_type" in item_a else 0
+			var type_b = item_b.item_type if "item_type" in item_b else 0
+			if type_a != type_b:
+				return type_a < type_b
+			# Secondary sort by rarity
+			var rarity_a = item_a.rarity if "rarity" in item_a else 0
+			var rarity_b = item_b.rarity if "rarity" in item_b else 0
+			return rarity_a > rarity_b
+		2:  # Rarity (highest first)
+			var rarity_a = item_a.rarity if "rarity" in item_a else 0
+			var rarity_b = item_b.rarity if "rarity" in item_b else 0
+			return rarity_a > rarity_b
+		3:  # Name
+			var name_a = item_a.item_name if "item_name" in item_a else ""
+			var name_b = item_b.item_name if "item_name" in item_b else ""
+			return name_a < name_b
+		4:  # Weight (heaviest first)
+			var weight_a = item_a.weight if "weight" in item_a else 1.0
+			var weight_b = item_b.weight if "weight" in item_b else 1.0
+			return weight_a > weight_b
+
+	return false
+
+func _play_sort_animation():
+	"""Animate items settling after sort"""
+	var grid_container: Control = null
+	for child in grid_panel.get_children():
+		if child is VBoxContainer:
+			grid_container = child.get_node_or_null("GridContainer")
+			break
+
+	if not grid_container:
+		return
+
+	var delay = 0.0
+	for child in grid_container.get_children():
+		if child.name.begins_with("ItemDisplay"):
+			child.modulate.a = 0
+			child.scale = Vector2(0.8, 0.8)
+
+			var tween = create_tween()
+			tween.set_parallel(true)
+			tween.tween_property(child, "modulate:a", 1.0, 0.2).set_delay(delay)
+			tween.tween_property(child, "scale", Vector2.ONE, 0.2).set_delay(delay).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+			delay += 0.02
+
+# ============================================
+# SEARCH & FILTER
+# ============================================
+
+func _on_search_changed(new_text: String):
+	"""Filter items based on search text"""
+	search_filter = new_text.to_lower()
+	_refresh_display()
+
+func _item_matches_filter(item: Resource) -> bool:
+	"""Check if item matches current search filter"""
+	if search_filter.is_empty():
+		return true
+
+	var item_name = item.item_name if "item_name" in item else ""
+	if item_name.to_lower().contains(search_filter):
+		return true
+
+	# Check item type
+	var type_name = _get_item_type_name(item.item_type if "item_type" in item else 0)
+	if type_name.to_lower().contains(search_filter):
+		return true
+
+	# Check rarity
+	var rarity_name = _get_rarity_name(item.rarity if "rarity" in item else 0)
+	if rarity_name.to_lower().contains(search_filter):
+		return true
+
+	return false
+
+# ============================================
+# QUICK ACTIONS
+# ============================================
+
+func _on_transfer_all_pressed():
+	"""Transfer all items to stash"""
+	if not grid_inventory:
+		return
+
+	var items_to_transfer = grid_inventory.get_all_items(false).duplicate()
+	var transferred = 0
+
+	for entry in items_to_transfer:
+		grid_inventory.remove_item_at(entry.position, false)
+		if grid_inventory.add_item(entry.item, entry.quantity, true):
+			transferred += 1
+		else:
+			# Put back if stash full
+			grid_inventory.add_item(entry.item, entry.quantity, false)
+			break
+
+	if transferred > 0:
+		_refresh_display()
+		_show_success_feedback("%d items transferred!" % transferred)
+
+func _on_auto_stack_pressed():
+	"""Auto-stack all stackable items"""
+	if not grid_inventory:
+		return
+
+	# This is handled automatically by the inventory system when adding items
+	# Just do a "refresh" by re-placing all items
+	var items_copy = grid_inventory.get_all_items(false).duplicate()
+
+	for entry in items_copy:
+		grid_inventory.remove_item_at(entry.position, false)
+
+	var stacked = 0
+	for entry in items_copy:
+		if grid_inventory.add_item(entry.item, entry.quantity, false):
+			stacked += 1
+
+	_refresh_display()
+	_show_success_feedback("Items reorganized!")
+
+func _show_success_feedback(message: String):
+	"""Show success message"""
+	var label = Label.new()
+	label.text = message
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	label.position.y = 50
+	add_child(label)
+
+	var tween = create_tween()
+	tween.tween_property(label, "modulate:a", 0.0, 1.0).set_delay(0.8)
+	tween.tween_callback(label.queue_free)

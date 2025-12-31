@@ -53,6 +53,15 @@ var game_coordinator: Node = null
 # World tooltip reference
 var world_tooltip: WorldTooltip = null
 
+# Enhanced UI state
+var combo_count: int = 0
+var combo_timer: float = 0.0
+var combo_label: Label = null
+var hitmarker: Control = null
+var low_health_overlay: ColorRect = null
+var last_health: float = 100.0
+var health_change_tween: Tween = null
+
 func _ready():
 	# Add to hud group so arena manager can find us
 	add_to_group("hud")
@@ -85,6 +94,11 @@ func _ready():
 
 	# Create world tooltip for ground items
 	_create_world_tooltip()
+
+	# Create enhanced UI elements
+	_create_combo_display()
+	_create_hitmarker()
+	_create_low_health_overlay()
 
 func _connect_points_system():
 	if has_node("/root/PointsSystem"):
@@ -575,3 +589,281 @@ func update_sigil_health(current: float, maximum: float):
 	if sigil_percent:
 		var percent = int((current / maximum) * 100) if maximum > 0 else 0
 		sigil_percent.text = "%d%%" % percent
+
+# ============================================
+# ENHANCED UI ELEMENTS
+# ============================================
+
+func _create_combo_display():
+	"""Create combo counter display"""
+	combo_label = Label.new()
+	combo_label.name = "ComboLabel"
+	combo_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	combo_label.add_theme_font_size_override("font_size", 32)
+	combo_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+	combo_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+	combo_label.add_theme_constant_override("shadow_offset_x", 2)
+	combo_label.add_theme_constant_override("shadow_offset_y", 2)
+	combo_label.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	combo_label.position = Vector2(-150, -50)
+	combo_label.visible = false
+	add_child(combo_label)
+
+func _create_hitmarker():
+	"""Create hitmarker crosshair indicator"""
+	hitmarker = Control.new()
+	hitmarker.name = "Hitmarker"
+	hitmarker.set_anchors_preset(Control.PRESET_CENTER)
+	hitmarker.custom_minimum_size = Vector2(40, 40)
+	hitmarker.visible = false
+	add_child(hitmarker)
+
+	# Create hitmarker lines
+	for i in range(4):
+		var line = ColorRect.new()
+		line.color = Color.WHITE
+		line.size = Vector2(12, 2)
+		line.position = Vector2(-6, -1)
+
+		match i:
+			0:  # Top left
+				line.rotation = deg_to_rad(-45)
+				line.position = Vector2(-15, -15)
+			1:  # Top right
+				line.rotation = deg_to_rad(45)
+				line.position = Vector2(5, -15)
+			2:  # Bottom left
+				line.rotation = deg_to_rad(45)
+				line.position = Vector2(-15, 5)
+			3:  # Bottom right
+				line.rotation = deg_to_rad(-45)
+				line.position = Vector2(5, 5)
+
+		hitmarker.add_child(line)
+
+func _create_low_health_overlay():
+	"""Create low health vignette overlay"""
+	low_health_overlay = ColorRect.new()
+	low_health_overlay.name = "LowHealthOverlay"
+	low_health_overlay.color = Color(0.5, 0, 0, 0)
+	low_health_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	low_health_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(low_health_overlay)
+	move_child(low_health_overlay, 0)  # Put behind other elements
+
+func show_hitmarker(is_headshot: bool = false, is_kill: bool = false):
+	"""Show hitmarker feedback"""
+	if not hitmarker:
+		return
+
+	hitmarker.visible = true
+
+	# Color based on hit type
+	var color = Color.WHITE
+	if is_kill:
+		color = Color(1.0, 0.3, 0.3)  # Red for kills
+	elif is_headshot:
+		color = Color(1.0, 0.8, 0.2)  # Yellow for headshots
+
+	for child in hitmarker.get_children():
+		if child is ColorRect:
+			child.color = color
+
+	# Scale animation
+	hitmarker.scale = Vector2(1.5, 1.5) if is_kill else Vector2(1.2, 1.2)
+
+	var tween = create_tween()
+	tween.tween_property(hitmarker, "scale", Vector2.ONE, 0.15)
+	tween.tween_property(hitmarker, "modulate:a", 0.0, 0.1)
+	tween.tween_callback(func(): hitmarker.visible = false; hitmarker.modulate.a = 1.0)
+
+func add_combo_kill():
+	"""Add to combo counter"""
+	combo_count += 1
+	combo_timer = 3.0  # Reset combo timer
+
+	if combo_label:
+		combo_label.visible = true
+		combo_label.text = "x%d COMBO!" % combo_count
+
+		# Scale punch animation
+		combo_label.scale = Vector2(1.3, 1.3)
+		var tween = create_tween()
+		tween.tween_property(combo_label, "scale", Vector2.ONE, 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+		# Color based on combo
+		if combo_count >= 10:
+			combo_label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.8))  # Pink
+		elif combo_count >= 5:
+			combo_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.2))  # Orange
+		else:
+			combo_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))  # Yellow
+
+func _update_combo(delta: float):
+	"""Update combo timer"""
+	if combo_timer > 0:
+		combo_timer -= delta
+		if combo_timer <= 0:
+			# Combo ended
+			if combo_count > 1:
+				_show_combo_end(combo_count)
+			combo_count = 0
+			if combo_label:
+				combo_label.visible = false
+
+func _show_combo_end(final_combo: int):
+	"""Show combo end bonus"""
+	var bonus = final_combo * 10
+	show_notification("COMBO x%d - +%d points!" % [final_combo, bonus])
+
+	# Award bonus points
+	if has_node("/root/PointsSystem"):
+		var points_system = get_node("/root/PointsSystem")
+		if points_system.has_method("add_points"):
+			points_system.add_points(bonus)
+
+func _update_low_health_effect():
+	"""Update low health visual effect"""
+	if not player or not low_health_overlay:
+		return
+
+	if "current_health" in player and "max_health" in player:
+		var health = player.current_health
+		var max_health = player.max_health
+		var health_percent = health / max_health if max_health > 0 else 1.0
+
+		# Show overlay when below 30% health
+		if health_percent < 0.3:
+			var intensity = (0.3 - health_percent) / 0.3  # 0 to 1
+			low_health_overlay.color.a = intensity * 0.3  # Max 30% opacity
+
+			# Pulse effect when very low
+			if health_percent < 0.15:
+				var pulse = (sin(Time.get_ticks_msec() * 0.005) + 1) * 0.5
+				low_health_overlay.color.a = intensity * 0.3 * (0.5 + pulse * 0.5)
+		else:
+			low_health_overlay.color.a = 0
+
+		# Check for health change
+		if health < last_health:
+			_on_player_damaged(last_health - health)
+		elif health > last_health:
+			_on_player_healed(health - last_health)
+
+		last_health = health
+
+func _on_player_damaged(damage: float):
+	"""React to player taking damage"""
+	show_damage_indicator()
+
+	# Screen shake effect (if camera available)
+	if player and player.has_node("Camera3D"):
+		var camera = player.get_node("Camera3D")
+		if camera.has_method("add_trauma"):
+			camera.add_trauma(min(damage / 50.0, 0.5))
+
+	# Flash health bar red
+	if health_bar:
+		var tween = create_tween()
+		tween.tween_property(health_bar, "modulate", Color(1.0, 0.3, 0.3), 0.1)
+		tween.tween_property(health_bar, "modulate", Color.WHITE, 0.2)
+
+func _on_player_healed(amount: float):
+	"""React to player healing"""
+	# Flash health bar green
+	if health_bar:
+		var tween = create_tween()
+		tween.tween_property(health_bar, "modulate", Color(0.3, 1.0, 0.3), 0.1)
+		tween.tween_property(health_bar, "modulate", Color.WHITE, 0.3)
+
+	# Show heal indicator
+	var heal_popup = Label.new()
+	heal_popup.text = "+%d HP" % int(amount)
+	heal_popup.add_theme_font_size_override("font_size", 18)
+	heal_popup.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	heal_popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	heal_popup.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	heal_popup.position = Vector2(-100, 80)
+	add_child(heal_popup)
+
+	var tween = create_tween()
+	tween.tween_property(heal_popup, "position:y", heal_popup.position.y - 30, 0.8)
+	tween.parallel().tween_property(heal_popup, "modulate:a", 0.0, 0.8)
+	tween.tween_callback(heal_popup.queue_free)
+
+# Override _process to include enhanced updates
+func _process(delta):
+	if not player or not is_instance_valid(player):
+		_find_player()
+		return
+
+	_update_health()
+	_update_stamina()
+	_update_weapon_info()
+	_update_combo(delta)
+	_update_low_health_effect()
+
+# ============================================
+# AMMO & RELOAD FEEDBACK
+# ============================================
+
+func show_reload_indicator():
+	"""Show reloading indicator"""
+	if ammo_label:
+		ammo_label.text = "RELOADING..."
+		ammo_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+
+func hide_reload_indicator():
+	"""Hide reloading indicator and restore ammo display"""
+	if ammo_label:
+		ammo_label.add_theme_color_override("font_color", Color.WHITE)
+	_update_weapon_info()
+
+func show_low_ammo_warning():
+	"""Flash low ammo warning"""
+	if ammo_label:
+		var tween = create_tween()
+		tween.tween_property(ammo_label, "modulate", Color(1.0, 0.3, 0.3), 0.2)
+		tween.tween_property(ammo_label, "modulate", Color.WHITE, 0.2)
+		tween.set_loops(3)
+
+func show_no_ammo():
+	"""Show no ammo indicator"""
+	if ammo_label:
+		ammo_label.text = "NO AMMO!"
+		ammo_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+
+# ============================================
+# WAVE ANNOUNCEMENTS (ENHANCED)
+# ============================================
+
+func _show_wave_announcement_enhanced(text: String, subtitle: String = ""):
+	"""Enhanced wave announcement with animations"""
+	if not wave_announcement:
+		wave_announcement = Label.new()
+		wave_announcement.name = "WaveAnnouncement"
+		wave_announcement.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		wave_announcement.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		wave_announcement.set_anchors_preset(Control.PRESET_CENTER)
+		wave_announcement.add_theme_font_size_override("font_size", 48)
+		wave_announcement.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		wave_announcement.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+		wave_announcement.add_theme_constant_override("shadow_offset_x", 3)
+		wave_announcement.add_theme_constant_override("shadow_offset_y", 3)
+		add_child(wave_announcement)
+
+	wave_announcement.text = text
+	wave_announcement.visible = true
+	wave_announcement.modulate.a = 0
+	wave_announcement.scale = Vector2(0.5, 0.5)
+
+	# Animate in
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(wave_announcement, "modulate:a", 1.0, 0.3)
+	tween.tween_property(wave_announcement, "scale", Vector2(1.0, 1.0), 0.4).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+	# Hold and fade out
+	tween.chain().tween_interval(2.0)
+	tween.tween_property(wave_announcement, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(func(): wave_announcement.visible = false)
