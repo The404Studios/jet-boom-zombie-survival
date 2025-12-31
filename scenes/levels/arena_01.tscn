@@ -21,6 +21,12 @@
 [ext_resource type="Texture2D" path="res://PSX+ Forest Pack/PSX+ Forest Pack/Textures/rock.png" id="19"]
 [ext_resource type="PackedScene" uid="uid://capture_sigil001" path="res://scenes/systems/capture_sigil.tscn" id="20"]
 [ext_resource type="Script" path="res://scripts/ui/teleport_ui.gd" id="21"]
+[ext_resource type="Script" path="res://scripts/systems/prop_spawner.gd" id="22"]
+[ext_resource type="PackedScene" uid="uid://pickupable_crate001" path="res://scenes/props/pickupable_crate.tscn" id="23"]
+[ext_resource type="PackedScene" uid="uid://pickupable_barrel001" path="res://scenes/props/pickupable_barrel.tscn" id="24"]
+[ext_resource type="PackedScene" uid="uid://pickupable_plank001" path="res://scenes/props/pickupable_plank.tscn" id="25"]
+[ext_resource type="PackedScene" uid="uid://pickupable_table001" path="res://scenes/props/pickupable_table.tscn" id="26"]
+[ext_resource type="PackedScene" uid="uid://pickupable_metal001" path="res://scenes/props/pickupable_metal_sheet.tscn" id="27"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_1"]
 sky_top_color = Color(0.03, 0.03, 0.08, 1)
@@ -1026,6 +1032,17 @@ transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, -3, 0, 42)
 
 [node name="PlantTall8" parent="TerrainExtras/ExtraPlants" instance=ExtResource("16")]
 transform = Transform3D(1.6, 0, 0, 0, 1.6, 0, 0, 0, 1.6, 3, 0, 42)
+
+[node name="PropSpawner" type="Node3D" parent="." groups=["prop_spawners"]]
+script = ExtResource("22")
+spawn_on_ready = true
+initial_prop_count = 25
+max_props_in_level = 60
+respawn_interval = 90.0
+respawn_batch_size = 5
+spawn_area_size = Vector3(80, 0, 80)
+spawn_height = 0.5
+prop_scenes = [ExtResource("23"), ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("27")]
 
 [node name="UI" type="CanvasLayer" parent="."]
 
