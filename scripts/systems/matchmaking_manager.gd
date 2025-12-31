@@ -21,11 +21,18 @@ enum MatchState {
 var current_match_state: MatchState = MatchState.WAITING_FOR_PLAYERS
 var is_searching: bool = false
 var spawn_point_index: int = 0
+var matchmaking_ticket_id: String = ""
 
 @onready var steam_manager: Node = get_node_or_null("/root/SteamManager")
 @onready var network_manager: Node = get_node_or_null("/root/NetworkManager")
+var backend: Node = null
+var websocket_hub: Node = null
 
 func _ready():
+	# Get backend references
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
 	# Connect to network signals
 	if network_manager:
 		network_manager.player_connected.connect(_on_player_connected)
@@ -36,6 +43,11 @@ func _ready():
 		steam_manager.lobby_created.connect(_on_lobby_created)
 		steam_manager.lobby_joined.connect(_on_lobby_joined)
 		steam_manager.lobby_list_received.connect(_on_lobby_list_received)
+
+	# Connect to WebSocket matchmaking signals
+	if websocket_hub:
+		if websocket_hub.has_signal("matchmaking_update"):
+			websocket_hub.matchmaking_update.connect(_on_backend_matchmaking_update)
 
 func _exit_tree():
 	# Disconnect signals to prevent memory leaks
@@ -59,37 +71,181 @@ func _exit_tree():
 
 func start_matchmaking():
 	"""Start searching for available matches"""
-	if not steam_manager or is_searching:
+	if is_searching:
 		return
 
 	is_searching = true
 	matchmaking_started.emit()
 
-	# Search for existing lobbies
-	steam_manager.search_lobbies()
+	# Try backend matchmaking first if available
+	if backend and backend.is_authenticated and websocket_hub:
+		_start_backend_matchmaking()
+		return
 
-	# Wait a bit for results
-	await get_tree().create_timer(2.0).timeout
+	# Fall back to Steam matchmaking
+	if steam_manager:
+		steam_manager.search_lobbies()
 
-	# If no lobbies found, create our own
-	if steam_manager.current_lobby_id == 0:
+		# Wait a bit for results
+		await get_tree().create_timer(2.0).timeout
+
+		# If no lobbies found, create our own
+		if steam_manager.current_lobby_id == 0:
+			create_match()
+	else:
+		# No Steam, create LAN match
 		create_match()
+
+func _start_backend_matchmaking():
+	"""Start matchmaking through backend API"""
+	var preferences = {
+		"gameMode": "survival",
+		"region": "",  # Auto-detect
+		"skillRange": 500
+	}
+
+	backend.join_matchmaking_queue(preferences, func(response):
+		if response.success:
+			matchmaking_ticket_id = response.get("ticketId", "")
+			print("Backend matchmaking started: %s" % matchmaking_ticket_id)
+		else:
+			# Fallback to Steam or LAN
+			if steam_manager:
+				steam_manager.search_lobbies()
+			else:
+				create_match()
+	)
 
 func stop_matchmaking():
 	"""Stop searching for matches"""
 	is_searching = false
+
+	# Cancel backend matchmaking if active
+	if not matchmaking_ticket_id.is_empty() and backend:
+		backend.leave_matchmaking_queue(func(_response):
+			matchmaking_ticket_id = ""
+		)
+
 	matchmaking_stopped.emit()
+
+func _on_backend_matchmaking_update(status: Dictionary):
+	"""Handle matchmaking updates from backend"""
+	var state = status.get("status", "")
+
+	match state:
+		"matched":
+			# Found a match!
+			var server_info = status.get("serverInfo", {})
+			is_searching = false
+			matchmaking_ticket_id = ""
+
+			# Join the matched server
+			if server_info:
+				var server_ip = server_info.get("ipAddress", "")
+				var server_port = server_info.get("port", 27015)
+				if network_manager and not server_ip.is_empty():
+					network_manager.join_server_lan(server_ip, server_port)
+
+			match_found.emit(status.get("serverId", 0))
+		"searching":
+			# Still searching, update UI if needed
+			var queue_size = status.get("queueSize", 0)
+			var wait_time = status.get("estimatedWaitTime", 0)
+			print("Matchmaking: %d in queue, ~%ds wait" % [queue_size, wait_time])
+		"cancelled":
+			is_searching = false
+			matchmaking_ticket_id = ""
+			matchmaking_stopped.emit()
 
 func create_match():
 	"""Create a new match (host)"""
-	if not steam_manager:
-		print("Steam not available, creating LAN match")
-		if network_manager:
+	# Create network server first
+	if network_manager:
+		if steam_manager:
+			# Will be handled in _on_lobby_created
+			steam_manager.create_lobby(2)  # 2 = Public
+		else:
+			print("Steam not available, creating LAN match")
 			network_manager.create_server_lan()
+			_register_server_with_backend()
+	else:
+		print("No network manager available")
+
+func _register_server_with_backend():
+	"""Register our server with the backend server browser"""
+	if not backend or not backend.is_authenticated:
 		return
 
-	# Create public lobby that allows join-in-progress
-	steam_manager.create_lobby(2)  # 2 = Public
+	var server_info = {
+		"name": _get_server_name(),
+		"port": 27015,
+		"maxPlayers": 8,
+		"gameMode": "survival",
+		"currentMap": _get_current_map(),
+		"hasPassword": false,
+		"region": ""
+	}
+
+	backend.register_server(server_info, func(response):
+		if response.success:
+			var server_id = response.get("serverId", 0)
+			print("Server registered with backend: %d" % server_id)
+
+			# Start heartbeat
+			_start_server_heartbeat(server_id)
+	)
+
+func _get_server_name() -> String:
+	var username = "Survivor"
+	if backend and backend.current_player:
+		username = backend.current_player.get("username", "Survivor")
+	return "%s's Game" % username
+
+func _get_current_map() -> String:
+	var scene = get_tree().current_scene
+	if scene:
+		var scene_name = scene.scene_file_path.get_file().get_basename()
+		return scene_name
+	return "warehouse"
+
+var _heartbeat_timer: Timer = null
+var _registered_server_id: int = 0
+
+func _start_server_heartbeat(server_id: int):
+	_registered_server_id = server_id
+
+	if _heartbeat_timer:
+		_heartbeat_timer.queue_free()
+
+	_heartbeat_timer = Timer.new()
+	_heartbeat_timer.wait_time = 30.0  # Every 30 seconds
+	_heartbeat_timer.autostart = true
+	_heartbeat_timer.timeout.connect(_send_server_heartbeat)
+	add_child(_heartbeat_timer)
+
+func _send_server_heartbeat():
+	if not backend or _registered_server_id == 0:
+		return
+
+	var player_count = 0
+	if network_manager and "players" in network_manager:
+		player_count = network_manager.players.size()
+
+	var status = {
+		"currentPlayers": player_count,
+		"currentWave": _get_current_wave(),
+		"matchState": MatchState.keys()[current_match_state]
+	}
+
+	backend.server_heartbeat(_registered_server_id, status, func(_response):
+		pass  # Heartbeat sent
+	)
+
+func _get_current_wave() -> int:
+	var wave_manager = get_node_or_null("/root/WaveManager")
+	if wave_manager and "current_wave" in wave_manager:
+		return wave_manager.current_wave
+	return 1
 
 func join_match(lobby_id: int):
 	"""Join an existing match"""

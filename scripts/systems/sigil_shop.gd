@@ -80,16 +80,92 @@ var player_persistence: Node = null
 var inventory_system: Node = null
 var equipment_system: Node = null
 
+# Backend integration
+var backend: Node = null
+var use_backend: bool = true
+var backend_shop_items: Array = []
+
 func _ready():
 	# Get persistence reference
 	if has_node("/root/PlayerPersistence"):
 		player_persistence = get_node("/root/PlayerPersistence")
+
+	# Initialize backend
+	_init_backend()
 
 	# Initialize shop inventory
 	_populate_shop_inventory()
 
 	# Load sigils from persistence
 	_load_sigils()
+
+	# Fetch backend shop items
+	_fetch_backend_shop_items()
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+
+	if backend:
+		if backend.has_signal("logged_in"):
+			backend.logged_in.connect(_on_backend_logged_in)
+
+func _on_backend_logged_in(_player_data: Dictionary):
+	"""Refresh shop and sigils on login"""
+	_load_sigils()
+	_fetch_backend_shop_items()
+
+func _fetch_backend_shop_items():
+	"""Fetch additional shop items from backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	backend.get_shop_items(func(response):
+		if response.success and response.has("items"):
+			backend_shop_items = response.items
+			_merge_backend_shop_items(response.items)
+			print("Fetched %d shop items from backend" % response.items.size())
+	)
+
+func _merge_backend_shop_items(items: Array):
+	"""Merge backend shop items with local items"""
+	for item_data in items:
+		var item_id = "backend_%s" % str(item_data.get("id", 0))
+
+		# Skip if already exists
+		if shop_items.has(item_id):
+			continue
+
+		# Create shop item from backend data
+		var category = _get_category_from_string(item_data.get("category", "consumables"))
+		var shop_item = ShopItem.new(
+			item_id,
+			item_data.get("name", "Unknown"),
+			item_data.get("description", ""),
+			category,
+			item_data.get("price", 100)
+		)
+
+		shop_item.rarity = item_data.get("rarity", 0)
+		shop_item.level_requirement = item_data.get("levelRequirement", 1)
+		shop_item.stock = item_data.get("stock", -1)
+
+		# Mark as backend item
+		shop_item.set_meta("backend_item", true)
+		shop_item.set_meta("backend_id", item_data.get("id", 0))
+
+		shop_items[item_id] = shop_item
+
+func _get_category_from_string(cat_str: String) -> ShopCategory:
+	match cat_str.to_lower():
+		"weapons": return ShopCategory.WEAPONS
+		"ammo": return ShopCategory.AMMO
+		"materials": return ShopCategory.MATERIALS
+		"consumables": return ShopCategory.CONSUMABLES
+		"gear": return ShopCategory.GEAR
+		"backpacks": return ShopCategory.BACKPACKS
+		"augments": return ShopCategory.AUGMENTS
+		"services": return ShopCategory.SERVICES
+	return ShopCategory.CONSUMABLES
 
 func _load_sigils():
 	if player_persistence:
@@ -775,6 +851,10 @@ func purchase_item(item_id: String, player: Node = null) -> bool:
 		purchase_failed.emit(check.reason)
 		return false
 
+	# Check if this is a backend item
+	if item.has_meta("backend_item") and item.get_meta("backend_item"):
+		return _purchase_backend_item(item, player)
+
 	# Deduct sigils
 	current_sigils -= item.cost
 	if player_persistence:
@@ -799,7 +879,74 @@ func purchase_item(item_id: String, player: Node = null) -> bool:
 
 	sigils_changed.emit(current_sigils)
 	item_purchased.emit(item.name, item.cost)
+
+	# Sync purchase to backend if authenticated
+	_sync_purchase_to_backend(item)
+
 	return true
+
+func _purchase_backend_item(item: ShopItem, player: Node) -> bool:
+	"""Handle purchase of a backend-sourced item"""
+	if not backend or not backend.is_authenticated:
+		purchase_failed.emit("Backend not available")
+		return false
+
+	var backend_id = item.get_meta("backend_id")
+
+	# Purchase through backend API
+	backend.purchase_item(backend_id, func(response):
+		if response.success:
+			# Backend handles deduction, refresh our sigils
+			if backend.current_player:
+				current_sigils = backend.current_player.get("currency", current_sigils)
+			sigils_changed.emit(current_sigils)
+			item_purchased.emit(item.name, item.cost)
+
+			# Give the item locally
+			match item.category:
+				ShopCategory.WEAPONS:
+					_give_weapon(item, player)
+				ShopCategory.AMMO:
+					_give_ammo(item, player)
+				ShopCategory.MATERIALS:
+					_give_material(item)
+				ShopCategory.CONSUMABLES:
+					_give_consumable(item, player)
+				ShopCategory.GEAR, ShopCategory.BACKPACKS, ShopCategory.AUGMENTS:
+					# Add to inventory from backend
+					if response.has("item"):
+						_add_backend_item_to_inventory(response.item)
+		else:
+			purchase_failed.emit(response.get("error", "Purchase failed"))
+	)
+
+	return true  # Async - actual result comes from callback
+
+func _sync_purchase_to_backend(item: ShopItem):
+	"""Sync local purchase to backend for tracking"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	# Update currency on backend
+	var currency_update = {
+		"currency": current_sigils
+	}
+
+	backend.update_profile(currency_update, func(_response):
+		pass  # Silent sync
+	)
+
+func _add_backend_item_to_inventory(item_data: Dictionary):
+	"""Add a backend-purchased item to local inventory"""
+	if inventory_system and inventory_system.has_method("add_item_from_data"):
+		inventory_system.add_item_from_data(item_data)
+	elif player_persistence:
+		# Add to stash if no inventory system
+		player_persistence.player_data.stash.append({
+			"item_id": item_data.get("itemId", ""),
+			"name": item_data.get("name", "Unknown"),
+			"quantity": item_data.get("quantity", 1)
+		})
 
 func _give_weapon(item: ShopItem, player: Node):
 	if not player:

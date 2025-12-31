@@ -37,16 +37,42 @@ var spawn_timer: float = 0.0
 var zombie_spawn_queue: Array[ZombieClassData] = []
 var active_zombies: Array[Node3D] = []
 
+# Network replication
+var is_network_authority: bool = true
+
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+
 func _ready():
+	# Check if we're the network authority
+	is_network_authority = not multiplayer.has_multiplayer_peer() or multiplayer.is_server()
+
+	# Initialize backend
+	_init_backend()
+
 	# Load zombie classes if not set
 	if zombie_classes.is_empty():
 		load_default_zombie_classes()
 
-	# Start first wave after delay
-	await get_tree().create_timer(5.0).timeout
-	if not is_instance_valid(self) or not is_inside_tree():
-		return
-	start_next_wave()
+	# Only server starts waves
+	if is_network_authority:
+		# Start first wave after delay
+		await get_tree().create_timer(5.0).timeout
+		if not is_instance_valid(self) or not is_inside_tree():
+			return
+		start_next_wave()
+	else:
+		# Clients request initial state
+		_request_wave_state.rpc_id(1)
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
+	if websocket_hub:
+		if websocket_hub.has_signal("wave_state_update"):
+			websocket_hub.wave_state_update.connect(_on_backend_wave_update)
 
 func _process(delta):
 	if is_intermission:
@@ -68,6 +94,10 @@ func _process(delta):
 			complete_wave()
 
 func start_next_wave():
+	# Only server can start waves
+	if not is_network_authority:
+		return
+
 	current_wave += 1
 	is_wave_active = true
 	is_intermission = false
@@ -89,6 +119,13 @@ func start_next_wave():
 		boss_wave.emit(current_wave)
 
 	print("Wave %d started! %d zombies incoming!" % [current_wave, zombies_to_spawn])
+
+	# Network replicate wave start
+	if multiplayer.has_multiplayer_peer():
+		_sync_wave_start.rpc(current_wave, zombies_to_spawn, is_boss_wave)
+
+	# Sync to backend
+	_sync_wave_to_backend()
 
 func generate_spawn_queue(include_boss: bool):
 	zombie_spawn_queue.clear()
@@ -237,10 +274,21 @@ func _on_zombie_died(zombie: Node, _points: int = 0, _experience: int = 0):
 		all_zombies_dead.emit()
 
 func complete_wave():
+	# Only server completes waves
+	if not is_network_authority:
+		return
+
 	is_wave_active = false
 	wave_completed.emit(current_wave)
 
 	print("Wave %d complete! %d zombies killed" % [current_wave, zombies_killed_this_wave])
+
+	# Network replicate wave complete
+	if multiplayer.has_multiplayer_peer():
+		_sync_wave_complete.rpc(current_wave, zombies_killed_this_wave)
+
+	# Sync to backend
+	_sync_wave_to_backend()
 
 	# Start intermission
 	start_intermission()
@@ -252,9 +300,18 @@ func start_intermission():
 
 	print("Intermission: %d seconds to prepare!" % int(intermission_duration))
 
+	# Network replicate intermission
+	if multiplayer.has_multiplayer_peer() and is_network_authority:
+		_sync_intermission_start.rpc(intermission_duration)
+
 func end_intermission():
 	is_intermission = false
 	intermission_ended.emit()
+
+	# Network replicate intermission end
+	if multiplayer.has_multiplayer_peer() and is_network_authority:
+		_sync_intermission_end.rpc()
+
 	start_next_wave()
 
 func get_zombies_remaining() -> int:
@@ -383,3 +440,125 @@ func get_current_state() -> Dictionary:
 		"total_killed": total_zombies_killed,
 		"progress": get_wave_progress()
 	}
+
+# ============================================
+# NETWORK REPLICATION
+# ============================================
+
+@rpc("any_peer", "reliable")
+func _request_wave_state():
+	"""Client requests current wave state"""
+	if not multiplayer.is_server():
+		return
+
+	var sender_id = multiplayer.get_remote_sender_id()
+	var state = get_current_state()
+	_receive_wave_state.rpc_id(sender_id, state)
+
+@rpc("authority", "reliable")
+func _receive_wave_state(state: Dictionary):
+	"""Receive full wave state from server"""
+	current_wave = state.get("wave", 0)
+	is_wave_active = state.get("is_active", false)
+	is_intermission = state.get("is_intermission", false)
+	intermission_timer = state.get("intermission_time", 0.0)
+	zombies_alive = state.get("zombies_alive", 0)
+	zombies_killed_this_wave = state.get("zombies_killed", 0)
+	total_zombies_killed = state.get("total_killed", 0)
+
+	print("Wave state received: Wave %d" % current_wave)
+
+@rpc("authority", "reliable")
+func _sync_wave_start(wave: int, zombie_count: int, is_boss: bool):
+	"""Receive wave start from server"""
+	if is_network_authority:
+		return
+
+	current_wave = wave
+	is_wave_active = true
+	is_intermission = false
+	zombies_to_spawn = zombie_count
+	zombies_spawned_this_wave = 0
+	zombies_killed_this_wave = 0
+	zombies_alive = 0
+
+	wave_started.emit(wave, zombie_count)
+
+	if is_boss:
+		boss_wave.emit(wave)
+
+	print("Wave %d started! (synced from server)" % wave)
+
+@rpc("authority", "reliable")
+func _sync_wave_complete(wave: int, kills: int):
+	"""Receive wave complete from server"""
+	if is_network_authority:
+		return
+
+	is_wave_active = false
+	zombies_killed_this_wave = kills
+
+	wave_completed.emit(wave)
+
+	print("Wave %d complete! (synced from server)" % wave)
+
+@rpc("authority", "reliable")
+func _sync_intermission_start(duration: float):
+	"""Receive intermission start from server"""
+	if is_network_authority:
+		return
+
+	is_intermission = true
+	intermission_timer = duration
+
+	intermission_started.emit(duration)
+
+@rpc("authority", "reliable")
+func _sync_intermission_end():
+	"""Receive intermission end from server"""
+	if is_network_authority:
+		return
+
+	is_intermission = false
+
+	intermission_ended.emit()
+
+@rpc("authority", "unreliable_ordered")
+func _sync_zombie_count(alive: int, killed: int):
+	"""Receive zombie count update from server"""
+	if is_network_authority:
+		return
+
+	zombies_alive = alive
+	zombies_killed_this_wave = killed
+
+func sync_zombie_counts():
+	"""Server syncs zombie counts to clients"""
+	if is_network_authority and multiplayer.has_multiplayer_peer():
+		_sync_zombie_count.rpc(zombies_alive, zombies_killed_this_wave)
+
+# ============================================
+# BACKEND INTEGRATION
+# ============================================
+
+func _sync_wave_to_backend():
+	"""Sync wave state to backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	var state = get_current_state()
+
+	# Update server info with wave data
+	if websocket_hub and websocket_hub.has_method("update_server_info"):
+		websocket_hub.update_server_info({
+			"currentWave": current_wave,
+			"isActive": is_wave_active
+		})
+
+func _on_backend_wave_update(state: Dictionary):
+	"""Handle wave state from backend (for spectators/late joiners)"""
+	if is_network_authority:
+		return
+
+	current_wave = state.get("currentWave", current_wave)
+	is_wave_active = state.get("isActive", is_wave_active)

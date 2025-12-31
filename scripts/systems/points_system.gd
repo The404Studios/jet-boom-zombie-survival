@@ -24,6 +24,11 @@ var current_sigils: int = 500
 var total_sigils_earned: int = 0
 var total_sigils_spent: int = 0
 
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+var _pending_backend_sync: bool = false
+
 # Sigil conversion rate (points to sigils)
 const SIGIL_CONVERSION_RATE: float = 0.1  # 10% of points earned as sigils
 
@@ -52,8 +57,33 @@ func _ready():
 	points_changed.emit(current_points)
 	sigils_changed.emit(current_sigils)
 
+	# Initialize backend integration
+	_init_backend()
+
 	# Sync with persistence if available
 	await get_tree().create_timer(0.2).timeout
+	_sync_from_persistence()
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
+	if backend:
+		if backend.has_signal("logged_in"):
+			backend.logged_in.connect(_on_backend_logged_in)
+		if backend.has_signal("logged_out"):
+			backend.logged_out.connect(_on_backend_logged_out)
+
+func _on_backend_logged_in(player_data: Dictionary):
+	"""Sync sigils from backend on login"""
+	var backend_currency = player_data.get("currency", 0)
+	if backend_currency > 0:
+		current_sigils = backend_currency
+		sigils_changed.emit(current_sigils)
+		print("Sigils synced from backend: %d" % current_sigils)
+
+func _on_backend_logged_out():
+	"""Reset to local persistence on logout"""
 	_sync_from_persistence()
 
 func _sync_from_persistence():
@@ -169,6 +199,9 @@ func add_sigils(amount: int, reason: String = ""):
 	if has_node("/root/PlayerPersistence"):
 		get_node("/root/PlayerPersistence").add_currency("sigils", amount)
 
+	# Sync with backend
+	_sync_sigils_to_backend()
+
 func spend_sigils(amount: int) -> bool:
 	if current_sigils < amount:
 		return false
@@ -180,6 +213,9 @@ func spend_sigils(amount: int) -> bool:
 	# Sync with persistence
 	if has_node("/root/PlayerPersistence"):
 		get_node("/root/PlayerPersistence").spend_currency("sigils", amount)
+
+	# Sync with backend
+	_sync_sigils_to_backend()
 
 	return true
 
@@ -249,3 +285,62 @@ func reset_points():
 	total_sigils_spent = 0
 	points_changed.emit(current_points)
 	sigils_changed.emit(current_sigils)
+
+# ============================================
+# BACKEND SYNC
+# ============================================
+
+func _sync_sigils_to_backend():
+	"""Sync current sigil balance to backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	# Debounce sync calls
+	if _pending_backend_sync:
+		return
+	_pending_backend_sync = true
+
+	# Wait a moment to batch updates
+	await get_tree().create_timer(0.5).timeout
+	_pending_backend_sync = false
+
+	if not backend or not backend.is_authenticated:
+		return
+
+	# Update backend with current sigil balance
+	var update_data = {
+		"currency": current_sigils
+	}
+
+	backend.update_profile(update_data, func(response):
+		if response.success:
+			print("Sigils synced to backend: %d" % current_sigils)
+	)
+
+func sync_stats_to_backend():
+	"""Sync point stats at end of match"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	var stat_update = {
+		"pointsEarned": total_points_earned,
+		"pointsSpent": total_points_spent,
+		"sigilsEarned": total_sigils_earned,
+		"sigilsSpent": total_sigils_spent
+	}
+
+	backend.update_stats(stat_update, func(response):
+		if response.success:
+			print("Point stats synced to backend")
+	)
+
+func fetch_sigils_from_backend():
+	"""Fetch current sigil balance from backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	if backend.current_player:
+		var backend_sigils = backend.current_player.get("currency", 0)
+		if backend_sigils > 0:
+			current_sigils = backend_sigils
+			sigils_changed.emit(current_sigils)

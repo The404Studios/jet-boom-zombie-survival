@@ -17,14 +17,33 @@ var player_muted: Dictionary = {} # peer_id -> bool
 # Cached reference
 var _network_manager: Node = null
 
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+var use_backend_chat: bool = true
+
 func _ready():
 	# Cache network manager reference
 	_network_manager = get_node_or_null("/root/NetworkManager")
+
+	# Initialize backend
+	_init_backend()
 
 	# Connect to network signals
 	if _network_manager:
 		_network_manager.player_connected.connect(_on_player_connected)
 		_network_manager.player_disconnected.connect(_on_player_disconnected)
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
+	if websocket_hub:
+		# Connect to WebSocket chat signals
+		if websocket_hub.has_signal("chat_message_received"):
+			websocket_hub.chat_message_received.connect(_on_backend_chat_received)
+		if websocket_hub.has_signal("system_message_received"):
+			websocket_hub.system_message_received.connect(_on_backend_system_message)
 
 func _exit_tree():
 	# Disconnect signals to prevent memory leaks
@@ -64,8 +83,15 @@ func send_message(message: String, is_team: bool = false):
 
 	# Get player name
 	var sender_name = "Player"
-	if _network_manager and _network_manager.players.has(multiplayer.get_unique_id()):
+	if backend and backend.is_authenticated and backend.current_player:
+		sender_name = backend.current_player.get("username", "Player")
+	elif _network_manager and _network_manager.players.has(multiplayer.get_unique_id()):
 		sender_name = _network_manager.players[multiplayer.get_unique_id()].get("name", "Player")
+
+	# Send via backend WebSocket if available and authenticated
+	if use_backend_chat and websocket_hub and backend and backend.is_authenticated:
+		_send_via_backend(sender_name, message, is_team)
+		return
 
 	# Send via RPC (only if multiplayer is active)
 	if not multiplayer.has_multiplayer_peer():
@@ -86,6 +112,25 @@ func send_message(message: String, is_team: bool = false):
 		_broadcast_message(multiplayer.get_unique_id(), sender_name, message, is_team)
 	else:
 		_send_message_to_server.rpc_id(1, message, is_team)
+
+func _send_via_backend(sender_name: String, message: String, is_team: bool):
+	"""Send message via backend WebSocket"""
+	var channel = "team" if is_team else "global"
+	websocket_hub.send_chat_message(message, channel)
+
+	# Also add to local history immediately
+	var chat_entry = {
+		"sender": sender_name,
+		"message": message,
+		"is_team": is_team,
+		"timestamp": Time.get_unix_time_from_system()
+	}
+	chat_history.append(chat_entry)
+	if chat_history.size() > CHAT_HISTORY_SIZE:
+		chat_history.pop_front()
+
+	# Emit locally so UI updates
+	message_received.emit(sender_name, message, is_team)
 
 @rpc("any_peer", "reliable")
 func _send_message_to_server(message: String, is_team: bool):
@@ -211,3 +256,62 @@ func clear_history():
 func get_recent_messages(count: int = 20) -> Array:
 	var start_index = max(0, chat_history.size() - count)
 	return chat_history.slice(start_index)
+
+# ============================================
+# BACKEND CHAT HANDLERS
+# ============================================
+
+func _on_backend_chat_received(sender_name: String, message: String, channel: String):
+	"""Handle chat message from backend WebSocket"""
+	var is_team = channel == "team"
+
+	# Add to history
+	var chat_entry = {
+		"sender": sender_name,
+		"message": message,
+		"is_team": is_team,
+		"timestamp": Time.get_unix_time_from_system()
+	}
+
+	chat_history.append(chat_entry)
+	if chat_history.size() > CHAT_HISTORY_SIZE:
+		chat_history.pop_front()
+
+	message_received.emit(sender_name, message, is_team)
+
+func _on_backend_system_message(message: String):
+	"""Handle system message from backend"""
+	emit_system_message(message)
+
+func send_global_message(message: String):
+	"""Send message to global chat (all servers)"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.send_chat_message(message, "global")
+
+func send_party_message(message: String):
+	"""Send message to party chat"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.send_chat_message(message, "party")
+
+func send_server_message(message: String):
+	"""Send message to current server only"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.send_chat_message(message, "server")
+	else:
+		# Fallback to RPC
+		send_message(message, false)
+
+func send_whisper(target_player_id: int, message: String):
+	"""Send private message to specific player"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.send_whisper(target_player_id, message)
+
+func join_chat_channel(channel_name: String):
+	"""Join a chat channel"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.join_channel(channel_name)
+
+func leave_chat_channel(channel_name: String):
+	"""Leave a chat channel"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.leave_channel(channel_name)
