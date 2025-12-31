@@ -418,6 +418,13 @@ func update_server_info(info: Dictionary) -> void:
 	if current_server_id > 0:
 		_invoke("UpdateServerInfo", [current_server_id, info])
 
+func send_game_invite(friend_id: int, server_info: Dictionary = {}) -> void:
+	"""Send game invite to a friend"""
+	var info = server_info
+	if info.is_empty() and current_server_id > 0:
+		info = {"serverId": current_server_id}
+	_invoke("SendGameInvite", [friend_id, info])
+
 # ============================================
 # HUB METHODS - GAME SERVER (for dedicated servers)
 # ============================================

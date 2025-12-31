@@ -126,10 +126,7 @@ func _on_send_pressed():
 
 	# Send via WebSocket
 	if websocket_hub and websocket_hub.is_connected:
-		if current_channel == "global":
-			websocket_hub.send_chat_message(text)
-		else:
-			websocket_hub.send_party_chat_message(text)
+		websocket_hub.send_chat_message(text, current_channel)
 
 	# Show locally immediately
 	_add_message(username, text, true)

@@ -7,6 +7,7 @@ class_name BackendClient
 signal logged_in(player_data: Dictionary)
 signal logged_out
 signal login_failed(error: String)
+signal profile_updated(player_data: Dictionary)
 signal request_completed(endpoint: String, response: Dictionary)
 signal request_failed(endpoint: String, error: String)
 
@@ -134,7 +135,15 @@ func get_player_profile(player_id: int, callback: Callable = Callable()) -> void
 
 func update_profile(data: Dictionary, callback: Callable = Callable()) -> void:
 	"""Update current player's profile"""
-	_make_request("PATCH", "/api/player/me", data, callback)
+	_make_request("PATCH", "/api/player/me", data, func(response):
+		if response.success:
+			# Update local player data
+			for key in data:
+				current_player[key] = data[key]
+			profile_updated.emit(current_player)
+		if callback.is_valid():
+			callback.call(response)
+	)
 
 func update_stats(stats: Dictionary, callback: Callable = Callable()) -> void:
 	"""Update player stats after a game"""
@@ -160,6 +169,22 @@ func respond_to_friend_request(friend_id: int, accept: bool, callback: Callable 
 	"""Accept or decline friend request"""
 	var url = "/api/player/me/friends/%d/respond?accept=%s" % [friend_id, str(accept).to_lower()]
 	_make_request("POST", url, {}, callback)
+
+func get_pending_friend_requests(callback: Callable = Callable()) -> void:
+	"""Get pending friend requests"""
+	_make_request("GET", "/api/player/me/friends/pending", {}, callback)
+
+func accept_friend_request(request_id: int, callback: Callable = Callable()) -> void:
+	"""Accept a friend request"""
+	respond_to_friend_request(request_id, true, callback)
+
+func decline_friend_request(request_id: int, callback: Callable = Callable()) -> void:
+	"""Decline a friend request"""
+	respond_to_friend_request(request_id, false, callback)
+
+func remove_friend(friend_id: int, callback: Callable = Callable()) -> void:
+	"""Remove a friend"""
+	_make_request("DELETE", "/api/player/me/friends/%d" % friend_id, {}, callback)
 
 func unlock_achievement(achievement_id: String, callback: Callable = Callable()) -> void:
 	"""Unlock an achievement"""
@@ -204,9 +229,19 @@ func update_server(server_id: int, token: String, data: Dictionary, callback: Ca
 	"""Update game server status"""
 	_make_request("PATCH", "/api/servers/%d" % server_id, data, callback, false, {"X-Server-Token": token})
 
-func server_heartbeat(server_id: int, token: String, callback: Callable = Callable()) -> void:
-	"""Send server heartbeat"""
-	_make_request("POST", "/api/servers/%d/heartbeat" % server_id, {}, callback, false, {"X-Server-Token": token})
+func server_heartbeat(server_id: int, status_or_token, callback: Callable = Callable()) -> void:
+	"""Send server heartbeat - accepts either status Dictionary or token String"""
+	var extra_headers = {}
+	var body = {}
+
+	if status_or_token is String:
+		# Legacy: token as string
+		extra_headers = {"X-Server-Token": status_or_token}
+	elif status_or_token is Dictionary:
+		# New: status dictionary, use auth token
+		body = status_or_token
+
+	_make_request("POST", "/api/servers/%d/heartbeat" % server_id, body, callback, false, extra_headers)
 
 func deregister_server(server_id: int, token: String, callback: Callable = Callable()) -> void:
 	"""Deregister a game server"""
@@ -237,6 +272,10 @@ func get_matchmaking_status(ticket_id: String, callback: Callable = Callable()) 
 func cancel_matchmaking(ticket_id: String, callback: Callable = Callable()) -> void:
 	"""Cancel matchmaking"""
 	_make_request("DELETE", "/api/matchmaking/%s" % ticket_id, {}, callback)
+
+func leave_matchmaking_queue(callback: Callable = Callable()) -> void:
+	"""Leave matchmaking queue (without ticket ID)"""
+	_make_request("DELETE", "/api/matchmaking/leave", {}, callback)
 
 # ============================================
 # LEADERBOARD API
