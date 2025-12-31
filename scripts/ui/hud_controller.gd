@@ -24,6 +24,13 @@ extends Control
 @onready var crosshair = $Crosshair if has_node("Crosshair") else null
 @onready var damage_indicator = $DamageIndicator if has_node("DamageIndicator") else null
 @onready var wave_announcement = $WaveAnnouncement if has_node("WaveAnnouncement") else null
+@onready var kill_feed = $KillFeed if has_node("KillFeed") else null
+@onready var sigil_bar = $SigilHealth/SigilBar if has_node("SigilHealth/SigilBar") else null
+@onready var sigil_percent = $SigilHealth/SigilPercent if has_node("SigilHealth/SigilPercent") else null
+
+# Kill feed settings
+const MAX_KILL_FEED_ENTRIES: int = 5
+const KILL_FEED_DURATION: float = 5.0
 
 # Phase timer elements (created dynamically)
 var phase_container: Control = null
@@ -452,3 +459,119 @@ func show_notification(text: String):
 	tween.tween_interval(1.5)
 	tween.tween_property(notification, "modulate:a", 0.0, 0.5)
 	tween.tween_callback(notification.queue_free)
+
+# ============================================
+# KILL FEED
+# ============================================
+
+func add_kill_feed_entry(killer_name: String, victim_name: String, weapon_name: String = "", was_headshot: bool = false):
+	"""Add entry to kill feed"""
+	if not kill_feed:
+		return
+
+	var entry = HBoxContainer.new()
+	entry.add_theme_constant_override("separation", 8)
+
+	# Killer name
+	var killer_label = Label.new()
+	killer_label.text = killer_name
+	killer_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	killer_label.add_theme_font_size_override("font_size", 14)
+	entry.add_child(killer_label)
+
+	# Weapon/action
+	var action_label = Label.new()
+	if was_headshot:
+		action_label.text = "[HEADSHOT]"
+		action_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	else:
+		action_label.text = "[%s]" % weapon_name if weapon_name else "killed"
+		action_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	action_label.add_theme_font_size_override("font_size", 12)
+	entry.add_child(action_label)
+
+	# Victim name
+	var victim_label = Label.new()
+	victim_label.text = victim_name
+	victim_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	victim_label.add_theme_font_size_override("font_size", 14)
+	entry.add_child(victim_label)
+
+	kill_feed.add_child(entry)
+
+	# Limit entries
+	while kill_feed.get_child_count() > MAX_KILL_FEED_ENTRIES:
+		var old_entry = kill_feed.get_child(0)
+		kill_feed.remove_child(old_entry)
+		old_entry.queue_free()
+
+	# Fade out after duration
+	var tween = create_tween()
+	tween.tween_interval(KILL_FEED_DURATION)
+	tween.tween_property(entry, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(entry.queue_free)
+
+func show_zombie_kill(zombie_type: String, was_headshot: bool = false, points: int = 0):
+	"""Show zombie kill in kill feed"""
+	var killer_name = "You"
+	var victim_name = zombie_type
+	var weapon = "Pistol"
+
+	if player and "current_weapon_data" in player:
+		var weapon_data = player.current_weapon_data
+		if weapon_data and "item_name" in weapon_data:
+			weapon = weapon_data.item_name
+
+	add_kill_feed_entry(killer_name, victim_name, weapon, was_headshot)
+
+	# Show points popup
+	if points > 0:
+		show_points_popup(points, was_headshot)
+
+func show_points_popup(points: int, was_headshot: bool = false):
+	"""Show floating points popup"""
+	var popup = Label.new()
+	popup.text = "+%d" % points
+	if was_headshot:
+		popup.text += " HEADSHOT!"
+		popup.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	else:
+		popup.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+
+	popup.add_theme_font_size_override("font_size", 20)
+	popup.add_theme_color_override("font_shadow_color", Color(0, 0, 0))
+	popup.add_theme_constant_override("shadow_offset_x", 1)
+	popup.add_theme_constant_override("shadow_offset_y", 1)
+
+	popup.position = get_viewport().get_visible_rect().size / 2 + Vector2(randf_range(-50, 50), 50)
+	add_child(popup)
+
+	# Animate upward and fade
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(popup, "position:y", popup.position.y - 80, 1.0)
+	tween.tween_property(popup, "modulate:a", 0.0, 1.0)
+	tween.chain().tween_callback(popup.queue_free)
+
+# ============================================
+# SIGIL HEALTH
+# ============================================
+
+func update_sigil_health(current: float, maximum: float):
+	"""Update the sigil health bar"""
+	if sigil_bar:
+		sigil_bar.max_value = maximum
+		sigil_bar.value = current
+
+		# Color based on health percentage
+		var health_percent = current / maximum if maximum > 0 else 0
+		if health_percent < 0.25:
+			sigil_bar.modulate = Color(1.0, 0.2, 0.2)
+		elif health_percent < 0.5:
+			sigil_bar.modulate = Color(1.0, 0.6, 0.2)
+		else:
+			sigil_bar.modulate = Color(0.4, 0.8, 1.0)
+
+	if sigil_percent:
+		var percent = int((current / maximum) * 100) if maximum > 0 else 0
+		sigil_percent.text = "%d%%" % percent
