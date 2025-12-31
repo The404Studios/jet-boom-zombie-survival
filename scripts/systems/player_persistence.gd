@@ -121,6 +121,12 @@ func _init_backend():
 	if backend:
 		backend.logged_in.connect(_on_backend_logged_in)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if backend:
+		if backend.has_signal("logged_in") and backend.logged_in.is_connected(_on_backend_logged_in):
+			backend.logged_in.disconnect(_on_backend_logged_in)
+
 func _on_backend_logged_in(_player_data: Dictionary):
 	# Sync from backend when logged in
 	sync_from_backend()

@@ -65,6 +65,11 @@ func _exit_tree():
 		if steam_manager.lobby_list_received.is_connected(_on_lobby_list_received):
 			steam_manager.lobby_list_received.disconnect(_on_lobby_list_received)
 
+	# Disconnect websocket signals
+	if websocket_hub:
+		if websocket_hub.has_signal("matchmaking_update") and websocket_hub.matchmaking_update.is_connected(_on_backend_matchmaking_update):
+			websocket_hub.matchmaking_update.disconnect(_on_backend_matchmaking_update)
+
 # ============================================
 # MATCHMAKING
 # ============================================
