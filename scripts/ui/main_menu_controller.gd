@@ -33,6 +33,8 @@ var backend: Node = null
 var websocket_hub: Node = null
 var login_panel: Control = null
 var server_browser_panel: Control = null
+var friends_panel: Control = null
+var global_chat: Control = null
 
 # Steam integration
 var steam_username: String = "Survivor"
@@ -128,6 +130,11 @@ func _connect_buttons():
 	# Create account button if it doesn't exist
 	if not account_btn and top_tabs:
 		_create_account_button()
+
+	# Create friends button if it doesn't exist
+	var friends_btn = get_node_or_null("TopTabs/FriendsTab")
+	if not friends_btn and top_tabs:
+		_create_friends_button()
 
 func _load_player_info():
 	# Try to get Steam username
@@ -899,6 +906,20 @@ func _on_account_pressed():
 		# Show login panel
 		show_login_panel()
 
+func _create_friends_button():
+	var friends_btn = Button.new()
+	friends_btn.name = "FriendsTab"
+	friends_btn.text = "FRIENDS"
+	friends_btn.custom_minimum_size = Vector2(80, 30)
+	friends_btn.pressed.connect(_on_friends_pressed)
+	top_tabs.add_child(friends_btn)
+
+func _on_friends_pressed():
+	if backend and backend.is_authenticated:
+		show_friends_panel()
+	else:
+		show_login_panel()
+
 func _check_authentication():
 	if backend and backend.is_authenticated:
 		# Already authenticated, load player data
@@ -952,6 +973,9 @@ func _on_backend_logged_in(player_data: Dictionary):
 	if websocket_hub and backend:
 		websocket_hub.connect_to_hub(backend.auth_token)
 
+	# Show global chat
+	show_global_chat()
+
 func _on_backend_logged_out():
 	# Reset to defaults
 	steam_username = "Survivor"
@@ -968,6 +992,9 @@ func _on_backend_logged_out():
 	# Disconnect WebSocket
 	if websocket_hub:
 		websocket_hub.disconnect_from_hub()
+
+	# Hide global chat
+	hide_global_chat()
 
 func _on_backend_login_failed(error: String):
 	# Error is already shown in login panel
@@ -1034,3 +1061,44 @@ func _on_create_server_requested():
 
 	# Show character select first
 	_show_character_select(true)
+
+# ============================================
+# FRIENDS AND CHAT
+# ============================================
+
+func show_friends_panel():
+	if not friends_panel:
+		var FriendsPanelClass = load("res://scripts/ui/friends_panel.gd")
+		friends_panel = Control.new()
+		friends_panel.set_script(FriendsPanelClass)
+		friends_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(friends_panel)
+
+		friends_panel.panel_closed.connect(func(): _close_panel(friends_panel))
+		friends_panel.friend_invited.connect(_on_friend_invited)
+
+	_show_panel(friends_panel)
+
+func _on_friend_invited(friend_id: int):
+	print("Invited friend: %d" % friend_id)
+
+func show_global_chat():
+	if not global_chat:
+		var ChatPanelClass = load("res://scripts/ui/global_chat_panel.gd")
+		global_chat = Control.new()
+		global_chat.set_script(ChatPanelClass)
+		global_chat.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		global_chat.position = Vector2(-360, -260)
+		add_child(global_chat)
+
+	global_chat.visible = true
+
+func hide_global_chat():
+	if global_chat:
+		global_chat.visible = false
+
+func _show_profile_panel():
+	# For now, show a simple profile info or reuse stash panel for profile
+	# Could create a dedicated profile panel later
+	if stash_panel:
+		_show_panel(stash_panel)
