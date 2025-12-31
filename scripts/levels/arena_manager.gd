@@ -205,7 +205,13 @@ func _load_zombie_scenes():
 		"shambler": load("res://scenes/zombies/zombie_shambler.tscn"),
 		"runner": load("res://scenes/zombies/zombie_runner.tscn"),
 		"tank": load("res://scenes/zombies/zombie_tank.tscn"),
-		"monster": load("res://scenes/zombies/zombie_monster.tscn")
+		"monster": load("res://scenes/zombies/zombie_monster.tscn"),
+		"poison": load("res://scenes/zombies/zombie_poison.tscn"),
+		"exploder": load("res://scenes/zombies/zombie_exploder.tscn"),
+		"spitter": load("res://scenes/zombies/zombie_spitter.tscn"),
+		"screamer": load("res://scenes/zombies/zombie_screamer.tscn"),
+		"berserker": load("res://scenes/zombies/zombie_berserker.tscn"),
+		"boomer": load("res://scenes/zombies/zombie_boomer.tscn")
 	}
 
 # ============================================
@@ -285,22 +291,58 @@ func _spawn_zombie():
 		_update_hud()
 
 func _get_zombie_type_for_wave() -> String:
-	# Weighted selection based on wave
+	# JetBoom-style weighted selection based on wave
 	var roll = randf()
+	var cumulative = 0.0
 
+	# Wave 10+: Boss types
 	if current_wave >= 10:
-		# Boss wave
-		if roll < 0.1:
+		if roll < 0.08:
 			return "monster"
 
-	if current_wave >= 7:
-		if roll < 0.3:
-			return "tank"
+	# Wave 8+: Screamer (buff aura)
+	if current_wave >= 8:
+		cumulative += 0.1
+		if roll < cumulative:
+			return "screamer"
 
+	# Wave 7+: Tank and Spitter
+	if current_wave >= 7:
+		cumulative += 0.15
+		if roll < cumulative:
+			return "tank"
+		cumulative += 0.1
+		if roll < cumulative:
+			return "spitter"
+
+	# Wave 6+: Exploder and Boomer
+	if current_wave >= 6:
+		cumulative += 0.12
+		if roll < cumulative:
+			return "exploder"
+		cumulative += 0.1
+		if roll < cumulative:
+			return "boomer"
+
+	# Wave 5+: Berserker
+	if current_wave >= 5:
+		cumulative += 0.15
+		if roll < cumulative:
+			return "berserker"
+
+	# Wave 4+: Poison zombies
 	if current_wave >= 4:
-		if roll < 0.4:
+		cumulative += 0.15
+		if roll < cumulative:
+			return "poison"
+
+	# Wave 3+: Runner
+	if current_wave >= 3:
+		cumulative += 0.25
+		if roll < cumulative:
 			return "runner"
 
+	# Default: Shambler
 	return "shambler"
 
 func _complete_wave():
