@@ -25,6 +25,10 @@ var spawn_manager: Node  # SpawnManager
 var network_manager: Node
 var state_synchronizer: Node
 
+# Backend integration
+var backend: Node
+var websocket_hub: Node
+
 # UI Elements
 var hud_controller: Node
 var minimap: Node
@@ -68,6 +72,10 @@ func _ready():
 
 func _initialize_systems():
 	await get_tree().create_timer(0.3).timeout
+
+	# Get backend references
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
 
 	# Find or create core systems
 	_setup_game_events()
@@ -320,6 +328,9 @@ func end_session(victory: bool):
 	# Compile final stats
 	var stats = _compile_session_stats(victory)
 
+	# Sync stats to backend
+	_sync_stats_to_backend(victory, stats)
+
 	# Show end screen
 	if end_round_stats:
 		end_round_stats.show_game_over(victory, stats)
@@ -327,6 +338,51 @@ func end_session(victory: bool):
 	session_ended.emit(victory, stats)
 
 	print("GameSessionManager: Session ended - Victory: %s" % victory)
+
+func _sync_stats_to_backend(victory: bool, stats: Dictionary):
+	"""Sync session stats to backend server"""
+	if not backend:
+		return
+
+	# Update player stats
+	var stat_update = {
+		"kills": stats.get("kills", 0),
+		"deaths": stats.get("deaths", 0),
+		"gamesPlayed": 1,
+		"gamesWon": 1 if victory else 0,
+		"highestWave": stats.get("final_wave", 0),
+		"playTimeSeconds": int(stats.get("total_time", 0)),
+		"damageDealt": int(stats.get("damage_dealt", 0)),
+		"headshots": stats.get("headshots", 0)
+	}
+
+	backend.update_stats(stat_update, func(response):
+		if response.success:
+			print("GameSessionManager: Stats synced to backend")
+		else:
+			print("GameSessionManager: Failed to sync stats - %s" % response.get("error", "Unknown"))
+	)
+
+	# Record the match
+	var match_record = {
+		"victory": victory,
+		"waveReached": stats.get("final_wave", 0),
+		"kills": stats.get("kills", 0),
+		"deaths": stats.get("deaths", 0),
+		"pointsEarned": stats.get("points_earned", 0),
+		"playTimeSeconds": int(stats.get("total_time", 0)),
+		"accuracy": stats.get("accuracy", 0),
+		"headshots": stats.get("headshots", 0)
+	}
+
+	backend.record_match(match_record, func(response):
+		if response.success:
+			print("GameSessionManager: Match recorded to backend")
+	)
+
+	# Notify via WebSocket if connected
+	if websocket_hub and websocket_hub.is_connected:
+		websocket_hub.broadcast_game_end(victory, stats.get("final_wave", 0), stats)
 
 func _reset_session_stats():
 	total_kills = 0

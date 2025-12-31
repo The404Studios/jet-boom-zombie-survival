@@ -41,13 +41,18 @@ var is_refreshing: bool = false
 # Network integration
 var matchmaking_manager: Node = null
 var steam_manager: Node = null
+var backend: Node = null
 
 func _ready():
 	matchmaking_manager = get_node_or_null("/root/MatchmakingManager")
 	steam_manager = get_node_or_null("/root/SteamManager")
+	backend = get_node_or_null("/root/Backend")
 
 	_create_ui()
 	_connect_signals()
+
+	# Initial server fetch
+	_request_servers()
 
 func _create_ui():
 	# Main background
@@ -446,13 +451,83 @@ func _request_servers():
 	refresh_button.text = "REFRESHING..."
 	refresh_button.disabled = true
 
-	# Request from matchmaking
+	# First try backend API
+	if backend:
+		var filters = _build_backend_filters()
+		backend.get_servers(filters, func(response):
+			if response.success and response.has("servers"):
+				var server_list = _convert_backend_servers(response.servers)
+				_on_servers_received(server_list)
+			elif response.success and response is Array:
+				_on_servers_received(_convert_backend_servers(response))
+			else:
+				# Fallback to test data
+				_on_servers_received(_get_test_servers())
+		)
+		return
+
+	# Try matchmaking manager
 	if matchmaking_manager and matchmaking_manager.has_method("request_server_list"):
 		matchmaking_manager.request_server_list()
 	else:
 		# Use test data
 		await get_tree().create_timer(0.5).timeout
 		_on_servers_received(_get_test_servers())
+
+func _build_backend_filters() -> Dictionary:
+	var filters = {}
+
+	if hide_empty_check and hide_empty_check.button_pressed:
+		filters["hideEmpty"] = true
+	if hide_full_check and hide_full_check.button_pressed:
+		filters["hideFull"] = true
+
+	# Map filter
+	if map_filter and map_filter.selected > 0:
+		var map_names = ["", "warehouse", "hospital", "subway", "mansion", "military_base", "shopping_mall"]
+		if map_filter.selected < map_names.size():
+			filters["map"] = map_names[map_filter.selected]
+
+	# Mode filter
+	if gamemode_filter and gamemode_filter.selected > 0:
+		var mode_names = ["", "survival", "objective", "endless"]
+		if gamemode_filter.selected < mode_names.size():
+			filters["gameMode"] = mode_names[gamemode_filter.selected]
+
+	return filters
+
+func _convert_backend_servers(backend_servers) -> Array:
+	var result = []
+
+	for s in backend_servers:
+		var server = {
+			"id": str(s.get("id", 0)),
+			"name": s.get("name", "Unknown Server"),
+			"ip": s.get("ipAddress", "0.0.0.0"),
+			"port": s.get("port", 27015),
+			"map": s.get("currentMap", "warehouse"),
+			"gamemode": s.get("gameMode", "survival"),
+			"current_players": s.get("currentPlayers", 0),
+			"max_players": s.get("maxPlayers", 8),
+			"ping": s.get("ping", 50),
+			"has_password": s.get("hasPassword", false),
+			"current_wave": s.get("currentWave", 1),
+			"difficulty": s.get("difficulty", "Normal"),
+			"region": s.get("region", ""),
+			"players": s.get("players", [])
+		}
+
+		# Extract player names if players is array of objects
+		if server.players is Array and server.players.size() > 0:
+			if server.players[0] is Dictionary:
+				var names = []
+				for p in server.players:
+					names.append(p.get("username", "Player"))
+				server.players = names
+
+		result.append(server)
+
+	return result
 
 func _on_servers_received(server_list: Array):
 	servers = server_list
