@@ -42,7 +42,11 @@ var current_filters: Dictionary = {
 # Selected item for purchase
 var selected_listing: Dictionary = {}
 
+# Backend integration
+var backend: Node = null
+
 func _ready():
+	backend = get_node_or_null("/root/Backend")
 	_setup_filters()
 	_setup_market_grid()
 	_connect_signals()
@@ -189,7 +193,15 @@ func _connect_signals():
 		type_filter.item_selected.connect(func(_idx): _on_filter_changed())
 
 func _load_player_currency():
-	# Get player currency from PointsSystem or AccountSystem
+	# Get player currency from backend first
+	if backend and backend.is_authenticated:
+		var profile = backend.current_player
+		if profile:
+			player_currency = profile.get("currency", 0)
+			_update_currency_display()
+			return
+
+	# Fallback to local systems
 	if has_node("/root/PointsSystem"):
 		var ps = get_node("/root/PointsSystem")
 		if ps.has_method("get_points"):
@@ -208,11 +220,40 @@ func _update_currency_display():
 		listing_count_label.text = "Listings: %d" % filtered_listings.size()
 
 func _load_market_listings():
-	# Would load from server/network
-	# For demo, create some sample listings
 	market_listings = []
 
-	# Sample items for testing
+	# Fetch from backend shop API
+	if backend and backend.is_authenticated:
+		backend.get_shop_items(func(response):
+			if response.success and response.has("items"):
+				_populate_from_backend(response.items)
+			else:
+				_load_sample_listings()
+		)
+	else:
+		_load_sample_listings()
+
+func _populate_from_backend(items: Array):
+	market_listings = []
+
+	for item in items:
+		market_listings.append({
+			"id": item.get("id", 0),
+			"item_name": item.get("name", "Unknown"),
+			"category": item.get("category", "Misc"),
+			"type": item.get("itemType", ""),
+			"rarity": item.get("rarity", 0),
+			"price": item.get("price", 0),
+			"seller_name": "Shop",
+			"icon": null,
+			"backend_item": true,
+			"timestamp": Time.get_unix_time_from_system()
+		})
+
+	_apply_filters()
+
+func _load_sample_listings():
+	# Fallback sample items for testing
 	var sample_items = [
 		{"name": "AK-47", "category": "Weapons", "type": "Rifle", "rarity": 2, "price": 800, "seller": "ProSeller"},
 		{"name": "Shotgun", "category": "Weapons", "type": "Shotgun", "rarity": 1, "price": 500, "seller": "GunShop"},
@@ -234,7 +275,7 @@ func _load_market_listings():
 			"rarity": item.rarity,
 			"price": item.price,
 			"seller_name": item.seller,
-			"icon": null,  # Would load actual icon
+			"icon": null,
 			"timestamp": Time.get_unix_time_from_system()
 		})
 
@@ -461,6 +502,46 @@ func _confirm_purchase(listing_id: int):
 		_show_message("Purchase Failed", "Insufficient funds.")
 		return
 
+	# If backend item, purchase through backend API
+	if listing.get("backend_item", false) and backend:
+		backend.purchase_item(listing_id, func(response):
+			if response.success:
+				_on_backend_purchase_success(listing, price)
+			else:
+				_show_message("Purchase Failed", response.get("error", "Unknown error"))
+		)
+		return
+
+	# Local purchase
+	_complete_local_purchase(listing, price)
+
+func _on_backend_purchase_success(listing: Dictionary, price: int):
+	player_currency -= price
+
+	# Refresh player data from backend
+	if backend:
+		backend.get_profile(func(response):
+			if response.success and response.has("player"):
+				player_currency = response.player.get("currency", player_currency)
+				_update_currency_display()
+		)
+
+	# Remove from local list
+	market_listings.erase(listing)
+
+	# Add to inventory
+	_add_item_to_inventory(listing)
+
+	# Emit signal
+	item_purchased.emit(listing.get("id", -1))
+
+	# Refresh display
+	_apply_filters()
+	_update_currency_display()
+
+	_show_message("Purchase Successful", "You bought %s for $%d" % [listing.get("item_name", "Item"), price])
+
+func _complete_local_purchase(listing: Dictionary, price: int):
 	# Deduct currency
 	player_currency -= price
 	if has_node("/root/PointsSystem"):
@@ -475,7 +556,7 @@ func _confirm_purchase(listing_id: int):
 	_add_item_to_inventory(listing)
 
 	# Emit signal
-	item_purchased.emit(listing_id)
+	item_purchased.emit(listing.get("id", -1))
 
 	# Refresh display
 	_apply_filters()

@@ -28,6 +28,12 @@ signal leaderboard_pressed
 @onready var character_select_panel: Control = $CharacterSelectPanel
 @onready var game_title: Label = $GameTitle
 
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+var login_panel: Control = null
+var server_browser_panel: Control = null
+
 # Steam integration
 var steam_username: String = "Survivor"
 var player_rank: int = 1
@@ -41,6 +47,13 @@ var play_time_seconds: int = 0
 var current_open_panel: Control = null
 
 func _ready():
+	# Initialize backend connections
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
+	# Connect backend signals
+	_connect_backend_signals()
+
 	# Connect button signals
 	_connect_buttons()
 
@@ -75,6 +88,9 @@ func _ready():
 	if game_title:
 		game_title.visible = true
 
+	# Check authentication status
+	_check_authentication()
+
 func _connect_buttons():
 	# Main menu buttons
 	var play_btn = get_node_or_null("MainPanel/MenuButtons/PlayButton")
@@ -96,6 +112,7 @@ func _connect_buttons():
 	var merchant_btn = get_node_or_null("TopTabs/MerchantTab")
 	var leaderboard_btn = get_node_or_null("TopTabs/LeaderboardTab")
 	var profile_btn = get_node_or_null("TopTabs/ProfileTab")
+	var account_btn = get_node_or_null("TopTabs/AccountTab")
 
 	if market_btn:
 		market_btn.pressed.connect(_on_market_pressed)
@@ -105,6 +122,12 @@ func _connect_buttons():
 		leaderboard_btn.pressed.connect(_on_leaderboard_pressed)
 	if profile_btn:
 		profile_btn.pressed.connect(_on_profile_pressed)
+	if account_btn:
+		account_btn.pressed.connect(_on_account_pressed)
+
+	# Create account button if it doesn't exist
+	if not account_btn and top_tabs:
+		_create_account_button()
 
 func _load_player_info():
 	# Try to get Steam username
@@ -182,9 +205,9 @@ func _on_multiplayer_selected():
 		var settings = get_node("/root/GameSettings")
 		settings.set_singleplayer(false)
 
-	# Close play mode panel and open character selection first, then lobby
+	# Close play mode panel and show server browser
 	_close_panel(play_mode_panel)
-	_show_character_select(true)  # true = multiplayer mode
+	show_server_browser()
 
 func _show_character_select(is_multiplayer: bool = false):
 	_show_panel(character_select_panel)
@@ -224,6 +247,19 @@ func _on_character_selected():
 	if is_multiplayer:
 		# Go to lobby for multiplayer
 		_show_lobby()
+
+		# Check if joining a server
+		if has_meta("pending_server_join"):
+			var server_info = get_meta("pending_server_join")
+			remove_meta("pending_server_join")
+			if lobby_panel and lobby_panel.has_method("set_server_info"):
+				lobby_panel.set_server_info(server_info)
+
+		# Check if creating a server
+		if has_meta("creating_server"):
+			remove_meta("creating_server")
+			if lobby_panel and lobby_panel.has_method("set_as_host"):
+				lobby_panel.set_as_host(true)
 	else:
 		# Start singleplayer game directly
 		start_solo_game()
@@ -566,7 +602,35 @@ func _populate_leaderboard():
 	for child in list.get_children():
 		child.queue_free()
 
-	# Add sample leaderboard entries (would come from server in real game)
+	# Fetch from backend if available
+	if backend:
+		backend.get_leaderboard("kills", "all", 50, func(response):
+			if response.success and response.has("entries"):
+				_display_leaderboard_entries(list, response.entries)
+			else:
+				_display_fallback_leaderboard(list)
+		)
+	else:
+		_display_fallback_leaderboard(list)
+
+func _display_leaderboard_entries(list: Control, entries: Array):
+	for child in list.get_children():
+		child.queue_free()
+
+	var rank = 1
+	for entry in entries:
+		var row_data = {
+			"rank": rank,
+			"name": entry.get("username", "Unknown"),
+			"score": entry.get("totalKills", 0),
+			"waves": entry.get("highestWave", 0)
+		}
+		var row = _create_leaderboard_row(row_data)
+		list.add_child(row)
+		rank += 1
+
+func _display_fallback_leaderboard(list: Control):
+	# Fallback sample entries
 	var entries = [
 		{"rank": 1, "name": "ProZombie", "score": 15000, "waves": 25},
 		{"rank": 2, "name": "SurvivorX", "score": 12500, "waves": 22},
@@ -797,3 +861,176 @@ func _set_setting(setting_name: String, value):
 		var settings = get_node("/root/GameSettings")
 		if setting_name in settings:
 			settings.set(setting_name, value)
+
+# ============================================
+# BACKEND INTEGRATION
+# ============================================
+
+func _connect_backend_signals():
+	if backend:
+		backend.logged_in.connect(_on_backend_logged_in)
+		backend.logged_out.connect(_on_backend_logged_out)
+		backend.login_failed.connect(_on_backend_login_failed)
+
+func _create_account_button():
+	var account_btn = Button.new()
+	account_btn.name = "AccountTab"
+	account_btn.text = "LOGIN"
+	account_btn.custom_minimum_size = Vector2(80, 30)
+	account_btn.pressed.connect(_on_account_pressed)
+	top_tabs.add_child(account_btn)
+
+	# Update button text based on auth status
+	_update_account_button()
+
+func _update_account_button():
+	var account_btn = top_tabs.get_node_or_null("AccountTab") if top_tabs else null
+	if account_btn:
+		if backend and backend.is_authenticated:
+			account_btn.text = "ACCOUNT"
+		else:
+			account_btn.text = "LOGIN"
+
+func _on_account_pressed():
+	if backend and backend.is_authenticated:
+		# Show account/profile panel
+		_show_profile_panel()
+	else:
+		# Show login panel
+		show_login_panel()
+
+func _check_authentication():
+	if backend and backend.is_authenticated:
+		# Already authenticated, load player data
+		_load_player_from_backend()
+	else:
+		# Show login option or guest mode
+		pass
+
+func _load_player_from_backend():
+	if not backend:
+		return
+
+	var player = backend.current_player
+	if player.is_empty():
+		return
+
+	steam_username = player.get("username", steam_username)
+	player_level = player.get("level", 1)
+	player_prestige = player.get("prestige", 0)
+	total_kills = player.get("totalKills", 0)
+	total_waves_survived = player.get("highestWave", 0)
+	play_time_seconds = player.get("playTimeSeconds", 0)
+
+	# Calculate rank from level
+	player_rank = player_level
+
+	_update_player_info()
+
+	# Connect WebSocket hub with auth token
+	if websocket_hub and not backend.auth_token.is_empty():
+		websocket_hub.connect_to_hub(backend.auth_token)
+
+func _on_backend_logged_in(player_data: Dictionary):
+	# Update local player info from backend response
+	steam_username = player_data.get("username", steam_username)
+	player_level = player_data.get("level", 1)
+	player_prestige = player_data.get("prestige", 0)
+	total_kills = player_data.get("totalKills", 0)
+	total_waves_survived = player_data.get("highestWave", 0)
+	play_time_seconds = player_data.get("playTimeSeconds", 0)
+	player_rank = player_level
+
+	_update_player_info()
+	_update_account_button()
+
+	# Close login panel if open
+	if login_panel and login_panel.visible:
+		_close_panel(login_panel)
+
+	# Connect WebSocket
+	if websocket_hub and backend:
+		websocket_hub.connect_to_hub(backend.auth_token)
+
+func _on_backend_logged_out():
+	# Reset to defaults
+	steam_username = "Survivor"
+	player_rank = 1
+	player_prestige = 0
+	player_level = 1
+	total_kills = 0
+	total_waves_survived = 0
+	play_time_seconds = 0
+
+	_update_player_info()
+	_update_account_button()
+
+	# Disconnect WebSocket
+	if websocket_hub:
+		websocket_hub.disconnect_from_hub()
+
+func _on_backend_login_failed(error: String):
+	# Error is already shown in login panel
+	pass
+
+func show_login_panel():
+	if not login_panel:
+		# Create login panel dynamically
+		var LoginPanelClass = load("res://scripts/ui/login_panel.gd")
+		login_panel = Control.new()
+		login_panel.set_script(LoginPanelClass)
+		login_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(login_panel)
+
+		# Connect signals
+		login_panel.login_successful.connect(_on_login_panel_success)
+		login_panel.panel_closed.connect(_on_login_panel_closed)
+
+	_show_panel(login_panel)
+
+func _on_login_panel_success(player_data: Dictionary):
+	_on_backend_logged_in(player_data)
+
+func _on_login_panel_closed():
+	_close_panel(login_panel)
+
+func show_server_browser():
+	if not server_browser_panel:
+		var ServerBrowserClass = load("res://scripts/ui/server_browser.gd")
+		server_browser_panel = Control.new()
+		server_browser_panel.set_script(ServerBrowserClass)
+		server_browser_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+		add_child(server_browser_panel)
+
+		# Connect signals
+		server_browser_panel.back_pressed.connect(func(): _close_panel(server_browser_panel))
+		server_browser_panel.join_requested.connect(_on_server_join_requested)
+		server_browser_panel.create_server_requested.connect(_on_create_server_requested)
+
+	_show_panel(server_browser_panel)
+
+func _on_server_join_requested(server_info: Dictionary):
+	# Join the selected server
+	_close_panel(server_browser_panel)
+
+	# Store server info for after character select
+	set_meta("pending_server_join", server_info)
+
+	# Connect via WebSocket
+	if websocket_hub:
+		var server_id = server_info.get("id", 0)
+		if server_id is String:
+			server_id = int(server_id)
+		websocket_hub.join_server(server_id)
+
+	# Show character select first
+	_show_character_select(true)
+
+func _on_create_server_requested():
+	_close_panel(server_browser_panel)
+
+	# Store that we're creating a server
+	set_meta("creating_server", true)
+
+	# Show character select first
+	_show_character_select(true)

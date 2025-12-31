@@ -51,12 +51,19 @@ var available_maps: Array = [
 
 # Network references
 var network_manager: Node = null
+var websocket_hub: Node = null
+var backend: Node = null
 var is_host: bool = false
+var server_info: Dictionary = {}
 
 func _ready():
 	network_manager = get_node_or_null("/root/NetworkManager")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+	backend = get_node_or_null("/root/Backend")
+
 	_create_ui()
 	_connect_signals()
+	_connect_websocket_signals()
 
 	# Check if we're the host
 	if multiplayer.has_multiplayer_peer():
@@ -413,6 +420,34 @@ func _connect_signals():
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 
+func _connect_websocket_signals():
+	if websocket_hub:
+		if websocket_hub.has_signal("chat_message_received"):
+			websocket_hub.chat_message_received.connect(_on_websocket_chat_message)
+		if websocket_hub.has_signal("game_state_received"):
+			websocket_hub.game_state_received.connect(_on_websocket_game_state)
+		if websocket_hub.has_signal("wave_started"):
+			websocket_hub.wave_started.connect(_on_websocket_wave_started)
+		if websocket_hub.has_signal("notification_received"):
+			websocket_hub.notification_received.connect(_on_websocket_notification)
+
+func _on_websocket_chat_message(player_id: int, username: String, message: String):
+	_add_chat_message("[color=white]%s:[/color] %s" % [username, message])
+
+func _on_websocket_game_state(state: Dictionary):
+	# Update lobby state from server
+	if state.has("players"):
+		for player in state.players:
+			var peer_id = player.get("id", 0)
+			if not player_entries.has(peer_id):
+				add_player(peer_id, player)
+
+func _on_websocket_wave_started(wave_number: int, _zombie_count: int):
+	_add_chat_message("[color=yellow]Wave %d starting![/color]" % wave_number)
+
+func _on_websocket_notification(type: String, message: String):
+	_add_chat_message("[color=cyan][%s] %s[/color]" % [type, message])
+
 func _process(delta):
 	# Handle countdown
 	if countdown_timer > 0:
@@ -618,10 +653,18 @@ func _on_chat_submitted(text: String):
 	chat_input.text = ""
 
 	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
-	var player_name = "You"  # Would get from player data
+	var player_name = "You"
 
-	# Send to network
-	if multiplayer.has_multiplayer_peer():
+	# Get player name from backend if available
+	if backend and backend.current_player:
+		player_name = backend.current_player.get("username", "You")
+
+	# Send via WebSocket hub first
+	if websocket_hub and websocket_hub.is_connected:
+		websocket_hub.send_chat_message(text)
+		_add_chat_message("[color=cyan]%s:[/color] %s" % [player_name, text])
+	# Fallback to peer-to-peer
+	elif multiplayer.has_multiplayer_peer():
 		rpc("_receive_chat_message", local_id, player_name, text)
 	else:
 		_add_chat_message("[color=cyan]%s:[/color] %s" % [player_name, text])
@@ -793,3 +836,35 @@ func set_available_maps(maps: Array):
 
 	for map_data in available_maps:
 		_create_map_button(map_data)
+
+func set_server_info(info: Dictionary):
+	"""Set server info when joining a server"""
+	server_info = info
+
+	# Update UI with server info
+	var server_name = info.get("name", "Game Server")
+	_add_chat_message("[color=gray]Connected to %s[/color]" % server_name)
+
+	# Pre-select map if specified
+	var map_id = info.get("map", "")
+	if not map_id.is_empty() and map_buttons.has(map_id):
+		_on_map_voted(map_id)
+
+func set_as_host(hosting: bool):
+	"""Set whether this client is the host"""
+	is_host = hosting
+
+	# Update start button visibility
+	var start_btn = get_node_or_null("HBoxContainer/VBoxContainer/HBoxContainer/StartButton")
+	if start_btn:
+		start_btn.visible = is_host
+
+	if is_host:
+		_add_chat_message("[color=yellow]You are the host[/color]")
+
+func leave_server():
+	"""Leave the current server"""
+	if websocket_hub:
+		websocket_hub.leave_server()
+
+	_on_leave_pressed()
