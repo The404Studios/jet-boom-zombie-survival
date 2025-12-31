@@ -64,11 +64,18 @@ var wave_manager: Node = null
 var player_manager: Node = null
 var network_manager: Node = null
 
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+
 func _ready():
 	# Get references
 	wave_manager = get_node_or_null("/root/WaveManager")
 	player_manager = get_node_or_null("/root/PlayerManager")
 	network_manager = get_node_or_null("/root/NetworkManager")
+
+	# Initialize backend
+	_init_backend()
 
 	# Connect signals
 	if wave_manager:
@@ -82,6 +89,10 @@ func _ready():
 			player_manager.all_players_dead.connect(_on_all_players_dead)
 		if player_manager.has_signal("player_died"):
 			player_manager.player_died.connect(_on_player_died)
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
 
 func _process(delta):
 	match current_state:
@@ -238,6 +249,9 @@ func trigger_game_over(victory: bool):
 	# Sync to network
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_sync_game_over.rpc(victory, game_stats)
+
+	# Sync final stats to backend
+	_sync_game_stats_to_backend(victory)
 
 # ============================================
 # CONDITIONS
@@ -432,3 +446,54 @@ func reset_game():
 		"fastest_round": INF,
 		"highest_kills_round": 0
 	}
+
+# ============================================
+# BACKEND INTEGRATION
+# ============================================
+
+func _sync_game_stats_to_backend(victory: bool):
+	"""Sync game stats to backend at game end"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	# Update player stats
+	var stat_update = {
+		"kills": game_stats.total_zombies_killed,
+		"deaths": game_stats.total_deaths,
+		"gamesPlayed": 1,
+		"gamesWon": 1 if victory else 0,
+		"highestWave": current_round,
+		"headshots": round_stats.headshots,
+		"damageDealt": int(round_stats.damage_dealt)
+	}
+
+	backend.update_stats(stat_update, func(response):
+		if response.success:
+			print("Game stats synced to backend")
+	)
+
+	# Record match
+	var match_record = {
+		"victory": victory,
+		"rounds": current_round,
+		"kills": game_stats.total_zombies_killed,
+		"deaths": game_stats.total_deaths,
+		"duration": int(round_stats.time_elapsed)
+	}
+
+	backend.record_match(match_record, func(response):
+		if response.success:
+			print("Match recorded to backend")
+	)
+
+func sync_round_progress_to_backend():
+	"""Sync current round progress to backend (for server info)"""
+	if not websocket_hub:
+		return
+
+	if websocket_hub.has_method("update_server_info"):
+		websocket_hub.update_server_info({
+			"currentRound": current_round,
+			"maxRounds": rounds_to_win,
+			"state": RoundState.keys()[current_state]
+		})

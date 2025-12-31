@@ -105,6 +105,11 @@ func accept_trade(trade_id: int) -> bool:
 			pending_requests.remove_at(i)
 			trade_accepted.emit(trade_id)
 
+			# Notify backend
+			if websocket_hub and backend and backend.is_authenticated:
+				websocket_hub.accept_trade(trade_id)
+
+			# Network replicate
 			if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 				_accept_trade_rpc.rpc(trade_id)
 
@@ -121,6 +126,11 @@ func decline_trade(trade_id: int) -> bool:
 			pending_requests.remove_at(i)
 			trade_declined.emit(trade_id)
 
+			# Notify backend
+			if websocket_hub and backend and backend.is_authenticated:
+				websocket_hub.decline_trade(trade_id)
+
+			# Network replicate
 			if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 				_decline_trade_rpc.rpc(trade_id)
 
@@ -302,6 +312,11 @@ func cancel_trade(trade_id: int, player_id: int) -> bool:
 	trade_cancelled.emit(trade_id)
 	active_trades.erase(trade_id)
 
+	# Notify backend
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.cancel_trade(trade_id)
+
+	# Network replicate
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
 		_cancel_trade_rpc.rpc(trade_id)
 
