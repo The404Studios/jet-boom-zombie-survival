@@ -1,0 +1,62 @@
+[gd_scene load_steps=6 format=3 uid="uid://observed_player001"]
+
+[ext_resource type="Script" path="res://scripts/player/observed_player.gd" id="1"]
+[ext_resource type="PackedScene" path="res://Free_Character/male_zombie/male_z.glb" id="2"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nameplate"]
+shading_mode = 0
+albedo_color = Color(1, 1, 1, 1)
+billboard_mode = 1
+
+[node name="ObservedPlayer" type="CharacterBody3D" groups=["players", "observed_players"]]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="Model" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="WeaponHolder" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.2, -0.2)
+
+[node name="Head" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="Nameplate" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+pixel_size = 0.005
+text = "Player"
+font_size = 32
+outline_size = 4
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HealthBar3D" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
+visible = false
+
+[node name="Background" type="MeshInstance3D" parent="HealthBar3D"]
+mesh = SubResource("CapsuleShape3D_1")
+
+[node name="Fill" type="MeshInstance3D" parent="HealthBar3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="FootstepPlayer" type="AudioStreamPlayer3D" parent="."]
+max_db = -10.0
+unit_size = 5.0
+max_distance = 20.0
+
+[node name="VoicePlayer" type="AudioStreamPlayer3D" parent="."]
+max_db = 0.0
+unit_size = 3.0
+max_distance = 30.0
