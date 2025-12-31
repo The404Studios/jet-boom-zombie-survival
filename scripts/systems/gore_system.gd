@@ -1,39 +1,65 @@
 extends Node
 
-# Gore system with blood particles, decals, and gibs
+# Gore system with blood particles, decals, and model-based gibs
 # Fully network replicated for multiplayer consistency
+# Features: Body part dismemberment, blood splatter, gore trails
 
 @warning_ignore("unused_signal")
 signal gore_spawned(gore_position: Vector3, gore_type: String)
+signal dismemberment_occurred(position: Vector3, body_part: String)
 
 const MAX_BLOOD_DECALS: int = 100
-const MAX_GIBS: int = 50
+const MAX_GIBS: int = 75
 const DECAL_LIFETIME: float = 30.0
-const GIB_LIFETIME: float = 10.0
+const GIB_LIFETIME: float = 15.0
+
+# Body part types for dismemberment
+enum BodyPart { HEAD, TORSO, ARM_LEFT, ARM_RIGHT, LEG_LEFT, LEG_RIGHT, HAND, FOOT, SPINE, RIBCAGE }
 
 var blood_decals: Array = []
 var active_gibs: Array = []
 var gore_enabled: bool = true
+var gore_level: int = 3  # 0=off, 1=minimal, 2=normal, 3=extreme
 
-# Particle scenes (will be created procedurally)
-var blood_particle_scene: PackedScene
-var gib_scene: PackedScene
+# Cached materials for performance
+var blood_material: StandardMaterial3D
+var bone_material: StandardMaterial3D
+var flesh_material: StandardMaterial3D
+var organ_material: StandardMaterial3D
 
 func _ready():
 	# Create procedural gore scenes
 	_create_gore_scenes()
+	_create_gore_materials()
 
 func _create_gore_scenes():
 	"""Initialize gore system - particles and gibs created on-demand"""
-	# Pre-allocate arrays
-	blood_decals.resize(MAX_BLOOD_DECALS)
-	active_gibs.resize(MAX_GIBS)
+	blood_decals.clear()
+	active_gibs.clear()
 
-	# Fill with null
-	for i in range(MAX_BLOOD_DECALS):
-		blood_decals[i] = null
-	for i in range(MAX_GIBS):
-		active_gibs[i] = null
+func _create_gore_materials():
+	"""Pre-create materials for gore effects"""
+	# Blood material - dark red, wet look
+	blood_material = StandardMaterial3D.new()
+	blood_material.albedo_color = Color(0.5, 0.02, 0.02, 1.0)
+	blood_material.roughness = 0.2
+	blood_material.metallic = 0.1
+
+	# Bone material - off-white
+	bone_material = StandardMaterial3D.new()
+	bone_material.albedo_color = Color(0.9, 0.85, 0.75, 1.0)
+	bone_material.roughness = 0.7
+
+	# Flesh material - pink/red muscle tissue
+	flesh_material = StandardMaterial3D.new()
+	flesh_material.albedo_color = Color(0.65, 0.25, 0.25, 1.0)
+	flesh_material.roughness = 0.6
+
+	# Organ material - dark red, shiny
+	organ_material = StandardMaterial3D.new()
+	organ_material.albedo_color = Color(0.4, 0.08, 0.08, 1.0)
+	organ_material.roughness = 0.3
+	organ_material.metallic = 0.05
 
 # ============================================
 # BLOOD EFFECTS (Network Replicated)
@@ -195,8 +221,10 @@ func _fade_decal(decal: Decal):
 
 func spawn_gibs(position: Vector3, force: Vector3, count: int = 5):
 	"""Spawn flying gibs from zombie death"""
+	if not gore_enabled or gore_level == 0:
+		return
+
 	if not multiplayer.has_multiplayer_peer():
-		# Single-player - spawn directly
 		_spawn_gibs_local(position, force, count)
 		return
 
@@ -217,51 +245,60 @@ func _create_single_gib(position: Vector3, base_force: Vector3) -> RigidBody3D:
 	var gib = RigidBody3D.new()
 	gib.global_position = position + Vector3(randf_range(-0.3, 0.3), randf_range(0, 0.5), randf_range(-0.3, 0.3))
 
-	# Create mesh
 	var mesh_instance = MeshInstance3D.new()
-	var gib_type = randi() % 3
+	var gib_type = randi() % 5
 
 	match gib_type:
-		0:  # Chunk
+		0:  # Flesh chunk
 			var box = BoxMesh.new()
-			box.size = Vector3(randf_range(0.1, 0.3), randf_range(0.1, 0.3), randf_range(0.1, 0.3))
+			box.size = Vector3(randf_range(0.08, 0.2), randf_range(0.08, 0.2), randf_range(0.08, 0.2))
 			mesh_instance.mesh = box
-		1:  # Splatter
+			mesh_instance.material_override = flesh_material.duplicate()
+		1:  # Blood clot
+			var sphere = SphereMesh.new()
+			sphere.radius = randf_range(0.05, 0.12)
+			sphere.height = randf_range(0.1, 0.24)
+			mesh_instance.mesh = sphere
+			mesh_instance.material_override = blood_material.duplicate()
+		2:  # Bone fragment
+			var cylinder = CylinderMesh.new()
+			cylinder.top_radius = randf_range(0.02, 0.05)
+			cylinder.bottom_radius = randf_range(0.02, 0.05)
+			cylinder.height = randf_range(0.15, 0.35)
+			mesh_instance.mesh = cylinder
+			mesh_instance.material_override = bone_material.duplicate()
+		3:  # Organ piece
 			var sphere = SphereMesh.new()
 			sphere.radius = randf_range(0.08, 0.15)
-			sphere.height = randf_range(0.15, 0.3)
+			sphere.height = randf_range(0.12, 0.25)
 			mesh_instance.mesh = sphere
-		2:  # Bone-like
-			var cylinder = CylinderMesh.new()
-			cylinder.top_radius = 0.05
-			cylinder.bottom_radius = 0.05
-			cylinder.height = randf_range(0.2, 0.4)
-			mesh_instance.mesh = cylinder
-
-	# Material - dark bloody color
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(randf_range(0.3, 0.6), 0.0, 0.0, 1.0)
-	material.roughness = 0.9
-	mesh_instance.material_override = material
+			mesh_instance.material_override = organ_material.duplicate()
+		4:  # Tissue strip
+			var box = BoxMesh.new()
+			box.size = Vector3(randf_range(0.02, 0.05), randf_range(0.15, 0.3), randf_range(0.02, 0.05))
+			mesh_instance.mesh = box
+			mesh_instance.material_override = flesh_material.duplicate()
 
 	gib.add_child(mesh_instance)
 
 	# Collision
 	var collision = CollisionShape3D.new()
-	var shape = BoxShape3D.new()
-	shape.size = Vector3(0.2, 0.2, 0.2)
+	var shape = SphereShape3D.new()
+	shape.radius = 0.1
 	collision.shape = shape
 	gib.add_child(collision)
 
 	# Physics properties
-	gib.mass = 0.5
-	gib.gravity_scale = 1.5
+	gib.mass = randf_range(0.2, 0.8)
+	gib.gravity_scale = 1.2
+	gib.collision_layer = 0  # Don't block anything
+	gib.collision_mask = 1   # Only collide with ground
 
 	# Apply random force
 	var random_force = base_force + Vector3(
-		randf_range(-3, 3),
-		randf_range(2, 5),
-		randf_range(-3, 3)
+		randf_range(-4, 4),
+		randf_range(3, 7),
+		randf_range(-4, 4)
 	)
 
 	# Add to scene
@@ -276,10 +313,10 @@ func _create_single_gib(position: Vector3, base_force: Vector3) -> RigidBody3D:
 	await get_tree().physics_frame
 	if is_instance_valid(gib):
 		gib.apply_central_impulse(random_force)
-		gib.apply_torque_impulse(Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5)))
+		gib.apply_torque_impulse(Vector3(randf_range(-8, 8), randf_range(-8, 8), randf_range(-8, 8)))
 
 	# Cleanup old gibs if too many
-	if active_gibs.size() > MAX_GIBS:
+	while active_gibs.size() > MAX_GIBS:
 		var old_gib = active_gibs.pop_front()
 		if is_instance_valid(old_gib):
 			old_gib.queue_free()
@@ -293,28 +330,30 @@ func _cleanup_gib(gib: RigidBody3D):
 	await get_tree().create_timer(GIB_LIFETIME).timeout
 
 	if is_instance_valid(gib):
-		# Fade out - check if gib has children before accessing
 		if gib.get_child_count() > 0:
 			var mesh = gib.get_child(0) as MeshInstance3D
-			if mesh:
+			if mesh and mesh.material_override:
 				var tween = create_tween()
 				var mat = mesh.material_override as StandardMaterial3D
 				if mat:
-					var current_color = mat.albedo_color
-					tween.tween_property(mat, "albedo_color", Color(current_color.r, current_color.g, current_color.b, 0.0), 1.0)
+					mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					tween.tween_property(mat, "albedo_color:a", 0.0, 1.0)
 
 		await get_tree().create_timer(1.0).timeout
 		if is_instance_valid(gib):
+			active_gibs.erase(gib)
 			gib.queue_free()
 
 # ============================================
-# DISMEMBERMENT (Headshots, etc.)
+# DISMEMBERMENT (Body part separation)
 # ============================================
 
 func spawn_dismemberment_effect(position: Vector3, body_part: String):
 	"""Spawn special effect for dismemberment (headshot, limb loss)"""
+	if not gore_enabled or gore_level < 2:
+		return
+
 	if not multiplayer.has_multiplayer_peer():
-		# Single-player - spawn directly
 		_spawn_dismemberment_local(position, body_part)
 		return
 
@@ -324,106 +363,370 @@ func spawn_dismemberment_effect(position: Vector3, body_part: String):
 		_spawn_dismemberment_networked.rpc_id(1, position, body_part)
 
 func _spawn_dismemberment_local(position: Vector3, body_part: String):
-	# Extra blood for dismemberment
-	spawn_blood_effect(position, Vector3.UP, 3)
+	# Extra blood spray for dismemberment
+	spawn_blood_effect(position, Vector3.UP, 5)
 
-	# Spawn body part gib
+	# Spawn appropriate body part
 	match body_part:
 		"head":
 			_create_head_gib(position)
-		"arm", "leg":
-			_create_limb_gib(position)
+		"arm_left", "arm_right", "arm":
+			_create_arm_gib(position, body_part == "arm_left")
+		"leg_left", "leg_right", "leg":
+			_create_leg_gib(position, body_part == "leg_left")
+		"torso":
+			_create_torso_gib(position)
+		"hand":
+			_create_hand_gib(position)
+		"foot":
+			_create_foot_gib(position)
+
+	# Additional small gibs and blood trail
+	for i in range(3):
+		_create_single_gib(position, Vector3(randf_range(-2, 2), 3, randf_range(-2, 2)))
+
+	dismemberment_occurred.emit(position, body_part)
 
 @rpc("any_peer", "call_local", "reliable")
 func _spawn_dismemberment_networked(position: Vector3, body_part: String):
 	_spawn_dismemberment_local(position, body_part)
 
+func spawn_full_body_explosion(position: Vector3, force_multiplier: float = 1.0):
+	"""Spawn all body parts exploding outward - for explosive deaths"""
+	if not gore_enabled or gore_level < 2:
+		return
+
+	# Spawn all major body parts
+	_create_head_gib(position + Vector3(0, 1.6, 0))
+	_create_torso_gib(position + Vector3(0, 1.0, 0))
+	_create_arm_gib(position + Vector3(0.4, 1.2, 0), false)
+	_create_arm_gib(position + Vector3(-0.4, 1.2, 0), true)
+	_create_leg_gib(position + Vector3(0.2, 0.5, 0), false)
+	_create_leg_gib(position + Vector3(-0.2, 0.5, 0), true)
+
+	# Lots of small gibs
+	var gib_count = 15 if gore_level >= 3 else 8
+	for i in range(gib_count):
+		var offset = Vector3(randf_range(-0.5, 0.5), randf_range(0.5, 1.5), randf_range(-0.5, 0.5))
+		var force = Vector3(randf_range(-5, 5), randf_range(4, 10), randf_range(-5, 5)) * force_multiplier
+		_create_single_gib(position + offset, force)
+
+	# Major blood explosion
+	spawn_blood_effect(position + Vector3.UP, Vector3.UP, 8)
+
 func _create_head_gib(position: Vector3):
 	var gib = RigidBody3D.new()
 	gib.global_position = position
+	gib.collision_layer = 0
+	gib.collision_mask = 1
 
-	# Head mesh
+	# Head shape - slightly elongated sphere
 	var mesh_instance = MeshInstance3D.new()
 	var sphere = SphereMesh.new()
-	sphere.radius = 0.15
-	sphere.height = 0.3
+	sphere.radius = 0.12
+	sphere.height = 0.28
 	mesh_instance.mesh = sphere
 
-	# Bloody material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.3, 0.3, 1.0)
-	mesh_instance.material_override = material
+	# Zombie skin material with blood
+	var mat = StandardMaterial3D.new()
+	mat.albedo_color = Color(0.45, 0.35, 0.3, 1.0)
+	mat.roughness = 0.8
+	mesh_instance.material_override = mat
 
 	gib.add_child(mesh_instance)
+
+	# Add blood stump at neck
+	var stump = MeshInstance3D.new()
+	var stump_mesh = CylinderMesh.new()
+	stump_mesh.top_radius = 0.06
+	stump_mesh.bottom_radius = 0.08
+	stump_mesh.height = 0.05
+	stump.mesh = stump_mesh
+	stump.material_override = blood_material.duplicate()
+	stump.position = Vector3(0, -0.14, 0)
+	gib.add_child(stump)
 
 	# Collision
 	var collision = CollisionShape3D.new()
 	var shape = SphereShape3D.new()
-	shape.radius = 0.15
+	shape.radius = 0.12
 	collision.shape = shape
 	gib.add_child(collision)
 
-	gib.mass = 2.0
-	var scene = get_tree().current_scene
-	if not scene:
-		gib.queue_free()
-		return
-	scene.add_child(gib)
+	gib.mass = 1.5
+	_add_gib_to_scene(gib, Vector3(randf_range(-2, 2), randf_range(5, 9), randf_range(-2, 2)))
 
-	# Apply upward force
-	await get_tree().physics_frame
-	if is_instance_valid(gib):
-		gib.apply_central_impulse(Vector3(randf_range(-2, 2), randf_range(5, 8), randf_range(-2, 2)))
-		gib.apply_torque_impulse(Vector3(randf_range(-10, 10), randf_range(-10, 10), randf_range(-10, 10)))
-
-	# Cleanup
-	await get_tree().create_timer(GIB_LIFETIME).timeout
-	if is_instance_valid(gib):
-		gib.queue_free()
-
-func _create_limb_gib(position: Vector3):
+func _create_arm_gib(position: Vector3, is_left: bool):
 	var gib = RigidBody3D.new()
 	gib.global_position = position
+	gib.collision_layer = 0
+	gib.collision_mask = 1
 
-	# Limb mesh
-	var mesh_instance = MeshInstance3D.new()
-	var capsule = CapsuleMesh.new()
-	capsule.radius = 0.08
-	capsule.height = 0.5
-	mesh_instance.mesh = capsule
+	# Upper arm
+	var upper_arm = MeshInstance3D.new()
+	var upper_capsule = CapsuleMesh.new()
+	upper_capsule.radius = 0.05
+	upper_capsule.height = 0.35
+	upper_arm.mesh = upper_capsule
+	upper_arm.material_override = flesh_material.duplicate()
+	upper_arm.position = Vector3(0, 0.15, 0)
+	gib.add_child(upper_arm)
 
-	# Material
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.4, 0.2, 0.2, 1.0)
-	mesh_instance.material_override = material
+	# Lower arm
+	var lower_arm = MeshInstance3D.new()
+	var lower_capsule = CapsuleMesh.new()
+	lower_capsule.radius = 0.04
+	lower_capsule.height = 0.3
+	lower_arm.mesh = lower_capsule
+	lower_arm.material_override = flesh_material.duplicate()
+	lower_arm.position = Vector3(0, -0.18, 0)
+	gib.add_child(lower_arm)
 
-	gib.add_child(mesh_instance)
+	# Hand
+	var hand = MeshInstance3D.new()
+	var hand_mesh = BoxMesh.new()
+	hand_mesh.size = Vector3(0.08, 0.1, 0.04)
+	hand.mesh = hand_mesh
+	hand.material_override = flesh_material.duplicate()
+	hand.position = Vector3(0, -0.38, 0)
+	gib.add_child(hand)
+
+	# Bloody stump at shoulder
+	var stump = MeshInstance3D.new()
+	var stump_mesh = SphereMesh.new()
+	stump_mesh.radius = 0.06
+	stump_mesh.height = 0.08
+	stump.mesh = stump_mesh
+	stump.material_override = blood_material.duplicate()
+	stump.position = Vector3(0, 0.35, 0)
+	gib.add_child(stump)
+
+	# Collision
+	var collision = CollisionShape3D.new()
+	var shape = CapsuleShape3D.new()
+	shape.radius = 0.06
+	shape.height = 0.7
+	collision.shape = shape
+	gib.add_child(collision)
+
+	gib.mass = 1.2
+	var dir = -1.0 if is_left else 1.0
+	_add_gib_to_scene(gib, Vector3(randf_range(2, 4) * dir, randf_range(3, 6), randf_range(-2, 2)))
+
+func _create_leg_gib(position: Vector3, is_left: bool):
+	var gib = RigidBody3D.new()
+	gib.global_position = position
+	gib.collision_layer = 0
+	gib.collision_mask = 1
+
+	# Upper leg (thigh)
+	var thigh = MeshInstance3D.new()
+	var thigh_capsule = CapsuleMesh.new()
+	thigh_capsule.radius = 0.08
+	thigh_capsule.height = 0.45
+	thigh.mesh = thigh_capsule
+	thigh.material_override = flesh_material.duplicate()
+	thigh.position = Vector3(0, 0.2, 0)
+	gib.add_child(thigh)
+
+	# Lower leg (calf)
+	var calf = MeshInstance3D.new()
+	var calf_capsule = CapsuleMesh.new()
+	calf_capsule.radius = 0.06
+	calf_capsule.height = 0.4
+	calf.mesh = calf_capsule
+	calf.material_override = flesh_material.duplicate()
+	calf.position = Vector3(0, -0.25, 0)
+	gib.add_child(calf)
+
+	# Foot
+	var foot = MeshInstance3D.new()
+	var foot_mesh = BoxMesh.new()
+	foot_mesh.size = Vector3(0.08, 0.06, 0.18)
+	foot.mesh = foot_mesh
+	foot.material_override = flesh_material.duplicate()
+	foot.position = Vector3(0, -0.5, 0.05)
+	gib.add_child(foot)
+
+	# Bloody stump at hip
+	var stump = MeshInstance3D.new()
+	var stump_mesh = SphereMesh.new()
+	stump_mesh.radius = 0.08
+	stump_mesh.height = 0.1
+	stump.mesh = stump_mesh
+	stump.material_override = blood_material.duplicate()
+	stump.position = Vector3(0, 0.45, 0)
+	gib.add_child(stump)
 
 	# Collision
 	var collision = CollisionShape3D.new()
 	var shape = CapsuleShape3D.new()
 	shape.radius = 0.08
-	shape.height = 0.5
+	shape.height = 0.9
 	collision.shape = shape
 	gib.add_child(collision)
 
-	gib.mass = 1.0
+	gib.mass = 2.0
+	var dir = -1.0 if is_left else 1.0
+	_add_gib_to_scene(gib, Vector3(randf_range(1, 3) * dir, randf_range(2, 5), randf_range(-2, 2)))
+
+func _create_torso_gib(position: Vector3):
+	var gib = RigidBody3D.new()
+	gib.global_position = position
+	gib.collision_layer = 0
+	gib.collision_mask = 1
+
+	# Main torso
+	var torso = MeshInstance3D.new()
+	var torso_mesh = BoxMesh.new()
+	torso_mesh.size = Vector3(0.4, 0.5, 0.25)
+	torso.mesh = torso_mesh
+	torso.material_override = flesh_material.duplicate()
+	gib.add_child(torso)
+
+	# Ribcage peek
+	var ribs = MeshInstance3D.new()
+	var ribs_mesh = BoxMesh.new()
+	ribs_mesh.size = Vector3(0.3, 0.15, 0.2)
+	ribs.mesh = ribs_mesh
+	ribs.material_override = bone_material.duplicate()
+	ribs.position = Vector3(0, 0.1, 0.05)
+	gib.add_child(ribs)
+
+	# Bloody areas at connection points
+	var neck_stump = MeshInstance3D.new()
+	var neck_mesh = CylinderMesh.new()
+	neck_mesh.top_radius = 0.06
+	neck_mesh.bottom_radius = 0.08
+	neck_mesh.height = 0.05
+	neck_stump.mesh = neck_mesh
+	neck_stump.material_override = blood_material.duplicate()
+	neck_stump.position = Vector3(0, 0.27, 0)
+	gib.add_child(neck_stump)
+
+	# Collision
+	var collision = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(0.4, 0.5, 0.25)
+	collision.shape = shape
+	gib.add_child(collision)
+
+	gib.mass = 4.0
+	_add_gib_to_scene(gib, Vector3(randf_range(-1, 1), randf_range(2, 4), randf_range(-1, 1)))
+
+func _create_hand_gib(position: Vector3):
+	var gib = RigidBody3D.new()
+	gib.global_position = position
+	gib.collision_layer = 0
+	gib.collision_mask = 1
+
+	# Hand
+	var hand = MeshInstance3D.new()
+	var hand_mesh = BoxMesh.new()
+	hand_mesh.size = Vector3(0.08, 0.12, 0.04)
+	hand.mesh = hand_mesh
+	hand.material_override = flesh_material.duplicate()
+	gib.add_child(hand)
+
+	# Fingers (simplified as box)
+	var fingers = MeshInstance3D.new()
+	var fingers_mesh = BoxMesh.new()
+	fingers_mesh.size = Vector3(0.06, 0.08, 0.03)
+	fingers.mesh = fingers_mesh
+	fingers.material_override = flesh_material.duplicate()
+	fingers.position = Vector3(0, -0.1, 0)
+	gib.add_child(fingers)
+
+	# Bloody wrist stump
+	var stump = MeshInstance3D.new()
+	var stump_mesh = CylinderMesh.new()
+	stump_mesh.top_radius = 0.03
+	stump_mesh.bottom_radius = 0.04
+	stump_mesh.height = 0.03
+	stump.mesh = stump_mesh
+	stump.material_override = blood_material.duplicate()
+	stump.position = Vector3(0, 0.08, 0)
+	gib.add_child(stump)
+
+	# Collision
+	var collision = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(0.1, 0.15, 0.05)
+	collision.shape = shape
+	gib.add_child(collision)
+
+	gib.mass = 0.3
+	_add_gib_to_scene(gib, Vector3(randf_range(-3, 3), randf_range(4, 7), randf_range(-3, 3)))
+
+func _create_foot_gib(position: Vector3):
+	var gib = RigidBody3D.new()
+	gib.global_position = position
+	gib.collision_layer = 0
+	gib.collision_mask = 1
+
+	# Foot
+	var foot = MeshInstance3D.new()
+	var foot_mesh = BoxMesh.new()
+	foot_mesh.size = Vector3(0.08, 0.06, 0.2)
+	foot.mesh = foot_mesh
+	foot.material_override = flesh_material.duplicate()
+	gib.add_child(foot)
+
+	# Bloody ankle stump
+	var stump = MeshInstance3D.new()
+	var stump_mesh = CylinderMesh.new()
+	stump_mesh.top_radius = 0.04
+	stump_mesh.bottom_radius = 0.05
+	stump_mesh.height = 0.04
+	stump.mesh = stump_mesh
+	stump.material_override = blood_material.duplicate()
+	stump.position = Vector3(0, 0.05, -0.05)
+	gib.add_child(stump)
+
+	# Collision
+	var collision = CollisionShape3D.new()
+	var shape = BoxShape3D.new()
+	shape.size = Vector3(0.1, 0.08, 0.22)
+	collision.shape = shape
+	gib.add_child(collision)
+
+	gib.mass = 0.5
+	_add_gib_to_scene(gib, Vector3(randf_range(-2, 2), randf_range(2, 5), randf_range(-2, 2)))
+
+func _add_gib_to_scene(gib: RigidBody3D, impulse: Vector3):
+	"""Helper to add gib to scene and apply physics"""
 	var scene = get_tree().current_scene
 	if not scene:
 		gib.queue_free()
 		return
-	scene.add_child(gib)
 
-	# Apply force
+	scene.add_child(gib)
+	active_gibs.append(gib)
+
+	# Apply physics after a frame
 	await get_tree().physics_frame
 	if is_instance_valid(gib):
-		gib.apply_central_impulse(Vector3(randf_range(-3, 3), randf_range(3, 6), randf_range(-3, 3)))
-		gib.apply_torque_impulse(Vector3(randf_range(-8, 8), randf_range(-8, 8), randf_range(-8, 8)))
+		gib.apply_central_impulse(impulse)
+		gib.apply_torque_impulse(Vector3(randf_range(-12, 12), randf_range(-12, 12), randf_range(-12, 12)))
+
+	# Spawn blood trail while flying
+	_spawn_flying_blood_trail(gib)
 
 	# Cleanup
-	await get_tree().create_timer(GIB_LIFETIME).timeout
-	if is_instance_valid(gib):
-		gib.queue_free()
+	_cleanup_gib(gib)
+
+func _spawn_flying_blood_trail(gib: RigidBody3D):
+	"""Spawn blood drips while the gib is in the air"""
+	if gore_level < 3:
+		return
+
+	for i in range(5):
+		await get_tree().create_timer(0.15).timeout
+		if not is_instance_valid(gib):
+			return
+		if gib.linear_velocity.length() < 0.5:
+			return
+		spawn_blood_effect(gib.global_position, Vector3.DOWN, 1)
 
 # ============================================
 # CLEANUP

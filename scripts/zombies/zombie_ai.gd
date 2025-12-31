@@ -314,21 +314,35 @@ func attack_target():
 
 	is_attacking = false
 
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
+func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO):
 	if is_dead:
 		return
 
+	var old_health = current_health
 	current_health -= amount
 	current_health = max(current_health, 0)
+
+	# Apply armor reduction
+	if armor > 0:
+		var armor_reduction = min(armor, amount * 0.5)
+		current_health += armor_reduction  # Reduce effective damage
 
 	# Play hurt animation
 	if animation_player and animation_player.has_animation("hurt") and not is_attacking:
 		animation_player.play("hurt")
 
-	if current_health <= 0:
-		die()
+	# Spawn blood at hit location
+	var gore_system = get_node_or_null("/root/GoreSystem")
+	if gore_system and hit_position != Vector3.ZERO:
+		var hit_normal = (hit_position - global_position).normalized()
+		gore_system.spawn_blood_effect(hit_position, -hit_normal, 1)
 
-func die():
+	if current_health <= 0:
+		# Check for overkill (damage was more than 2x remaining health)
+		var overkill = amount > (old_health * 2.0)
+		die(overkill, hit_position)
+
+func die(overkill: bool = false, hit_position: Vector3 = Vector3.ZERO):
 	if is_dead:
 		return
 
@@ -344,13 +358,36 @@ func die():
 
 	zombie_died.emit(self, kill_points, kill_experience)
 
-	# Spawn gore effects
-	if has_node("/root/GoreSystem"):
-		get_node("/root/GoreSystem").spawn_death_effect(global_position)
+	# Spawn gore effects based on death type
+	var gore_system = get_node_or_null("/root/GoreSystem")
+	if gore_system:
+		if has_explosion or overkill:
+			# Full body explosion for exploders or overkill damage
+			gore_system.spawn_full_body_explosion(global_position, 1.5 if has_explosion else 1.0)
+		elif hit_position != Vector3.ZERO:
+			# Determine which body part was hit for dismemberment
+			var local_hit = hit_position - global_position
+			if local_hit.y > 1.4:
+				gore_system.spawn_dismemberment_effect(hit_position, "head")
+			elif local_hit.y > 0.8:
+				if local_hit.x > 0.3:
+					gore_system.spawn_dismemberment_effect(hit_position, "arm_right")
+				elif local_hit.x < -0.3:
+					gore_system.spawn_dismemberment_effect(hit_position, "arm_left")
+				else:
+					gore_system.spawn_dismemberment_effect(hit_position, "torso")
+			else:
+				if local_hit.x > 0.1:
+					gore_system.spawn_dismemberment_effect(hit_position, "leg_right")
+				else:
+					gore_system.spawn_dismemberment_effect(hit_position, "leg_left")
+		else:
+			# Standard death gore
+			gore_system.spawn_death_effect(global_position)
 
-	# Play death animation
-	if animation_player and animation_player.has_animation("death"):
-		animation_player.play("death")
+	# Hide model instead of playing death animation (we show gibs)
+	if model:
+		model.visible = false
 
 	# Disable collision
 	collision_layer = 0
@@ -364,8 +401,8 @@ func die():
 		var points_system = get_node("/root/PointsSystem")
 		points_system.reward_zombie_kill(zombie_class)
 
-	# Remove after a delay
-	await get_tree().create_timer(3.0).timeout
+	# Remove after a short delay (gore shows the death)
+	await get_tree().create_timer(0.5).timeout
 	if is_instance_valid(self):
 		queue_free()
 
