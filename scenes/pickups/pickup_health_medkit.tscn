@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://pickup_health_medkit001"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.3, 0.15, 0.2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+size = Vector3(0.3, 0.15, 0.2)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.9, 0.9, 0.9, 1)
+emission_enabled = true
+emission = Color(1, 0, 0, 1)
+emission_energy_multiplier = 0.5
+
+[node name="PickupHealthMedkit" type="Area3D" groups=["pickups", "health"]]
+collision_layer = 16
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
+
+[node name="CrossH" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, 0)
+
+[node name="GlowLight" type="OmniLight3D" parent="."]
+light_color = Color(1, 0.3, 0.3, 1)
+light_energy = 0.5
+omni_range = 1.5
