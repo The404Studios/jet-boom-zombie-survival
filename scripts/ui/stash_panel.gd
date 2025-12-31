@@ -92,7 +92,11 @@ var player_stats: Dictionary = {
 enum SortMode { NAME, RARITY, TYPE, VALUE, WEIGHT }
 var current_sort_mode: int = SortMode.NAME
 
+# Backend integration
+var backend: Node = null
+
 func _ready():
+	backend = get_node_or_null("/root/Backend")
 	_setup_inventory_grid()
 	_setup_equipment_slots()
 	_connect_signals()
@@ -242,27 +246,36 @@ func _setup_equipment_slot(slot: Panel, slot_name: String):
 	button.pressed.connect(_on_equipment_slot_clicked.bind(slot_name))
 
 func _update_stats_display():
-	# Get player name from Steam or persistence
+	# Get player name from backend first
 	var player_name = "Survivor"
-	if has_node("/root/SteamManager"):
-		var steam = get_node("/root/SteamManager")
-		if steam.is_initialized() and "steam_username" in steam:
-			player_name = steam.steam_username
-	elif has_node("/root/AccountSystem"):
-		var account = get_node("/root/AccountSystem")
-		if account.has_method("get_username"):
-			player_name = account.get_username()
+	var rank_text = "Novice"
+
+	if backend and backend.is_authenticated:
+		var profile = backend.current_player
+		if profile:
+			player_name = profile.get("username", "Survivor")
+			var level = profile.get("level", 1)
+			rank_text = _get_rank_name(level)
+	else:
+		# Fallback to Steam or persistence
+		if has_node("/root/SteamManager"):
+			var steam = get_node("/root/SteamManager")
+			if steam.is_initialized() and "steam_username" in steam:
+				player_name = steam.steam_username
+		elif has_node("/root/AccountSystem"):
+			var account = get_node("/root/AccountSystem")
+			if account.has_method("get_username"):
+				player_name = account.get_username()
+
+		# Get rank from persistence
+		if has_node("/root/PlayerPersistence"):
+			var persistence = get_node("/root/PlayerPersistence")
+			if persistence.player_data:
+				var rank = persistence.player_data.get("rank", 1)
+				rank_text = _get_rank_name(rank)
 
 	if player_name_label:
 		player_name_label.text = player_name
-
-	# Get rank from persistence
-	var rank_text = "Novice"
-	if has_node("/root/PlayerPersistence"):
-		var persistence = get_node("/root/PlayerPersistence")
-		if persistence.player_data:
-			var rank = persistence.player_data.get("rank", 1)
-			rank_text = _get_rank_name(rank)
 
 	if rank_label:
 		rank_label.text = rank_text
@@ -304,10 +317,18 @@ func _update_stat_label(label_name: String, value: String):
 
 func _update_currency_display():
 	var money = 0
-	if has_node("/root/PointsSystem"):
-		var ps = get_node("/root/PointsSystem")
-		if ps.has_method("get_points"):
-			money = ps.get_points()
+
+	# Get currency from backend first
+	if backend and backend.is_authenticated:
+		var profile = backend.current_player
+		if profile:
+			money = profile.get("currency", 0)
+	else:
+		# Fallback to local systems
+		if has_node("/root/PointsSystem"):
+			var ps = get_node("/root/PointsSystem")
+			if ps.has_method("get_points"):
+				money = ps.get_points()
 
 	if money_label:
 		money_label.text = "Money: $%d" % money

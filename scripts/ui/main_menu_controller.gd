@@ -112,6 +112,7 @@ func _connect_buttons():
 	var merchant_btn = get_node_or_null("TopTabs/MerchantTab")
 	var leaderboard_btn = get_node_or_null("TopTabs/LeaderboardTab")
 	var profile_btn = get_node_or_null("TopTabs/ProfileTab")
+	var account_btn = get_node_or_null("TopTabs/AccountTab")
 
 	if market_btn:
 		market_btn.pressed.connect(_on_market_pressed)
@@ -121,6 +122,12 @@ func _connect_buttons():
 		leaderboard_btn.pressed.connect(_on_leaderboard_pressed)
 	if profile_btn:
 		profile_btn.pressed.connect(_on_profile_pressed)
+	if account_btn:
+		account_btn.pressed.connect(_on_account_pressed)
+
+	# Create account button if it doesn't exist
+	if not account_btn and top_tabs:
+		_create_account_button()
 
 func _load_player_info():
 	# Try to get Steam username
@@ -198,9 +205,9 @@ func _on_multiplayer_selected():
 		var settings = get_node("/root/GameSettings")
 		settings.set_singleplayer(false)
 
-	# Close play mode panel and open character selection first, then lobby
+	# Close play mode panel and show server browser
 	_close_panel(play_mode_panel)
-	_show_character_select(true)  # true = multiplayer mode
+	show_server_browser()
 
 func _show_character_select(is_multiplayer: bool = false):
 	_show_panel(character_select_panel)
@@ -240,6 +247,19 @@ func _on_character_selected():
 	if is_multiplayer:
 		# Go to lobby for multiplayer
 		_show_lobby()
+
+		# Check if joining a server
+		if has_meta("pending_server_join"):
+			var server_info = get_meta("pending_server_join")
+			remove_meta("pending_server_join")
+			if lobby_panel and lobby_panel.has_method("set_server_info"):
+				lobby_panel.set_server_info(server_info)
+
+		# Check if creating a server
+		if has_meta("creating_server"):
+			remove_meta("creating_server")
+			if lobby_panel and lobby_panel.has_method("set_as_host"):
+				lobby_panel.set_as_host(true)
 	else:
 		# Start singleplayer game directly
 		start_solo_game()
@@ -852,6 +872,33 @@ func _connect_backend_signals():
 		backend.logged_out.connect(_on_backend_logged_out)
 		backend.login_failed.connect(_on_backend_login_failed)
 
+func _create_account_button():
+	var account_btn = Button.new()
+	account_btn.name = "AccountTab"
+	account_btn.text = "LOGIN"
+	account_btn.custom_minimum_size = Vector2(80, 30)
+	account_btn.pressed.connect(_on_account_pressed)
+	top_tabs.add_child(account_btn)
+
+	# Update button text based on auth status
+	_update_account_button()
+
+func _update_account_button():
+	var account_btn = top_tabs.get_node_or_null("AccountTab") if top_tabs else null
+	if account_btn:
+		if backend and backend.is_authenticated:
+			account_btn.text = "ACCOUNT"
+		else:
+			account_btn.text = "LOGIN"
+
+func _on_account_pressed():
+	if backend and backend.is_authenticated:
+		# Show account/profile panel
+		_show_profile_panel()
+	else:
+		# Show login panel
+		show_login_panel()
+
 func _check_authentication():
 	if backend and backend.is_authenticated:
 		# Already authenticated, load player data
@@ -895,6 +942,7 @@ func _on_backend_logged_in(player_data: Dictionary):
 	player_rank = player_level
 
 	_update_player_info()
+	_update_account_button()
 
 	# Close login panel if open
 	if login_panel and login_panel.visible:
@@ -915,6 +963,7 @@ func _on_backend_logged_out():
 	play_time_seconds = 0
 
 	_update_player_info()
+	_update_account_button()
 
 	# Disconnect WebSocket
 	if websocket_hub:
@@ -964,6 +1013,9 @@ func _on_server_join_requested(server_info: Dictionary):
 	# Join the selected server
 	_close_panel(server_browser_panel)
 
+	# Store server info for after character select
+	set_meta("pending_server_join", server_info)
+
 	# Connect via WebSocket
 	if websocket_hub:
 		var server_id = server_info.get("id", 0)
@@ -971,14 +1023,14 @@ func _on_server_join_requested(server_info: Dictionary):
 			server_id = int(server_id)
 		websocket_hub.join_server(server_id)
 
-	# Open lobby with server info
-	_show_lobby()
-	if lobby_panel and lobby_panel.has_method("set_server_info"):
-		lobby_panel.set_server_info(server_info)
+	# Show character select first
+	_show_character_select(true)
 
 func _on_create_server_requested():
 	_close_panel(server_browser_panel)
-	_show_lobby()
 
-	if lobby_panel and lobby_panel.has_method("set_as_host"):
-		lobby_panel.set_as_host(true)
+	# Store that we're creating a server
+	set_meta("creating_server", true)
+
+	# Show character select first
+	_show_character_select(true)

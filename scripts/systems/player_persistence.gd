@@ -7,6 +7,11 @@ const STASH_FILE_PATH = "user://stash_data.save"
 
 signal data_loaded
 signal data_saved
+signal backend_synced
+
+# Backend integration
+var backend: Node = null
+var use_backend: bool = true
 
 # Player data structure
 var player_data = {
@@ -97,12 +102,36 @@ func save_player_data(character_stats: Node = null, equipment: Node = null, inve
 		file.close()
 		data_saved.emit()
 		print("Player data saved successfully")
+
+		# Also sync to backend if available
+		if use_backend:
+			sync_to_backend()
+
 		return true
 	else:
 		print("Failed to save player data")
 		return false
 
+func _ready():
+	# Get backend reference after autoloads are ready
+	call_deferred("_init_backend")
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+	if backend:
+		backend.logged_in.connect(_on_backend_logged_in)
+
+func _on_backend_logged_in(_player_data: Dictionary):
+	# Sync from backend when logged in
+	sync_from_backend()
+
 func load_player_data() -> bool:
+	# Try backend first if available and authenticated
+	if use_backend and backend and backend.is_authenticated:
+		sync_from_backend()
+		return true
+
+	# Fallback to local file
 	if not FileAccess.file_exists(SAVE_FILE_PATH):
 		print("No save file found, using defaults")
 		return false
@@ -117,6 +146,62 @@ func load_player_data() -> bool:
 	else:
 		print("Failed to load player data")
 		return false
+
+func sync_from_backend():
+	"""Sync player data from backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	var profile = backend.current_player
+	if not profile:
+		return
+
+	# Map backend profile to local player_data structure
+	player_data.character.level = profile.get("level", 1)
+	player_data.character.experience = profile.get("experience", 0)
+	player_data.currency.sigils = profile.get("currency", 0)
+
+	# Update stats
+	player_data.stats.zombies_killed = profile.get("totalKills", 0)
+	player_data.stats.waves_survived = profile.get("highestWave", 0)
+
+	# Fetch inventory from backend
+	backend.get_inventory(func(response):
+		if response.success and response.has("items"):
+			_populate_stash_from_backend(response.items)
+	)
+
+	data_loaded.emit()
+	backend_synced.emit()
+	print("Player data synced from backend")
+
+func _populate_stash_from_backend(items: Array):
+	player_data.stash = []
+	for item in items:
+		player_data.stash.append({
+			"item_id": item.get("itemId", ""),
+			"name": item.get("itemName", "Unknown"),
+			"quantity": item.get("quantity", 1),
+			"equipped": item.get("isEquipped", false)
+		})
+
+func sync_to_backend():
+	"""Sync player data to backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	# Update stats on backend
+	var stat_update = {
+		"kills": player_data.stats.get("zombies_killed", 0),
+		"deaths": player_data.stats.get("deaths", 0),
+		"highestWave": player_data.stats.get("waves_survived", 0)
+	}
+
+	backend.update_stats(stat_update, func(response):
+		if response.success:
+			backend_synced.emit()
+			print("Player data synced to backend")
+	)
 
 func apply_to_character_stats(character_stats: Node):
 	if not character_stats:
