@@ -45,12 +45,64 @@ var account_data: Dictionary = {
 var is_logged_in: bool = false
 var steam_manager: Node = null
 
+# Backend integration
+var backend: Node = null
+var use_backend: bool = true
+
 func _ready():
 	# Try to connect to Steam
 	_try_steam_connection()
 
+	# Initialize backend
+	_init_backend()
+
 	# Load saved account data
 	_load_account()
+
+func _init_backend():
+	backend = get_node_or_null("/root/Backend")
+
+	if backend:
+		if backend.has_signal("logged_in"):
+			backend.logged_in.connect(_on_backend_logged_in)
+		if backend.has_signal("logged_out"):
+			backend.logged_out.connect(_on_backend_logged_out)
+		if backend.has_signal("profile_updated"):
+			backend.profile_updated.connect(_on_profile_updated)
+
+func _on_backend_logged_in(player_data: Dictionary):
+	"""Sync account from backend on login"""
+	is_logged_in = true
+
+	# Map backend profile to local account
+	account_data.username = player_data.get("username", account_data.username)
+	account_data.rank = player_data.get("level", 1)
+	account_data.experience = player_data.get("experience", 0)
+	account_data.currency.coins = player_data.get("currency", 0)
+
+	# Stats
+	account_data.statistics.zombies_killed = player_data.get("totalKills", 0)
+	account_data.statistics.waves_survived = player_data.get("highestWave", 0)
+	account_data.statistics.games_played = player_data.get("gamesPlayed", 0)
+	account_data.statistics.deaths = player_data.get("deaths", 0)
+
+	account_loaded.emit(account_data)
+	print("Account synced from backend: %s" % account_data.username)
+
+func _on_backend_logged_out():
+	"""Reset to local data on logout"""
+	_load_account()
+
+func _on_profile_updated(updated_data: Dictionary):
+	"""Handle profile updates from backend"""
+	if updated_data.has("level"):
+		account_data.rank = updated_data.level
+	if updated_data.has("experience"):
+		account_data.experience = updated_data.experience
+	if updated_data.has("currency"):
+		account_data.currency.coins = updated_data.currency
+
+	save_account()
 
 func _try_steam_connection():
 	steam_manager = get_node_or_null("/root/SteamManager")
@@ -212,3 +264,74 @@ func needs_account_setup() -> bool:
 
 func load_account():
 	_load_account()
+
+# ============================================
+# BACKEND SYNC
+# ============================================
+
+func sync_to_backend():
+	"""Sync current account stats to backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	var stat_update = {
+		"kills": account_data.statistics.zombies_killed,
+		"deaths": account_data.statistics.deaths,
+		"gamesPlayed": account_data.statistics.games_played,
+		"highestWave": account_data.statistics.waves_survived,
+		"headshots": account_data.statistics.headshots,
+		"damageDealt": account_data.statistics.damage_dealt
+	}
+
+	backend.update_stats(stat_update, func(response):
+		if response.success:
+			print("Account stats synced to backend")
+	)
+
+func sync_from_backend():
+	"""Fetch current profile from backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	backend.get_profile(func(response):
+		if response.success:
+			_on_backend_logged_in(response)
+	)
+
+func create_backend_account(username: String, email: String, password: String, callback: Callable):
+	"""Create a new account via backend"""
+	if not backend:
+		callback.call({"success": false, "error": "Backend not available"})
+		return
+
+	backend.register(username, email, password, func(response):
+		if response.success:
+			account_data.username = username
+			is_logged_in = true
+			account_created.emit(username)
+		callback.call(response)
+	)
+
+func login_backend(email: String, password: String, callback: Callable):
+	"""Login via backend"""
+	if not backend:
+		callback.call({"success": false, "error": "Backend not available"})
+		return
+
+	backend.login(email, password, func(response):
+		if response.success:
+			# Backend will emit logged_in signal which triggers sync
+			pass
+		else:
+			login_failed.emit(response.get("error", "Login failed"))
+		callback.call(response)
+	)
+
+func logout_backend():
+	"""Logout from backend"""
+	if backend:
+		backend.logout()
+	is_logged_in = false
+
+func is_backend_available() -> bool:
+	return backend != null and backend.is_authenticated

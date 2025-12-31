@@ -57,8 +57,34 @@ var active_notifications: Array = []
 var announcement_queue: Array = []
 var is_showing_announcement: bool = false
 
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+
 func _ready():
 	_setup_containers()
+	_setup_backend_integration()
+
+func _setup_backend_integration():
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
+	if websocket_hub:
+		# Connect to backend notification signals
+		if websocket_hub.has_signal("notification_received"):
+			websocket_hub.notification_received.connect(_on_backend_notification)
+		if websocket_hub.has_signal("friend_request_received"):
+			websocket_hub.friend_request_received.connect(_on_friend_request)
+		if websocket_hub.has_signal("game_invite_received"):
+			websocket_hub.game_invite_received.connect(_on_game_invite)
+		if websocket_hub.has_signal("achievement_unlocked"):
+			websocket_hub.achievement_unlocked.connect(_on_achievement_unlocked)
+		if websocket_hub.has_signal("trade_request_received"):
+			websocket_hub.trade_request_received.connect(_on_trade_request)
+		if websocket_hub.has_signal("player_joined"):
+			websocket_hub.player_joined.connect(_on_player_joined_backend)
+		if websocket_hub.has_signal("player_left"):
+			websocket_hub.player_left.connect(_on_player_left_backend)
 
 func _setup_containers():
 	# Create notification container if not exists
@@ -317,3 +343,97 @@ func clear_all():
 		child.queue_free()
 
 	is_showing_announcement = false
+
+# ============================================
+# BACKEND NOTIFICATION HANDLERS
+# ============================================
+
+func _on_backend_notification(notification_data: Dictionary):
+	"""Handle generic notification from backend"""
+	var title = notification_data.get("title", "")
+	var message = notification_data.get("message", "")
+	var notification_type = notification_data.get("type", "info")
+
+	var type = NotificationType.INFO
+	match notification_type:
+		"success": type = NotificationType.SUCCESS
+		"warning": type = NotificationType.WARNING
+		"error": type = NotificationType.ERROR
+		"achievement": type = NotificationType.ACHIEVEMENT
+
+	if not title.is_empty():
+		announce(title, message)
+	else:
+		notify(message, type)
+
+func _on_friend_request(from_player_id: int, from_username: String):
+	"""Handle friend request notification"""
+	notify("Friend request from " + from_username, NotificationType.INFO, 5.0)
+
+func _on_game_invite(from_player_id: int, from_username: String, server_info: Dictionary):
+	"""Handle game invite notification"""
+	var server_name = server_info.get("name", "a game")
+	notify(from_username + " invited you to join " + server_name, NotificationType.INFO, 8.0)
+
+func _on_achievement_unlocked(achievement_data: Dictionary):
+	"""Handle achievement unlock notification"""
+	var achievement_name = achievement_data.get("name", "Unknown Achievement")
+	var description = achievement_data.get("description", "")
+
+	notify_achievement(achievement_name)
+
+	# Also sync to backend
+	if backend and backend.is_authenticated:
+		backend.unlock_achievement(achievement_data.get("id", ""), func(_response):
+			pass
+		)
+
+func _on_trade_request(from_player_id: int, from_username: String):
+	"""Handle trade request notification"""
+	notify(from_username + " wants to trade with you", NotificationType.INFO, 10.0)
+
+func _on_player_joined_backend(player_data: Dictionary):
+	"""Handle player joined notification from backend"""
+	var username = player_data.get("username", "A player")
+	notify_player_joined(username)
+
+func _on_player_left_backend(player_data: Dictionary):
+	"""Handle player left notification from backend"""
+	var username = player_data.get("username", "A player")
+	notify_player_left(username)
+
+# ============================================
+# BACKEND SPECIFIC NOTIFICATIONS
+# ============================================
+
+func notify_connection_status(connected: bool):
+	"""Notify backend connection status change"""
+	if connected:
+		notify("Connected to server", NotificationType.SUCCESS)
+	else:
+		notify("Disconnected from server", NotificationType.WARNING)
+
+func notify_level_up(new_level: int):
+	"""Notify player level up"""
+	announce("LEVEL UP!", "You are now level %d" % new_level, 4.0)
+
+func notify_currency_earned(amount: int, currency_type: String = "sigils"):
+	"""Notify currency earned"""
+	notify("+%d %s" % [amount, currency_type.capitalize()], NotificationType.SUCCESS, 2.0)
+
+func notify_item_received(item_name: String, from_source: String = ""):
+	"""Notify item received"""
+	var text = "Received: " + item_name
+	if not from_source.is_empty():
+		text += " from " + from_source
+	notify(text, NotificationType.PICKUP)
+
+func notify_matchmaking_status(status: String, queue_size: int = 0):
+	"""Notify matchmaking status updates"""
+	match status:
+		"searching":
+			notify("Searching for match... (%d in queue)" % queue_size, NotificationType.INFO)
+		"found":
+			announce("MATCH FOUND", "Connecting to server...", 3.0)
+		"cancelled":
+			notify("Matchmaking cancelled", NotificationType.WARNING)

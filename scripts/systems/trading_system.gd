@@ -35,7 +35,25 @@ var next_trade_id: int = 1
 
 const TRADE_TIMEOUT: float = 300.0  # 5 minute timeout
 
+# Backend integration
+var backend: Node = null
+var websocket_hub: Node = null
+
 func _ready():
+	# Get backend references
+	backend = get_node_or_null("/root/Backend")
+	websocket_hub = get_node_or_null("/root/WebSocketHub")
+
+	# Connect to WebSocket trade signals
+	if websocket_hub:
+		if websocket_hub.has_signal("trade_request_received"):
+			websocket_hub.trade_request_received.connect(_on_backend_trade_request)
+		if websocket_hub.has_signal("trade_accepted"):
+			websocket_hub.trade_accepted.connect(_on_backend_trade_accepted)
+		if websocket_hub.has_signal("trade_declined"):
+			websocket_hub.trade_declined.connect(_on_backend_trade_declined)
+		if websocket_hub.has_signal("trade_completed"):
+			websocket_hub.trade_completed.connect(_on_backend_trade_completed)
 	# Clean up old trades periodically
 	var timer = Timer.new()
 	timer.wait_time = 30.0
@@ -60,6 +78,10 @@ func request_trade(from_player: int, to_player: int) -> int:
 
 	pending_requests.append(trade)
 	trade_requested.emit(from_player, to_player)
+
+	# Send trade request via backend if available
+	if backend and backend.is_authenticated and websocket_hub:
+		websocket_hub.send_trade_request(to_player)
 
 	# Network replicate
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
@@ -322,3 +344,94 @@ func _cleanup_expired_trades():
 
 	for i in range(expired_requests.size() - 1, -1, -1):
 		pending_requests.remove_at(expired_requests[i])
+
+# ============================================
+# BACKEND INTEGRATION
+# ============================================
+
+func _on_backend_trade_request(from_player_id: int, from_username: String):
+	"""Handle trade request received via backend"""
+	print("Trade request from %s (ID: %d)" % [from_username, from_player_id])
+
+	# Create local trade session
+	var our_id = 0
+	if backend and backend.current_player:
+		our_id = backend.current_player.get("id", 0)
+
+	var trade = TradeSession.new(from_player_id, our_id)
+	trade.id = next_trade_id
+	next_trade_id += 1
+	pending_requests.append(trade)
+
+	trade_requested.emit(from_player_id, our_id)
+
+func _on_backend_trade_accepted(trade_id: int):
+	"""Handle trade accepted via backend"""
+	accept_trade(trade_id)
+
+func _on_backend_trade_declined(trade_id: int):
+	"""Handle trade declined via backend"""
+	decline_trade(trade_id)
+
+func _on_backend_trade_completed(trade_id: int, items_received: Array):
+	"""Handle trade completion via backend"""
+	print("Trade %d completed, received %d items" % [trade_id, items_received.size()])
+
+	# Add items to inventory
+	var inventory_system = get_node_or_null("/root/GameManager/InventorySystem")
+	if inventory_system:
+		for item_data in items_received:
+			# Would add item to inventory here
+			pass
+
+	trade_completed.emit(trade_id)
+	if active_trades.has(trade_id):
+		active_trades.erase(trade_id)
+
+func send_trade_offer_to_backend(trade_id: int):
+	"""Sync current trade offer to backend"""
+	if not backend or not backend.is_authenticated:
+		return
+
+	if not active_trades.has(trade_id):
+		return
+
+	var trade = active_trades[trade_id]
+	var our_id = 0
+	if backend.current_player:
+		our_id = backend.current_player.get("id", 0)
+
+	# Determine which items are ours
+	var our_items = []
+	var our_currency = 0
+	if trade.player1_id == our_id:
+		our_items = _serialize_items(trade.player1_items)
+		our_currency = trade.player1_currency
+	else:
+		our_items = _serialize_items(trade.player2_items)
+		our_currency = trade.player2_currency
+
+	var offer = {
+		"tradeId": trade_id,
+		"items": our_items,
+		"currency": our_currency
+	}
+
+	if websocket_hub:
+		websocket_hub.send_trade_offer(offer)
+
+func _serialize_items(items: Array) -> Array:
+	"""Serialize items for backend transmission"""
+	var serialized = []
+	for item in items:
+		if item:
+			serialized.append({
+				"itemId": item.get("id", 0) if item is Dictionary else 0,
+				"name": item.item_name if "item_name" in item else "Unknown"
+			})
+	return serialized
+
+func confirm_trade_via_backend(trade_id: int):
+	"""Confirm trade readiness via backend"""
+	if websocket_hub and backend and backend.is_authenticated:
+		websocket_hub.confirm_trade(trade_id)
