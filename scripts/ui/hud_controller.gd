@@ -88,6 +88,7 @@ func _ready():
 	_connect_arena_manager()
 	_connect_points_system()
 	_connect_game_coordinator()
+	_connect_game_events()
 
 	# Create phase timer UI
 	_create_phase_timer_ui()
@@ -99,6 +100,9 @@ func _ready():
 	_create_combo_display()
 	_create_hitmarker()
 	_create_low_health_overlay()
+
+	# Get references to integrated UI elements
+	_setup_integrated_ui()
 
 func _connect_points_system():
 	if has_node("/root/PointsSystem"):
@@ -319,6 +323,81 @@ func _on_all_players_ready():
 	if meetup_indicator:
 		meetup_indicator.text = "ALL PLAYERS READY!"
 		meetup_indicator.add_theme_color_override("font_color", Color(0.2, 1.0, 0.2))
+
+# ============================================
+# GAME EVENTS INTEGRATION
+# ============================================
+
+var minimap_ref: Node = null
+var objective_tracker_ref: Node = null
+var kill_feed_ui_ref: Node = null
+var scoreboard_ref: Node = null
+var end_round_stats_ref: Node = null
+
+func _connect_game_events():
+	var game_events = get_node_or_null("/root/GameEvents")
+	if game_events:
+		if game_events.has_signal("wave_spawning"):
+			if not game_events.wave_spawning.is_connected(_on_event_wave_spawning):
+				game_events.wave_spawning.connect(_on_event_wave_spawning)
+		if game_events.has_signal("zombie_killed"):
+			if not game_events.zombie_killed.is_connected(_on_event_zombie_killed):
+				game_events.zombie_killed.connect(_on_event_zombie_killed)
+		if game_events.has_signal("player_damaged"):
+			if not game_events.player_damaged.is_connected(_on_event_player_damaged):
+				game_events.player_damaged.connect(_on_event_player_damaged)
+		if game_events.has_signal("headshot_landed"):
+			if not game_events.headshot_landed.is_connected(_on_event_headshot):
+				game_events.headshot_landed.connect(_on_event_headshot)
+
+func _on_event_wave_spawning(wave_num: int, zombie_count: int):
+	update_wave_info(wave_num, zombie_count, zombie_count)
+
+func _on_event_zombie_killed(_zombie: Node, _killer_id: int, _weapon: String, is_headshot: bool):
+	# Show hitmarker
+	show_hitmarker(is_headshot, true)
+	# Add combo
+	add_combo_kill()
+
+func _on_event_player_damaged(peer_id: int, _damage: float, _attacker_id: int, _damage_type: String):
+	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
+	if peer_id == local_id:
+		show_damage_indicator()
+
+func _on_event_headshot(_attacker_id: int, _target: Node):
+	show_hitmarker(true, false)
+
+func _setup_integrated_ui():
+	# Get references to child UI elements
+	minimap_ref = get_node_or_null("Minimap")
+	objective_tracker_ref = get_node_or_null("ObjectiveTracker")
+	kill_feed_ui_ref = get_node_or_null("KillFeedUI")
+	scoreboard_ref = get_node_or_null("Scoreboard")
+	end_round_stats_ref = get_node_or_null("EndRoundStats")
+
+	# Bind to GameEvents if available
+	var game_events = get_node_or_null("/root/GameEvents")
+	if game_events:
+		if kill_feed_ui_ref:
+			game_events.bind_kill_feed(kill_feed_ui_ref)
+		if scoreboard_ref:
+			game_events.bind_scoreboard(scoreboard_ref)
+
+func _input(event):
+	# Handle scoreboard toggle (Tab key)
+	if event.is_action_pressed("scoreboard") or (event is InputEventKey and event.keycode == KEY_TAB and event.pressed):
+		if scoreboard_ref:
+			scoreboard_ref.show_scoreboard()
+	elif event.is_action_released("scoreboard") or (event is InputEventKey and event.keycode == KEY_TAB and not event.pressed):
+		if scoreboard_ref:
+			scoreboard_ref.hide_scoreboard()
+
+	# Minimap zoom controls
+	if minimap_ref:
+		if event.is_action_pressed("minimap_zoom_in"):
+			minimap_ref.zoom_in()
+		elif event.is_action_pressed("minimap_zoom_out"):
+			minimap_ref.zoom_out()
 
 func _create_phase_timer_ui():
 	# Create container for phase timer at top center
