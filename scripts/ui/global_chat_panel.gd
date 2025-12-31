@@ -135,13 +135,17 @@ func _on_send_pressed():
 	_add_message(username, text, true)
 	message_sent.emit(text)
 
-func _on_chat_message_received(player_id: int, username: String, message: String):
-	# Don't duplicate our own messages
-	var our_id = 0
-	if backend and backend.current_player:
-		our_id = backend.current_player.get("id", 0)
+func _on_chat_message_received(username: String, message: String, channel: String):
+	# Only show messages for current channel
+	if channel != current_channel and channel != "global":
+		return
 
-	if player_id != our_id:
+	# Don't duplicate our own messages
+	var our_username = "Guest"
+	if backend and backend.current_player:
+		our_username = backend.current_player.get("username", "Guest")
+
+	if username != our_username:
 		_add_message(username, message, false)
 
 func _add_message(username: String, message: String, is_local: bool):
@@ -197,3 +201,11 @@ func focus_input():
 func clear():
 	if chat_messages:
 		chat_messages.clear()
+
+func _exit_tree():
+	# Disconnect websocket signals to prevent memory leaks
+	if websocket_hub:
+		if websocket_hub.has_signal("chat_message_received") and websocket_hub.chat_message_received.is_connected(_on_chat_message_received):
+			websocket_hub.chat_message_received.disconnect(_on_chat_message_received)
+		if websocket_hub.has_signal("connected") and websocket_hub.connected.is_connected(_on_websocket_connected):
+			websocket_hub.connected.disconnect(_on_websocket_connected)

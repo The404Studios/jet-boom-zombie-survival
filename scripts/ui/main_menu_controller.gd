@@ -1102,3 +1102,42 @@ func _show_profile_panel():
 	# Could create a dedicated profile panel later
 	if stash_panel:
 		_show_panel(stash_panel)
+
+func _exit_tree():
+	# Disconnect backend signals to prevent memory leaks
+	if backend:
+		if backend.has_signal("logged_in") and backend.logged_in.is_connected(_on_backend_logged_in):
+			backend.logged_in.disconnect(_on_backend_logged_in)
+		if backend.has_signal("logged_out") and backend.logged_out.is_connected(_on_backend_logged_out):
+			backend.logged_out.disconnect(_on_backend_logged_out)
+		if backend.has_signal("login_failed") and backend.login_failed.is_connected(_on_backend_login_failed):
+			backend.login_failed.disconnect(_on_backend_login_failed)
+
+	# Disconnect AccountSystem signals
+	if has_node("/root/AccountSystem"):
+		var account = get_node("/root/AccountSystem")
+		if account.has_signal("account_loaded") and account.account_loaded.is_connected(_on_account_loaded):
+			account.account_loaded.disconnect(_on_account_loaded)
+
+	# Disconnect play mode panel signals
+	if play_mode_panel:
+		if play_mode_panel.has_signal("singleplayer_selected") and play_mode_panel.singleplayer_selected.is_connected(_on_singleplayer_selected):
+			play_mode_panel.singleplayer_selected.disconnect(_on_singleplayer_selected)
+		if play_mode_panel.has_signal("multiplayer_selected") and play_mode_panel.multiplayer_selected.is_connected(_on_multiplayer_selected):
+			play_mode_panel.multiplayer_selected.disconnect(_on_multiplayer_selected)
+		if play_mode_panel.has_signal("panel_closed") and play_mode_panel.panel_closed.is_connected(_on_play_mode_closed):
+			play_mode_panel.panel_closed.disconnect(_on_play_mode_closed)
+
+	# Disconnect character select signals
+	if character_select_panel:
+		if character_select_panel.has_signal("continue_pressed") and character_select_panel.continue_pressed.is_connected(_on_character_selected):
+			character_select_panel.continue_pressed.disconnect(_on_character_selected)
+		if character_select_panel.has_signal("panel_closed") and character_select_panel.panel_closed.is_connected(_on_character_select_closed):
+			character_select_panel.panel_closed.disconnect(_on_character_select_closed)
+
+	# Disconnect lobby signals
+	if lobby_panel:
+		if lobby_panel.has_signal("game_started") and lobby_panel.game_started.is_connected(_on_lobby_game_started):
+			lobby_panel.game_started.disconnect(_on_lobby_game_started)
+		if lobby_panel.has_signal("panel_closed") and lobby_panel.panel_closed.is_connected(_on_lobby_closed):
+			lobby_panel.panel_closed.disconnect(_on_lobby_closed)

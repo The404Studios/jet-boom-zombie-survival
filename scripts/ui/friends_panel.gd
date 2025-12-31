@@ -358,3 +358,8 @@ func open():
 
 func close():
 	visible = false
+
+func _exit_tree():
+	# Clear data arrays
+	friends.clear()
+	pending_requests.clear()

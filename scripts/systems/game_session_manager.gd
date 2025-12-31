@@ -687,3 +687,56 @@ func _connect_if_signal_exists(obj: Node, signal_name: String, callable: Callabl
 	if obj and obj.has_signal(signal_name):
 		if not obj.is_connected(signal_name, callable):
 			obj.connect(signal_name, callable)
+
+func _exit_tree():
+	"""Clean up all signal connections to prevent memory leaks"""
+	# Disconnect game events
+	if game_events:
+		_disconnect_if_connected(game_events, "player_died", _on_player_died)
+		_disconnect_if_connected(game_events, "zombie_killed", _on_zombie_killed)
+		_disconnect_if_connected(game_events, "damage_dealt", _on_damage_dealt)
+		_disconnect_if_connected(game_events, "headshot_landed", _on_headshot)
+		_disconnect_if_connected(game_events, "game_over", _on_game_over)
+		_disconnect_if_connected(game_events, "round_ended", _on_round_ended)
+
+	# Disconnect player manager
+	if player_manager:
+		_disconnect_if_connected(player_manager, "player_spawned", _on_player_spawned)
+		_disconnect_if_connected(player_manager, "player_died", _on_player_manager_died)
+		_disconnect_if_connected(player_manager, "all_players_dead", _on_all_players_dead)
+
+	# Disconnect round manager
+	if round_manager:
+		_disconnect_if_connected(round_manager, "round_started", _on_round_started)
+		_disconnect_if_connected(round_manager, "round_ended", _on_round_ended_rm)
+		_disconnect_if_connected(round_manager, "game_over", _on_game_over_rm)
+		_disconnect_if_connected(round_manager, "intermission_started", _on_intermission_started)
+
+	# Disconnect wave manager
+	if wave_manager:
+		_disconnect_if_connected(wave_manager, "wave_started", _on_wave_started)
+		_disconnect_if_connected(wave_manager, "wave_completed", _on_wave_completed)
+		_disconnect_if_connected(wave_manager, "zombie_spawned", _on_zombie_spawned)
+		_disconnect_if_connected(wave_manager, "intermission_started", _on_wave_intermission)
+		_disconnect_if_connected(wave_manager, "boss_wave", _on_boss_wave)
+
+	# Disconnect game coordinator
+	if game_coordinator:
+		_disconnect_if_connected(game_coordinator, "game_phase_changed", _on_phase_changed)
+		_disconnect_if_connected(game_coordinator, "game_over", _on_coordinator_game_over)
+
+	# Disconnect end round stats
+	if end_round_stats:
+		_disconnect_if_connected(end_round_stats, "continue_pressed", _on_continue_from_stats)
+		_disconnect_if_connected(end_round_stats, "restart_pressed", _on_restart_requested)
+		_disconnect_if_connected(end_round_stats, "main_menu_pressed", _on_main_menu_requested)
+
+	# Clear data
+	player_session_stats.clear()
+	session_stats.clear()
+
+func _disconnect_if_connected(obj: Node, signal_name: String, callable: Callable):
+	"""Safely disconnect from a signal if connected"""
+	if obj and obj.has_signal(signal_name):
+		if obj.is_connected(signal_name, callable):
+			obj.disconnect(signal_name, callable)

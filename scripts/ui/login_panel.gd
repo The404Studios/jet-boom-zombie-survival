@@ -403,3 +403,11 @@ func _input(event):
 	if event.is_action_pressed("ui_cancel"):
 		panel_closed.emit()
 		get_viewport().set_input_as_handled()
+
+func _exit_tree():
+	# Disconnect backend signals to prevent memory leaks
+	if backend:
+		if backend.has_signal("logged_in") and backend.logged_in.is_connected(_on_logged_in):
+			backend.logged_in.disconnect(_on_logged_in)
+		if backend.has_signal("login_failed") and backend.login_failed.is_connected(_on_login_failed):
+			backend.login_failed.disconnect(_on_login_failed)

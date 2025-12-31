@@ -431,7 +431,33 @@ func _connect_websocket_signals():
 		if websocket_hub.has_signal("notification_received"):
 			websocket_hub.notification_received.connect(_on_websocket_notification)
 
-func _on_websocket_chat_message(player_id: int, username: String, message: String):
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if network_manager:
+		if network_manager.has_signal("player_connected") and network_manager.player_connected.is_connected(_on_player_connected):
+			network_manager.player_connected.disconnect(_on_player_connected)
+		if network_manager.has_signal("player_disconnected") and network_manager.player_disconnected.is_connected(_on_player_disconnected):
+			network_manager.player_disconnected.disconnect(_on_player_disconnected)
+
+	if multiplayer.peer_connected.is_connected(_on_peer_connected):
+		multiplayer.peer_connected.disconnect(_on_peer_connected)
+	if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+		multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+
+	if websocket_hub:
+		if websocket_hub.has_signal("chat_message_received") and websocket_hub.chat_message_received.is_connected(_on_websocket_chat_message):
+			websocket_hub.chat_message_received.disconnect(_on_websocket_chat_message)
+		if websocket_hub.has_signal("game_state_received") and websocket_hub.game_state_received.is_connected(_on_websocket_game_state):
+			websocket_hub.game_state_received.disconnect(_on_websocket_game_state)
+		if websocket_hub.has_signal("wave_started") and websocket_hub.wave_started.is_connected(_on_websocket_wave_started):
+			websocket_hub.wave_started.disconnect(_on_websocket_wave_started)
+		if websocket_hub.has_signal("notification_received") and websocket_hub.notification_received.is_connected(_on_websocket_notification):
+			websocket_hub.notification_received.disconnect(_on_websocket_notification)
+
+	# Clear player entries
+	player_entries.clear()
+
+func _on_websocket_chat_message(username: String, message: String, _channel: String):
 	_add_chat_message("[color=white]%s:[/color] %s" % [username, message])
 
 func _on_websocket_game_state(state: Dictionary):
@@ -445,8 +471,10 @@ func _on_websocket_game_state(state: Dictionary):
 func _on_websocket_wave_started(wave_number: int, _zombie_count: int):
 	_add_chat_message("[color=yellow]Wave %d starting![/color]" % wave_number)
 
-func _on_websocket_notification(type: String, message: String):
-	_add_chat_message("[color=cyan][%s] %s[/color]" % [type, message])
+func _on_websocket_notification(notification_data: Dictionary):
+	var notification_type = notification_data.get("type", "info")
+	var message = notification_data.get("message", "")
+	_add_chat_message("[color=cyan][%s] %s[/color]" % [notification_type, message])
 
 func _process(delta):
 	# Handle countdown
