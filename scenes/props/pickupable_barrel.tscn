@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3 uid="uid://pickupable_barrel001"]
+
+[ext_resource type="Script" path="res://scripts/systems/pickupable_prop.gd" id="1"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_1"]
+radius = 0.4
+height = 1.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 0.35
+bottom_radius = 0.4
+height = 1.2
+radial_segments = 12
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.4, 0.25, 0.15, 1)
+roughness = 0.85
+metallic = 0.1
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1"]
+friction = 0.7
+rough = true
+bounce = 0.15
+
+[node name="PickupableBarrel" type="RigidBody3D" groups=["pickupable", "props", "interactable"]]
+collision_layer = 1
+collision_mask = 1
+physics_material_override = SubResource("PhysicsMaterial_1")
+mass = 20.0
+script = ExtResource("1")
+prop_name = "Barrel"
+prop_weight = 20.0
+max_health = 120.0
+can_be_nailed = true
+nail_slots = 3
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+shape = SubResource("CylinderShape3D_1")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("CylinderMesh_1")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")

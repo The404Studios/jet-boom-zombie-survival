@@ -52,6 +52,11 @@ var nail_timer: float = 0.0
 var nails_required: int = 6
 var nail_time: float = 0.5  # Time per nail
 
+# Prop carrying system (JetBoom-style)
+var carried_prop: Node = null
+var prop_holder: Node3D = null
+@export var prop_placement_range: float = 5.0
+
 # Stats (from character attributes)
 var max_health: float = 100.0
 var current_health: float = 100.0
@@ -91,6 +96,9 @@ func _ready():
 
 	# Equip starting weapon
 	_equip_starting_weapon()
+
+	# Create prop holder for carrying props
+	_create_prop_holder()
 
 	add_to_group("player")
 
@@ -931,12 +939,156 @@ func _handle_phasing():
 				prop.disable_phasing()
 
 # ============================================
+# PROP CARRYING SYSTEM (JetBoom-style)
+# ============================================
+
+func _create_prop_holder():
+	"""Create node to hold carried props"""
+	if camera and not camera.has_node("PropHolder"):
+		prop_holder = Node3D.new()
+		prop_holder.name = "PropHolder"
+		prop_holder.position = Vector3(0, -0.3, -1.5)  # In front of camera
+		camera.add_child(prop_holder)
+	elif camera and camera.has_node("PropHolder"):
+		prop_holder = camera.get_node("PropHolder")
+
+func is_carrying_prop() -> bool:
+	"""Check if player is carrying a prop"""
+	return carried_prop != null and is_instance_valid(carried_prop)
+
+func pickup_prop(prop: Node) -> bool:
+	"""Pick up a pickupable prop"""
+	if is_carrying_prop():
+		return false  # Already carrying something
+
+	if not prop or not prop.has_method("pickup"):
+		return false
+
+	if prop.pickup(self):
+		carried_prop = prop
+
+		# Hide weapon while carrying
+		if viewmodel:
+			viewmodel.visible = false
+
+		return true
+	return false
+
+func drop_prop() -> bool:
+	"""Drop currently carried prop"""
+	if not is_carrying_prop():
+		return false
+
+	if carried_prop.has_method("drop"):
+		carried_prop.drop()
+		carried_prop = null
+
+		# Show weapon again
+		if viewmodel:
+			viewmodel.visible = true
+
+		return true
+	return false
+
+func place_prop() -> bool:
+	"""Place prop at current look position"""
+	if not is_carrying_prop():
+		return false
+
+	# Get surface to place on via raycast
+	var surface: Node = null
+	if interact_ray and interact_ray.is_colliding():
+		surface = interact_ray.get_collider()
+
+	if carried_prop.has_method("place"):
+		if carried_prop.place(surface):
+			var placed_prop = carried_prop
+			carried_prop = null
+
+			# Show weapon again
+			if viewmodel:
+				viewmodel.visible = true
+
+			# Start nailing if placeable
+			if placed_prop.has_method("can_nail") and placed_prop.can_nail():
+				_start_prop_nailing(placed_prop)
+
+			return true
+	return false
+
+func throw_prop():
+	"""Throw prop with velocity"""
+	if not is_carrying_prop():
+		return
+
+	if not carried_prop.has_method("drop"):
+		return
+
+	# Get throw direction
+	var throw_dir = -camera.global_transform.basis.z
+	var throw_force = 8.0
+
+	# Store prop reference
+	var prop = carried_prop
+
+	# Drop the prop first
+	if prop.drop():
+		carried_prop = null
+
+		# Apply throw velocity if it's a RigidBody
+		if prop is RigidBody3D:
+			prop.linear_velocity = throw_dir * throw_force + Vector3(0, 2, 0)
+
+		# Show weapon
+		if viewmodel:
+			viewmodel.visible = true
+
+		# Play throw sound
+		if has_node("/root/AudioManager"):
+			get_node("/root/AudioManager").play_sound_3d("prop_throw", global_position, 0.5)
+
+func rotate_prop(direction: float):
+	"""Rotate carried prop"""
+	if not is_carrying_prop():
+		return
+
+	carried_prop.rotate_y(deg_to_rad(direction * 15.0))
+
+func _start_prop_nailing(prop: Node):
+	"""Start nailing a placed prop"""
+	if not prop or not prop.has_method("can_nail"):
+		return
+
+	if not prop.can_nail():
+		return
+
+	is_nailing = true
+	nailing_barricade = prop  # Reuse the barricade nailing system
+	nails_placed = 0
+	nail_timer = nail_time
+
+	# Get nail count from prop
+	if "nail_slots" in prop:
+		nails_required = prop.nail_slots - (prop.nails_attached if "nails_attached" in prop else 0)
+	else:
+		nails_required = 4
+
+	# Play starting sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("hammer_start", prop.global_position, 0.6)
+
+# ============================================
 # INTERACTION & NAILING SYSTEM
 # ============================================
 
 func _handle_interaction(delta):
 	"""Handle player interaction with objects and JetBoom-style nailing"""
 	var hud = get_tree().get_first_node_in_group("hud")
+
+	# Handle prop carrying controls
+	if is_carrying_prop():
+		_handle_prop_carrying(hud)
+		return
 
 	# Handle ongoing nailing
 	if is_nailing:
@@ -964,9 +1116,51 @@ func _handle_interaction(delta):
 	else:
 		_hide_interact_prompt(hud)
 
+func _handle_prop_carrying(hud):
+	"""Handle controls while carrying a prop"""
+	# Show carry prompt
+	if hud and hud.has_method("show_interact_prompt"):
+		var prop_name = carried_prop.prop_name if "prop_name" in carried_prop else "Prop"
+		hud.show_interact_prompt("[E] Place %s | [Q] Drop | [R] Rotate | [G] Throw" % prop_name)
+
+	# Place prop
+	if Input.is_action_just_pressed("interact"):
+		place_prop()
+		return
+
+	# Drop prop
+	if Input.is_action_just_pressed("drop") or Input.is_key_pressed(KEY_Q):
+		if Input.is_key_pressed(KEY_Q):  # Only trigger once
+			drop_prop()
+		return
+
+	# Throw prop
+	if Input.is_key_pressed(KEY_G):
+		throw_prop()
+		return
+
+	# Rotate prop with R or scroll
+	if Input.is_action_just_pressed("reload") or Input.is_key_pressed(KEY_R):
+		if Input.is_key_pressed(KEY_R):
+			rotate_prop(1.0 if not Input.is_key_pressed(KEY_SHIFT) else -1.0)
+
 func _show_interact_prompt(collider: Node, hud):
 	"""Show context-sensitive interaction prompt"""
 	if not hud or not hud.has_method("show_interact_prompt"):
+		return
+
+	# Pickupable props (JetBoom-style)
+	if collider.is_in_group("pickupable") or collider is PickupableProp:
+		if collider.has_method("get_interact_prompt"):
+			hud.show_interact_prompt(collider.get_interact_prompt())
+		elif collider.has_method("can_pickup") and collider.can_pickup():
+			var prop_name = collider.prop_name if "prop_name" in collider else "Prop"
+			hud.show_interact_prompt("[E] Pick up %s" % prop_name)
+		elif collider.has_method("can_nail") and collider.can_nail():
+			var prop_name = collider.prop_name if "prop_name" in collider else "Prop"
+			var nails = collider.nails_attached if "nails_attached" in collider else 0
+			var max_nails = collider.nail_slots if "nail_slots" in collider else 4
+			hud.show_interact_prompt("[E] Nail %s (%d/%d)" % [prop_name, nails, max_nails])
 		return
 
 	# Barricade spots
@@ -1021,6 +1215,21 @@ func _hide_interact_prompt(hud):
 
 func _start_interaction(collider: Node):
 	"""Begin an interaction based on collider type"""
+	# Pickupable props (JetBoom-style)
+	if collider.is_in_group("pickupable") or collider is PickupableProp:
+		# Check if we can pick it up
+		if collider.has_method("can_pickup") and collider.can_pickup():
+			pickup_prop(collider)
+			return
+		# Otherwise try to nail it
+		elif collider.has_method("can_nail") and collider.can_nail():
+			_start_prop_nailing(collider)
+			return
+		# Generic prop interaction
+		elif collider.has_method("interact"):
+			collider.interact(self)
+			return
+
 	# Barricade spots - start building/repairing
 	if collider.is_in_group("barricade_spot"):
 		if "has_barricade" in collider and collider.has_barricade:

@@ -1,0 +1,63 @@
+[gd_scene load_steps=7 format=3 uid="uid://pickupable_table001"]
+
+[ext_resource type="Script" path="res://scripts/systems/pickupable_prop.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(1.5, 0.8, 0.8)
+
+[sub_resource type="BoxMesh" id="BoxMesh_table"]
+size = Vector3(1.4, 0.1, 0.7)
+
+[sub_resource type="BoxMesh" id="BoxMesh_leg"]
+size = Vector3(0.1, 0.7, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(0.6, 0.4, 0.2, 1)
+roughness = 0.8
+metallic = 0.0
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_1"]
+friction = 0.6
+rough = true
+bounce = 0.05
+
+[node name="PickupableTable" type="RigidBody3D" groups=["pickupable", "props", "interactable"]]
+collision_layer = 1
+collision_mask = 1
+physics_material_override = SubResource("PhysicsMaterial_1")
+mass = 25.0
+script = ExtResource("1")
+prop_name = "Table"
+prop_weight = 25.0
+max_health = 180.0
+can_be_nailed = true
+nail_slots = 5
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("BoxShape3D_1")
+
+[node name="TableTop" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+mesh = SubResource("BoxMesh_table")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
+
+[node name="Leg1" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.35, -0.25)
+mesh = SubResource("BoxMesh_leg")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
+
+[node name="Leg2" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.35, -0.25)
+mesh = SubResource("BoxMesh_leg")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
+
+[node name="Leg3" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.6, 0.35, 0.25)
+mesh = SubResource("BoxMesh_leg")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")
+
+[node name="Leg4" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6, 0.35, 0.25)
+mesh = SubResource("BoxMesh_leg")
+surface_material_override/0 = SubResource("StandardMaterial3D_1")

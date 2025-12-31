@@ -1,33 +1,40 @@
 extends Area3D
 class_name LootItem
 
-# Loot Item - Interactable pickup item that can contain weapons, ammo, materials, gear, etc.
-# Supports world-space tooltips and right-click inspection
+# Enhanced Loot Item with magnetic pickup, hover effects, and easy interaction
+# Supports world-space tooltips and quick pickup with E key
 
 signal picked_up(player: Node)
 signal hover_started
 signal hover_ended
 
 @export var item_data: Resource = null
-@export var auto_pickup: bool = false
-@export var pickup_radius: float = 1.5
+@export var auto_pickup: bool = true  # Default to auto pickup for ammo/health
+@export var pickup_radius: float = 2.5  # Increased for easier pickup
+@export var magnetic_radius: float = 4.0  # Items attract to player in this range
+@export var magnetic_speed: float = 8.0  # How fast items move toward player
 @export var despawn_time: float = 300.0  # 5 minutes
-@export var bob_amplitude: float = 0.1
-@export var bob_speed: float = 2.0
-@export var rotation_speed: float = 1.0
+@export var bob_amplitude: float = 0.15
+@export var bob_speed: float = 2.5
+@export var rotation_speed: float = 1.5
 @export var show_world_tooltip: bool = true
-@export var tooltip_distance: float = 8.0
+@export var tooltip_distance: float = 10.0
+@export var pickup_key_prompt: bool = true  # Show "Press E to pickup"
 
 var item_mesh: MeshInstance3D = null
 var glow_light: OmniLight3D = null
 var label: Label3D = null
+var pickup_prompt: Label3D = null
 var world_tooltip: Control = null
+var particle_trail: GPUParticles3D = null
 
 var despawn_timer: float = 0.0
 var initial_y: float = 0.0
 var bob_time: float = 0.0
 var is_hovered: bool = false
 var hover_player: Node = null
+var is_being_attracted: bool = false
+var target_player: Node = null
 
 # Loot type tracking (from loot spawner)
 var loot_type: String = ""
@@ -52,11 +59,22 @@ func _ready():
 	# Create label
 	_create_label()
 
+	# Create pickup prompt
+	_create_pickup_prompt()
+
 	# Set despawn timer
 	despawn_timer = despawn_time
 
 	# Random rotation start
 	bob_time = randf() * TAU
+
+	# Auto pickup for common loot types
+	if loot_type in ["ammo", "health", "material"]:
+		auto_pickup = true
+	elif item_data and "item_type" in item_data:
+		# Auto pickup for ammo, consumables, materials
+		if item_data.item_type in [1, 8, 9]:  # AMMO, CONSUMABLE, MATERIAL
+			auto_pickup = true
 
 	# Track spawn time for garbage collection
 	set_meta("spawn_time", Time.get_ticks_msec() / 1000.0)
@@ -66,22 +84,106 @@ func _ready():
 	if gc and gc.has_method("track_loot"):
 		gc.track_loot(self)
 
-func _process(delta):
-	# Bob up and down
-	bob_time += delta * bob_speed
-	position.y = initial_y + sin(bob_time) * bob_amplitude
+	# Spawn animation
+	_play_spawn_animation()
 
-	# Rotate
-	rotate_y(delta * rotation_speed)
+func _process(delta):
+	# Handle magnetic attraction
+	if is_being_attracted and target_player and is_instance_valid(target_player):
+		var direction = (target_player.global_position + Vector3.UP * 0.5 - global_position).normalized()
+		var distance = global_position.distance_to(target_player.global_position)
+
+		# Accelerate as we get closer
+		var speed_mult = max(1.0, (magnetic_radius - distance) / magnetic_radius * 2.0)
+		global_position += direction * magnetic_speed * speed_mult * delta
+
+		# Check if close enough to pickup
+		if distance < 1.0:
+			pickup(target_player)
+			return
+	else:
+		# Bob up and down
+		bob_time += delta * bob_speed
+		position.y = initial_y + sin(bob_time) * bob_amplitude
+
+		# Rotate
+		rotate_y(delta * rotation_speed)
 
 	# Despawn timer
 	despawn_timer -= delta
 	if despawn_timer <= 0:
-		queue_free()
+		_play_despawn_animation()
+		return
+
+	# Flash when about to despawn
+	if despawn_timer < 10.0:
+		var flash = sin(Time.get_ticks_msec() * 0.01) > 0
+		if item_mesh:
+			item_mesh.visible = flash or despawn_timer < 5.0
 
 	# Update hover state for world tooltip
 	if show_world_tooltip:
 		_update_hover_state()
+
+	# Check for magnetic attraction
+	_check_magnetic_attraction()
+
+	# Handle pickup key input when hovered
+	if is_hovered and hover_player and Input.is_action_just_pressed("interact"):
+		pickup(hover_player)
+
+func _check_magnetic_attraction():
+	"""Check if any player is close enough for magnetic pickup"""
+	if is_being_attracted or not auto_pickup:
+		return
+
+	var players = get_tree().get_nodes_in_group("player")
+	for player in players:
+		if not is_instance_valid(player):
+			continue
+
+		var distance = global_position.distance_to(player.global_position)
+		if distance < magnetic_radius:
+			is_being_attracted = true
+			target_player = player
+			_start_attraction_effect()
+			break
+
+func _start_attraction_effect():
+	"""Visual effect when item starts being attracted"""
+	if glow_light:
+		var tween = create_tween()
+		tween.tween_property(glow_light, "light_energy", 1.5, 0.2)
+
+func _play_spawn_animation():
+	"""Animate item appearing"""
+	scale = Vector3.ZERO
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_ELASTIC)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector3.ONE, 0.4)
+
+func _play_despawn_animation():
+	"""Animate item disappearing"""
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector3.ZERO, 0.3)
+	tween.tween_callback(queue_free)
+
+func _create_pickup_prompt():
+	"""Create the 'Press E' pickup prompt"""
+	if not pickup_key_prompt:
+		return
+
+	pickup_prompt = Label3D.new()
+	pickup_prompt.text = "[E] Pickup"
+	pickup_prompt.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	pickup_prompt.font_size = 14
+	pickup_prompt.position = Vector3(0, 0.3, 0)
+	pickup_prompt.modulate = Color(1, 1, 1, 0.9)
+	pickup_prompt.outline_modulate = Color(0, 0, 0)
+	pickup_prompt.outline_size = 4
+	pickup_prompt.visible = false
+	add_child(pickup_prompt)
 
 func _update_hover_state():
 	"""Check if player is looking at this item and update tooltip"""
@@ -121,11 +223,28 @@ func _on_hover_start():
 	"""Called when player starts looking at this item"""
 	hover_started.emit()
 
-	# Highlight the item
+	# Highlight the item with glow animation
 	if item_mesh and item_mesh.material_override:
 		var mat = item_mesh.material_override as StandardMaterial3D
 		if mat:
-			mat.emission_energy_multiplier = 1.5
+			var tween = create_tween()
+			tween.tween_property(mat, "emission_energy_multiplier", 2.0, 0.15)
+
+	# Increase glow light
+	if glow_light:
+		var tween = create_tween()
+		tween.tween_property(glow_light, "light_energy", 0.8, 0.15)
+
+	# Show pickup prompt
+	if pickup_prompt:
+		pickup_prompt.visible = true
+		pickup_prompt.modulate.a = 0
+		var tween = create_tween()
+		tween.tween_property(pickup_prompt, "modulate:a", 1.0, 0.15)
+
+	# Scale up slightly
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector3(1.15, 1.15, 1.15), 0.15)
 
 	# Show world tooltip
 	_show_world_tooltip()
@@ -138,7 +257,23 @@ func _on_hover_end():
 	if item_mesh and item_mesh.material_override:
 		var mat = item_mesh.material_override as StandardMaterial3D
 		if mat:
-			mat.emission_energy_multiplier = 0.5
+			var tween = create_tween()
+			tween.tween_property(mat, "emission_energy_multiplier", 0.5, 0.15)
+
+	# Reduce glow light
+	if glow_light:
+		var tween = create_tween()
+		tween.tween_property(glow_light, "light_energy", 0.3, 0.15)
+
+	# Hide pickup prompt
+	if pickup_prompt:
+		var tween = create_tween()
+		tween.tween_property(pickup_prompt, "modulate:a", 0.0, 0.1)
+		tween.tween_callback(func(): pickup_prompt.visible = false)
+
+	# Scale back
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector3.ONE, 0.15)
 
 	# Hide world tooltip
 	_hide_world_tooltip()
