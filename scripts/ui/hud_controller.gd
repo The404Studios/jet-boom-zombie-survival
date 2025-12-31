@@ -145,7 +145,7 @@ func _show_wave_announcement(text: String):
 		tween.tween_interval(3.0)
 		tween.tween_callback(func(): wave_announcement.visible = false)
 
-func _process(_delta):
+func _process(delta):
 	if not player or not is_instance_valid(player):
 		_find_player()
 		return
@@ -153,6 +153,8 @@ func _process(_delta):
 	_update_health()
 	_update_stamina()
 	_update_weapon_info()
+	_update_combo(delta)
+	_update_low_health_effect()
 
 func _find_player():
 	var players = get_tree().get_nodes_in_group("player")
@@ -790,18 +792,6 @@ func _on_player_healed(amount: float):
 	tween.tween_property(heal_popup, "position:y", heal_popup.position.y - 30, 0.8)
 	tween.parallel().tween_property(heal_popup, "modulate:a", 0.0, 0.8)
 	tween.tween_callback(heal_popup.queue_free)
-
-# Override _process to include enhanced updates
-func _process(delta):
-	if not player or not is_instance_valid(player):
-		_find_player()
-		return
-
-	_update_health()
-	_update_stamina()
-	_update_weapon_info()
-	_update_combo(delta)
-	_update_low_health_effect()
 
 # ============================================
 # AMMO & RELOAD FEEDBACK

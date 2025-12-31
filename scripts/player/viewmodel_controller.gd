@@ -467,3 +467,119 @@ func set_bob_enabled(enabled: bool):
 
 func set_sway_enabled(enabled: bool):
 	sway_amount = 0.002 if enabled else 0.0
+
+# ============================================
+# HIT FEEDBACK
+# ============================================
+
+func on_hit_enemy(was_headshot: bool = false, was_kill: bool = false):
+	"""Called when a shot hits an enemy - provides feedback"""
+	# Small recoil "kick" on hit
+	var kick_amount = 0.3 if was_kill else 0.15
+	if was_headshot:
+		kick_amount *= 1.5
+
+	recoil_rotation.x += kick_amount
+	recoil_position.z += 0.01
+
+	# Flash effect on weapon
+	if current_weapon:
+		var original_color = Color.WHITE
+		var flash_color = Color(1.0, 0.3, 0.3) if was_kill else Color(1.0, 0.8, 0.2) if was_headshot else Color(1.0, 1.0, 1.0)
+
+		# Find mesh and flash it
+		for child in current_weapon.get_children():
+			if child is MeshInstance3D:
+				var mat = child.get_active_material(0)
+				if mat is StandardMaterial3D:
+					var tween = create_tween()
+					tween.tween_property(mat, "emission_energy_multiplier", 0.5, 0.05)
+					tween.tween_property(mat, "emission_energy_multiplier", 0.0, 0.1)
+
+	# Notify HUD for hitmarker
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_hitmarker"):
+		hud.show_hitmarker(was_headshot, was_kill)
+
+	# Notify screen effects
+	var screen_effects = get_tree().get_first_node_in_group("screen_effects")
+	if screen_effects and screen_effects.has_method("on_enemy_killed") and was_kill:
+		screen_effects.on_enemy_killed(was_headshot)
+
+func on_empty_click():
+	"""Called when player tries to fire with no ammo"""
+	# Small "jam" animation
+	var tween = create_tween()
+	tween.tween_property(weapon_pivot, "position:z", base_position.z + 0.02, 0.05)
+	tween.tween_property(weapon_pivot, "position:z", base_position.z, 0.1)
+
+	# Play empty click sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_2d("weapon_empty", 0.5)
+
+# ============================================
+# SPRINT / ADS POSITIONING
+# ============================================
+
+var is_sprinting: bool = false
+var is_aiming: bool = false
+var sprint_position: Vector3 = Vector3(0.4, -0.35, -0.4)
+var aim_position: Vector3 = Vector3(0.0, -0.25, -0.45)
+
+func set_sprinting(sprinting: bool):
+	"""Set sprint state - lowers weapon"""
+	is_sprinting = sprinting
+	_update_weapon_stance()
+
+func set_aiming(aiming: bool):
+	"""Set ADS state - centers weapon"""
+	is_aiming = aiming
+	_update_weapon_stance()
+
+func _update_weapon_stance():
+	"""Update weapon position based on stance"""
+	var target_pos = base_position
+	var target_bob = bob_amount
+	var target_sway = sway_amount
+
+	if is_aiming:
+		target_pos = aim_position
+		target_bob = 0.02  # Reduced bob when aiming
+		target_sway = 0.0005  # Very small sway
+	elif is_sprinting:
+		target_pos = sprint_position
+		target_bob = 0.08  # More bob when sprinting
+		target_sway = 0.004
+
+	# Smoothly transition
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(self, "base_position", target_pos, 0.2)
+	tween.tween_property(self, "bob_amount", target_bob, 0.2)
+	tween.tween_property(self, "sway_amount", target_sway, 0.2)
+
+# ============================================
+# ADDITIONAL EFFECTS
+# ============================================
+
+func play_inspect_animation():
+	"""Play weapon inspect animation"""
+	if is_reloading or is_switching:
+		return
+
+	var tween = create_tween()
+
+	# Rotate weapon to inspect
+	tween.tween_property(weapon_pivot, "rotation:y", deg_to_rad(-45), 0.3)
+	tween.tween_property(weapon_pivot, "rotation:z", deg_to_rad(15), 0.2)
+	tween.tween_interval(1.0)
+	tween.tween_property(weapon_pivot, "rotation:y", deg_to_rad(30), 0.3)
+	tween.tween_property(weapon_pivot, "rotation:z", deg_to_rad(-10), 0.2)
+	tween.tween_interval(0.5)
+	tween.tween_property(weapon_pivot, "rotation", base_rotation, 0.3)
+
+func add_recoil_impulse(vertical: float, horizontal: float):
+	"""Add external recoil impulse (for explosions, etc.)"""
+	recoil_rotation.x += vertical
+	recoil_rotation.y += horizontal
+	recoil_position.z += abs(vertical) * 0.01
