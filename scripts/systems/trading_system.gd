@@ -56,10 +56,32 @@ func _ready():
 			websocket_hub.trade_completed.connect(_on_backend_trade_completed)
 	# Clean up old trades periodically
 	var timer = Timer.new()
+	timer.name = "CleanupTimer"
 	timer.wait_time = 30.0
 	timer.timeout.connect(_cleanup_expired_trades)
 	timer.autostart = true
 	add_child(timer)
+
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if websocket_hub:
+		if websocket_hub.has_signal("trade_request_received") and websocket_hub.trade_request_received.is_connected(_on_backend_trade_request):
+			websocket_hub.trade_request_received.disconnect(_on_backend_trade_request)
+		if websocket_hub.has_signal("trade_accepted") and websocket_hub.trade_accepted.is_connected(_on_backend_trade_accepted):
+			websocket_hub.trade_accepted.disconnect(_on_backend_trade_accepted)
+		if websocket_hub.has_signal("trade_declined") and websocket_hub.trade_declined.is_connected(_on_backend_trade_declined):
+			websocket_hub.trade_declined.disconnect(_on_backend_trade_declined)
+		if websocket_hub.has_signal("trade_completed") and websocket_hub.trade_completed.is_connected(_on_backend_trade_completed):
+			websocket_hub.trade_completed.disconnect(_on_backend_trade_completed)
+
+	# Clean up timers
+	var cleanup_timer = get_node_or_null("CleanupTimer")
+	if cleanup_timer:
+		cleanup_timer.stop()
+
+	# Clear trade data
+	active_trades.clear()
+	pending_requests.clear()
 
 func request_trade(from_player: int, to_player: int) -> int:
 	# Check if either player is already in a trade

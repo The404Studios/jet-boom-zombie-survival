@@ -74,6 +74,14 @@ func _init_backend():
 		if backend.has_signal("logged_out"):
 			backend.logged_out.connect(_on_backend_logged_out)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if backend:
+		if backend.has_signal("logged_in") and backend.logged_in.is_connected(_on_backend_logged_in):
+			backend.logged_in.disconnect(_on_backend_logged_in)
+		if backend.has_signal("logged_out") and backend.logged_out.is_connected(_on_backend_logged_out):
+			backend.logged_out.disconnect(_on_backend_logged_out)
+
 func _on_backend_logged_in(player_data: Dictionary):
 	"""Sync sigils from backend on login"""
 	var backend_currency = player_data.get("currency", 0)

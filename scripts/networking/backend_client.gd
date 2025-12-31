@@ -124,6 +124,10 @@ func get_my_profile(callback: Callable = Callable()) -> void:
 			callback.call(response)
 	)
 
+func get_profile(callback: Callable = Callable()) -> void:
+	"""Alias for get_my_profile"""
+	get_my_profile(callback)
+
 func get_player_profile(player_id: int, callback: Callable = Callable()) -> void:
 	"""Get another player's profile"""
 	_make_request("GET", "/api/player/%d" % player_id, {}, callback, false)
@@ -156,6 +160,14 @@ func respond_to_friend_request(friend_id: int, accept: bool, callback: Callable 
 	"""Accept or decline friend request"""
 	var url = "/api/player/me/friends/%d/respond?accept=%s" % [friend_id, str(accept).to_lower()]
 	_make_request("POST", url, {}, callback)
+
+func unlock_achievement(achievement_id: String, callback: Callable = Callable()) -> void:
+	"""Unlock an achievement"""
+	_make_request("POST", "/api/player/me/achievements/%s" % achievement_id, {}, callback)
+
+func get_achievements(callback: Callable = Callable()) -> void:
+	"""Get player's achievements"""
+	_make_request("GET", "/api/player/me/achievements", {}, callback)
 
 # ============================================
 # SERVER BROWSER API
@@ -213,6 +225,10 @@ func join_matchmaking(game_mode: String, preferred_region: String = "", preferre
 		body["preferredMap"] = preferred_map
 
 	_make_request("POST", "/api/matchmaking/join", body, callback)
+
+func join_matchmaking_queue(preferences: Dictionary, callback: Callable = Callable()) -> void:
+	"""Join matchmaking queue with preferences dictionary"""
+	_make_request("POST", "/api/matchmaking/join", preferences, callback)
 
 func get_matchmaking_status(ticket_id: String, callback: Callable = Callable()) -> void:
 	"""Get matchmaking status"""

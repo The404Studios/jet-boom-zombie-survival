@@ -53,6 +53,18 @@ func _exit_tree():
 		if _network_manager.player_disconnected.is_connected(_on_player_disconnected):
 			_network_manager.player_disconnected.disconnect(_on_player_disconnected)
 
+	# Disconnect websocket signals
+	if websocket_hub:
+		if websocket_hub.has_signal("chat_message_received") and websocket_hub.chat_message_received.is_connected(_on_backend_chat_received):
+			websocket_hub.chat_message_received.disconnect(_on_backend_chat_received)
+		if websocket_hub.has_signal("system_message_received") and websocket_hub.system_message_received.is_connected(_on_backend_system_message):
+			websocket_hub.system_message_received.disconnect(_on_backend_system_message)
+
+	# Clear data
+	chat_history.clear()
+	message_timestamps.clear()
+	player_muted.clear()
+
 func _on_player_connected(_peer_id: int, player_data: Dictionary):
 	var msg = "%s joined the game" % player_data.get("name", "Player")
 	emit_system_message(msg)

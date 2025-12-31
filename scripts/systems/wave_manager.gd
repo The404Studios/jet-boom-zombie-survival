@@ -74,6 +74,20 @@ func _init_backend():
 		if websocket_hub.has_signal("wave_state_update"):
 			websocket_hub.wave_state_update.connect(_on_backend_wave_update)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if websocket_hub:
+		if websocket_hub.has_signal("wave_state_update") and websocket_hub.wave_state_update.is_connected(_on_backend_wave_update):
+			websocket_hub.wave_state_update.disconnect(_on_backend_wave_update)
+
+	# Clean up active zombies
+	for zombie in active_zombies:
+		if is_instance_valid(zombie):
+			if zombie.has_signal("zombie_died") and zombie.zombie_died.is_connected(_on_zombie_died):
+				zombie.zombie_died.disconnect(_on_zombie_died)
+	active_zombies.clear()
+	zombie_spawn_queue.clear()
+
 func _process(delta):
 	if is_intermission:
 		intermission_timer -= delta

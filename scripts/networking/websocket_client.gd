@@ -10,16 +10,31 @@ signal connection_error(error: String)
 signal message_received(type: String, data: Dictionary)
 
 # Hub-specific signals
-signal chat_message_received(player_id: int, username: String, message: String)
+signal chat_message_received(username: String, message: String, channel: String)
+signal system_message_received(message: String)
 signal voice_activity_received(player_id: int, is_speaking: bool)
 signal game_state_received(state: Dictionary)
 signal wave_started(wave_number: int, zombie_count: int)
+signal wave_state_update(state: Dictionary)
 signal player_death_received(player_id: int, killer: String, weapon: String)
 signal player_revive_received(revived_id: int, reviver_id: int)
+signal player_joined(player_data: Dictionary)
+signal player_left(player_data: Dictionary)
 signal game_ended(victory: bool, wave_reached: int, stats: Dictionary)
-signal notification_received(type: String, message: String)
+signal notification_received(notification_data: Dictionary)
 signal matchmaking_update(status: Dictionary)
 signal matchmaking_found(server: Dictionary)
+
+# Trading signals
+signal trade_request_received(from_player_id: int, from_username: String)
+signal trade_accepted(trade_id: int)
+signal trade_declined(trade_id: int)
+signal trade_completed(trade_id: int, items_received: Array)
+
+# Friend signals
+signal friend_request_received(from_player_id: int, from_username: String)
+signal game_invite_received(from_player_id: int, from_username: String, server_info: Dictionary)
+signal achievement_unlocked(achievement_data: Dictionary)
 
 @export var hub_url: String = "ws://localhost:5000/hubs/game"
 @export var auto_reconnect: bool = true
@@ -148,10 +163,15 @@ func _handle_invocation(data: Dictionary) -> void:
 			if arguments.size() > 0:
 				var msg = arguments[0]
 				chat_message_received.emit(
-					msg.get("PlayerId", 0),
 					msg.get("Username", ""),
-					msg.get("Message", "")
+					msg.get("Message", ""),
+					msg.get("Channel", "server")
 				)
+
+		"SystemMessage":
+			if arguments.size() > 0:
+				var msg = arguments[0]
+				system_message_received.emit(msg.get("Message", ""))
 
 		"VoiceActivity":
 			if arguments.size() > 0:
@@ -173,6 +193,10 @@ func _handle_invocation(data: Dictionary) -> void:
 					msg.get("ZombieCount", 0)
 				)
 
+		"WaveState":
+			if arguments.size() > 0:
+				wave_state_update.emit(arguments[0])
+
 		"PlayerDeath":
 			if arguments.size() > 0:
 				var msg = arguments[0]
@@ -190,6 +214,14 @@ func _handle_invocation(data: Dictionary) -> void:
 					msg.get("ReviverPlayerId", 0)
 				)
 
+		"PlayerJoined":
+			if arguments.size() > 0:
+				player_joined.emit(arguments[0])
+
+		"PlayerLeft":
+			if arguments.size() > 0:
+				player_left.emit(arguments[0])
+
 		"GameEnd":
 			if arguments.size() > 0:
 				var msg = arguments[0]
@@ -201,12 +233,56 @@ func _handle_invocation(data: Dictionary) -> void:
 
 		"Notification":
 			if arguments.size() > 0:
+				notification_received.emit(arguments[0])
+
+		# Trading
+		"TradeRequest":
+			if arguments.size() > 0:
 				var msg = arguments[0]
-				notification_received.emit(
-					msg.get("Type", ""),
-					msg.get("Message", "")
+				trade_request_received.emit(
+					msg.get("FromPlayerId", 0),
+					msg.get("FromUsername", "")
 				)
 
+		"TradeAccepted":
+			if arguments.size() > 0:
+				trade_accepted.emit(arguments[0].get("TradeId", 0))
+
+		"TradeDeclined":
+			if arguments.size() > 0:
+				trade_declined.emit(arguments[0].get("TradeId", 0))
+
+		"TradeCompleted":
+			if arguments.size() > 0:
+				var msg = arguments[0]
+				trade_completed.emit(
+					msg.get("TradeId", 0),
+					msg.get("ItemsReceived", [])
+				)
+
+		# Friends
+		"FriendRequest":
+			if arguments.size() > 0:
+				var msg = arguments[0]
+				friend_request_received.emit(
+					msg.get("FromPlayerId", 0),
+					msg.get("FromUsername", "")
+				)
+
+		"GameInvite":
+			if arguments.size() > 0:
+				var msg = arguments[0]
+				game_invite_received.emit(
+					msg.get("FromPlayerId", 0),
+					msg.get("FromUsername", ""),
+					msg.get("ServerInfo", {})
+				)
+
+		"AchievementUnlocked":
+			if arguments.size() > 0:
+				achievement_unlocked.emit(arguments[0])
+
+		# Matchmaking
 		"MatchmakingUpdate":
 			if arguments.size() > 0:
 				matchmaking_update.emit(arguments[0])
@@ -215,10 +291,14 @@ func _handle_invocation(data: Dictionary) -> void:
 			pass  # Handled by caller
 
 		"MatchmakingCancelled":
-			pass
+			matchmaking_update.emit({"status": "cancelled"})
 
 		"MatchmakingTimeout":
 			matchmaking_update.emit({"status": "timeout"})
+
+		"MatchFound":
+			if arguments.size() > 0:
+				matchmaking_found.emit(arguments[0])
 
 	message_received.emit(target, arguments[0] if arguments.size() > 0 else {})
 
@@ -255,9 +335,31 @@ func leave_server(server_id: int = -1) -> void:
 		_invoke("LeaveServer", [sid])
 	current_server_id = -1
 
-func send_chat_message(message: String) -> void:
-	if current_server_id > 0:
-		_invoke("SendChatMessage", [current_server_id, message])
+func send_chat_message(message: String, channel: String = "server") -> void:
+	"""Send chat message to specified channel"""
+	match channel:
+		"global":
+			_invoke("SendGlobalChatMessage", [message])
+		"party":
+			_invoke("SendPartyChatMessage", [message])
+		"team":
+			if current_server_id > 0:
+				_invoke("SendTeamChatMessage", [current_server_id, message])
+		_:  # "server" or default
+			if current_server_id > 0:
+				_invoke("SendChatMessage", [current_server_id, message])
+
+func send_whisper(target_player_id: int, message: String) -> void:
+	"""Send private message to player"""
+	_invoke("SendWhisper", [target_player_id, message])
+
+func join_channel(channel_name: String) -> void:
+	"""Join a chat channel"""
+	_invoke("JoinChannel", [channel_name])
+
+func leave_channel(channel_name: String) -> void:
+	"""Leave a chat channel"""
+	_invoke("LeaveChannel", [channel_name])
 
 func send_voice_activity(is_speaking: bool) -> void:
 	if current_server_id > 0:
@@ -278,6 +380,43 @@ func join_party(party_code: String) -> void:
 
 func leave_party(party_code: String) -> void:
 	_invoke("LeaveParty", [party_code])
+
+# ============================================
+# HUB METHODS - TRADING
+# ============================================
+
+func send_trade_request(to_player_id: int) -> void:
+	"""Send trade request to player"""
+	_invoke("SendTradeRequest", [to_player_id])
+
+func accept_trade(trade_id: int) -> void:
+	"""Accept a trade request"""
+	_invoke("AcceptTrade", [trade_id])
+
+func decline_trade(trade_id: int) -> void:
+	"""Decline a trade request"""
+	_invoke("DeclineTrade", [trade_id])
+
+func cancel_trade(trade_id: int) -> void:
+	"""Cancel an active trade"""
+	_invoke("CancelTrade", [trade_id])
+
+func send_trade_offer(offer: Dictionary) -> void:
+	"""Send/update trade offer"""
+	_invoke("UpdateTradeOffer", [offer])
+
+func confirm_trade(trade_id: int) -> void:
+	"""Confirm trade is ready"""
+	_invoke("ConfirmTrade", [trade_id])
+
+# ============================================
+# HUB METHODS - SERVER INFO
+# ============================================
+
+func update_server_info(info: Dictionary) -> void:
+	"""Update server info (for hosts)"""
+	if current_server_id > 0:
+		_invoke("UpdateServerInfo", [current_server_id, info])
 
 # ============================================
 # HUB METHODS - GAME SERVER (for dedicated servers)
