@@ -1,17 +1,11 @@
-[gd_scene load_steps=4 format=3 uid="uid://zombie001"]
+[gd_scene load_steps=5 format=3 uid="uid://zombie001"]
 
 [ext_resource type="Script" path="res://scripts/zombies/zombie_ai.gd" id="1"]
+[ext_resource type="PackedScene" path="res://Free_Character/male_zombie/male_z.glb" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_zombie"]
 radius = 0.4
 height = 1.8
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_zombie"]
-radius = 0.4
-height = 1.8
-
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_zombie"]
-albedo_color = Color(0.3, 0.5, 0.3, 1)
 
 [node name="Zombie" type="CharacterBody3D" groups=["zombies"]]
 collision_layer = 4
@@ -22,10 +16,8 @@ script = ExtResource("1")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_zombie")
 
-[node name="Model" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
-mesh = SubResource("CapsuleMesh_zombie")
-surface_material_override/0 = SubResource("StandardMaterial3D_zombie")
+[node name="Model" parent="." instance=ExtResource("2")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 path_desired_distance = 0.5
