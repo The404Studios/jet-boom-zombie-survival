@@ -51,6 +51,7 @@ PlayerClassSystem="*res://scripts/systems/player_class_system.gd"
 Backend="*res://scripts/networking/backend_client.gd"
 WebSocketHub="*res://scripts/networking/websocket_client.gd"
 HitValidator="*res://scripts/systems/hit_validator.gd"
+InventorySystem="*res://scripts/systems/inventory_system.gd"
 
 [display]
 
