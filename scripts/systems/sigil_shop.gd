@@ -897,7 +897,7 @@ func _purchase_backend_item(item: ShopItem, player: Node) -> bool:
 		purchase_failed.emit("Backend not available")
 		return false
 
-	var backend_id = item.get_meta("backend_id")
+	var backend_id = str(item.get_meta("backend_id"))
 
 	# Purchase through backend API
 	backend.purchase_item(backend_id, func(response):

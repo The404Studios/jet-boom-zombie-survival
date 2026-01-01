@@ -434,6 +434,18 @@ func _connect_signals():
 		if matchmaking_manager.has_signal("server_info_received"):
 			matchmaking_manager.server_info_received.connect(_on_server_info_received)
 
+func _exit_tree():
+	# Disconnect signals to prevent memory leaks
+	if matchmaking_manager:
+		if matchmaking_manager.has_signal("servers_received") and matchmaking_manager.servers_received.is_connected(_on_servers_received):
+			matchmaking_manager.servers_received.disconnect(_on_servers_received)
+		if matchmaking_manager.has_signal("server_info_received") and matchmaking_manager.server_info_received.is_connected(_on_server_info_received):
+			matchmaking_manager.server_info_received.disconnect(_on_server_info_received)
+
+	# Clear data
+	servers.clear()
+	server_buttons.clear()
+
 func _process(delta):
 	# Auto-refresh
 	if visible and not is_refreshing:

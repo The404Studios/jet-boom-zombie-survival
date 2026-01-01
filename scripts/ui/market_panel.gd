@@ -504,7 +504,8 @@ func _confirm_purchase(listing_id: int):
 
 	# If backend item, purchase through backend API
 	if listing.get("backend_item", false) and backend:
-		backend.purchase_item(listing_id, func(response):
+		var item_id = listing.get("backend_id", str(listing_id))
+		backend.purchase_item(str(item_id), func(response):
 			if response.success:
 				_on_backend_purchase_success(listing, price)
 			else:
