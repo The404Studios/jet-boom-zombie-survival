@@ -1097,12 +1097,6 @@ func hide_global_chat():
 	if global_chat:
 		global_chat.visible = false
 
-func _show_profile_panel():
-	# For now, show a simple profile info or reuse stash panel for profile
-	# Could create a dedicated profile panel later
-	if stash_panel:
-		_show_panel(stash_panel)
-
 func _exit_tree():
 	# Disconnect backend signals to prevent memory leaks
 	if backend:

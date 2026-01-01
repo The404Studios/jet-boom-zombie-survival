@@ -242,8 +242,11 @@ func _show_next_tip():
 	# Fade out/in animation
 	var tween = create_tween()
 	tween.tween_property(tip_label, "modulate:a", 0.0, 0.2)
-	tween.tween_callback(func(): tip_label.text = tips[current_tip_index])
+	tween.tween_callback(_update_tip_text)
 	tween.tween_property(tip_label, "modulate:a", 1.0, 0.2)
+
+func _update_tip_text():
+	tip_label.text = tips[current_tip_index]
 
 # ============================================
 # PUBLIC API
@@ -276,7 +279,10 @@ func hide_loading():
 	# Fade out
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, fade_duration)
-	tween.tween_callback(func(): visible = false)
+	tween.tween_callback(_hide_self)
+
+func _hide_self():
+	visible = false
 
 func set_progress(progress: float, status_text: String = ""):
 	"""Set loading progress (0-100)"""

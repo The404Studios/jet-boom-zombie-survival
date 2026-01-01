@@ -47,9 +47,9 @@ func setup_currency_display():
 		return
 
 	# Create currency labels with icons
-	var coins_label = create_currency_label("💰", "coins")
-	var tokens_label = create_currency_label("🎫", "tokens")
-	var scrap_label = create_currency_label("🔧", "scrap")
+	var coins_label = create_currency_label("[C]", "coins")
+	var tokens_label = create_currency_label("[T]", "tokens")
+	var scrap_label = create_currency_label("[S]", "scrap")
 
 	currency_panel.add_child(coins_label)
 	currency_panel.add_child(tokens_label)
@@ -222,11 +222,11 @@ func refresh_currency_display():
 	var scrap_label = currency_panel.get_node_or_null("ScrapLabel") as Label
 
 	if coins_label:
-		coins_label.text = "💰 %d" % player_persistence.get_currency("coins")
+		coins_label.text = "[C] %d" % player_persistence.get_currency("coins")
 	if tokens_label:
-		tokens_label.text = "🎫 %d" % player_persistence.get_currency("tokens")
+		tokens_label.text = "[T] %d" % player_persistence.get_currency("tokens")
 	if scrap_label:
-		scrap_label.text = "🔧 %d" % player_persistence.get_currency("scrap")
+		scrap_label.text = "[S] %d" % player_persistence.get_currency("scrap")
 
 func _on_shop_item_clicked(shop_item):  # MerchantSystem.ShopItem
 	selected_shop_item = shop_item
@@ -438,7 +438,7 @@ func spawn_coin_particles(amount: int):
 
 	for i in range(num_coins):
 		var coin = Label.new()
-		coin.text = "💰"
+		coin.text = "$"
 		coin.add_theme_font_size_override("font_size", 24)
 		coin.position = size / 2 + Vector2(randf_range(-50, 50), randf_range(-20, 20))
 		add_child(coin)

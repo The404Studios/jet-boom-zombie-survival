@@ -444,7 +444,7 @@ func _exit_tree():
 
 	# Clear data
 	servers.clear()
-	server_buttons.clear()
+	server_entries.clear()
 
 func _process(delta):
 	# Auto-refresh

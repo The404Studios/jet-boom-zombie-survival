@@ -206,18 +206,22 @@ func _get_packet_peer() -> int:
 func _get_available_packet_count() -> int:
 	return incoming_packets.size()
 
+func get_unique_id() -> int:
+	"""Public wrapper for _get_unique_id"""
+	return _get_unique_id()
+
 func _put_packet(p_buffer: PackedByteArray) -> Error:
 	if target_peer == 0:
 		# Broadcast to all
 		for peer_id in peer_id_to_steam_id:
-			if peer_id != get_unique_id():
+			if peer_id != _get_unique_id():
 				var steam_id = peer_id_to_steam_id[peer_id]
 				_send_game_packet(steam_id, p_buffer, CHANNEL_RELIABLE)
 	elif target_peer < 0:
 		# Broadcast except one
 		var exclude_peer = -target_peer
 		for peer_id in peer_id_to_steam_id:
-			if peer_id != get_unique_id() and peer_id != exclude_peer:
+			if peer_id != _get_unique_id() and peer_id != exclude_peer:
 				var steam_id = peer_id_to_steam_id[peer_id]
 				_send_game_packet(steam_id, p_buffer, CHANNEL_RELIABLE)
 	else:
