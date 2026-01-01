@@ -381,6 +381,30 @@ func pickup_weapon(weapon_data: Resource) -> bool:
 
 	return false
 
+func switch_weapon(slot: int):
+	"""Public method to switch weapon - used by weapon wheel"""
+	_switch_weapon(slot)
+
+func equip_weapon_slot(slot: int):
+	"""Alias for switch_weapon - used by weapon wheel"""
+	_switch_weapon(slot)
+
+func get_weapons() -> Array:
+	"""Return equipped weapons array - used by weapon wheel"""
+	return equipped_weapons
+
+func get_current_weapon() -> Resource:
+	"""Get currently equipped weapon"""
+	return current_weapon_data
+
+func get_weapon_ammo() -> Dictionary:
+	"""Get current weapon ammo state"""
+	return {
+		"current": current_ammo,
+		"reserve": reserve_ammo,
+		"max": current_weapon_data.magazine_size if current_weapon_data else 15
+	}
+
 func _fire_weapon():
 	if current_ammo <= 0:
 		# Play empty click sound

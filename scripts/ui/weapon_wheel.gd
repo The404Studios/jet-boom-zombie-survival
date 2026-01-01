@@ -269,21 +269,33 @@ func _update_weapons():
 	if not player:
 		return
 
-	# Get weapons from player inventory
-	var inventory = null
-	if player.has_node("Inventory"):
-		inventory = player.get_node("Inventory")
-	elif "inventory" in player:
-		inventory = player.inventory
-
-	if inventory and inventory.has_method("get_weapons"):
-		weapons = inventory.get_weapons()
-	elif "weapons" in player:
-		weapons = player.weapons
+	# Get weapons from player - prefer get_weapons method
+	if player.has_method("get_weapons"):
+		weapons = player.get_weapons()
 	else:
-		# Create placeholder weapons
-		for i in range(segment_count):
-			weapons.append(null)
+		# Try alternative methods
+		var inventory = null
+		if player.has_node("Inventory"):
+			inventory = player.get_node("Inventory")
+		elif "inventory" in player:
+			inventory = player.inventory
+
+		if inventory and inventory.has_method("get_weapons"):
+			weapons = inventory.get_weapons()
+		elif "weapons" in player:
+			weapons = player.weapons
+		elif "equipped_weapons" in player:
+			weapons = player.equipped_weapons
+		else:
+			# Create placeholder weapons
+			for i in range(segment_count):
+				weapons.append(null)
+
+	# Get current weapon info from player
+	var current_weapon_index = player.current_weapon_index if "current_weapon_index" in player else 0
+	var player_ammo = {}
+	if player.has_method("get_weapon_ammo"):
+		player_ammo = player.get_weapon_ammo()
 
 	# Update visuals
 	for i in range(segment_count):
@@ -298,16 +310,21 @@ func _update_weapons():
 			if labels[i]:
 				labels[i].text = weapon.item_name if "item_name" in weapon else "Weapon"
 
-			# Set ammo
+			# Set ammo - use player's ammo state for current weapon
 			if ammo_labels[i]:
 				var ammo_text = ""
-				if "current_ammo" in weapon and "max_ammo" in weapon:
-					ammo_text = "%d / %d" % [weapon.current_ammo, weapon.max_ammo]
+				if i == current_weapon_index and not player_ammo.is_empty():
+					ammo_text = "%d / %d" % [player_ammo.get("current", 0), player_ammo.get("reserve", 0)]
+				elif "magazine_size" in weapon:
+					ammo_text = "%d" % weapon.magazine_size
 				ammo_labels[i].text = ammo_text
 
-			# Update segment color
+			# Update segment color - highlight current weapon
 			if segments[i]:
-				segments[i].color = segment_color
+				if i == current_weapon_index:
+					segments[i].color = Color(0.3, 0.6, 0.3, 0.9)  # Green for current
+				else:
+					segments[i].color = segment_color
 		else:
 			# Empty slot
 			if icons[i]:
