@@ -50,6 +50,7 @@ PlayerManager="*res://scripts/systems/player_manager.gd"
 PlayerClassSystem="*res://scripts/systems/player_class_system.gd"
 Backend="*res://scripts/networking/backend_client.gd"
 WebSocketHub="*res://scripts/networking/websocket_client.gd"
+HitValidator="*res://scripts/systems/hit_validator.gd"
 
 [display]
 

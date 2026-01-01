@@ -3,6 +3,7 @@ extends CharacterBody3D
 # Complete FPS controller with viewmodel integration
 # Handles movement, looking, shooting, and weapon management
 # Integrates with RPG systems: CharacterAttributes, SkillTree, PlayerConditions
+# Network replicated with server-side hit validation
 
 @export var mouse_sensitivity: float = 0.003
 @export var base_move_speed: float = 5.0
@@ -17,6 +18,12 @@ extends CharacterBody3D
 @onready var raycast: RayCast3D = $Camera3D/RayCast3D
 @onready var interact_ray: RayCast3D = $Camera3D/InteractRay if has_node("Camera3D/InteractRay") else null
 @onready var spectator_controller: SpectatorController = $SpectatorController if has_node("SpectatorController") else null
+
+# Network
+var network_manager: Node = null
+var hit_validator: Node = null
+var is_local_player: bool = true
+var peer_id: int = 1
 
 # RPG Systems
 @onready var character_attributes: CharacterAttributes = $CharacterAttributes if has_node("CharacterAttributes") else null
@@ -101,6 +108,72 @@ func _ready():
 	_create_prop_holder()
 
 	add_to_group("player")
+	add_to_group("players")
+
+	# Network setup
+	_setup_network()
+
+func _setup_network():
+	"""Initialize network components"""
+	network_manager = get_node_or_null("/root/NetworkManager")
+	hit_validator = get_node_or_null("/root/HitValidator")
+
+	# Create hit validator if it doesn't exist
+	if not hit_validator:
+		var hv_script = load("res://scripts/systems/hit_validator.gd")
+		if hv_script:
+			hit_validator = hv_script.new()
+			hit_validator.name = "HitValidator"
+			get_tree().root.add_child(hit_validator)
+
+	# Determine if this is the local player
+	if multiplayer.has_multiplayer_peer():
+		peer_id = get_multiplayer_authority()
+		is_local_player = peer_id == multiplayer.get_unique_id()
+	else:
+		is_local_player = true
+		peer_id = 1
+
+	# Connect to hit validator signals
+	if hit_validator:
+		if hit_validator.has_signal("hit_confirmed"):
+			hit_validator.hit_confirmed.connect(_on_hit_confirmed)
+		if hit_validator.has_signal("hit_rejected"):
+			hit_validator.hit_rejected.connect(_on_hit_rejected)
+
+	# Disable camera and input for non-local players
+	if not is_local_player:
+		if camera:
+			camera.current = false
+		set_process_input(false)
+
+func _on_hit_confirmed(_attacker_id: int, target: Node, damage: float, hit_data: Dictionary):
+	"""Called when server confirms a hit"""
+	if not is_local_player:
+		return
+
+	# Show confirmed hit marker
+	var is_headshot = hit_data.get("server_headshot", false)
+	var was_kill = hit_data.get("was_kill", false)
+	_show_hit_marker(is_headshot, was_kill)
+
+	# Life steal on confirmed damage
+	if skill_tree and damage > 0:
+		var life_steal = skill_tree.get_effect_value("life_steal")
+		if life_steal > 0:
+			heal(damage * life_steal / 100.0)
+
+func _on_hit_rejected(_attacker_id: int, reason: String):
+	"""Called when server rejects a hit"""
+	if not is_local_player:
+		return
+	print("Hit rejected: %s" % reason)
+
+func _show_hit_marker(is_headshot: bool, is_kill: bool):
+	"""Show hit marker UI feedback"""
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_method("show_hit_marker"):
+		hud.show_hit_marker(is_headshot, is_kill)
 
 func _sync_stats_from_attributes():
 	"""Sync player stats from CharacterAttributes"""
@@ -308,12 +381,46 @@ func pickup_weapon(weapon_data: Resource) -> bool:
 
 	return false
 
+func switch_weapon(slot: int):
+	"""Public method to switch weapon - used by weapon wheel"""
+	_switch_weapon(slot)
+
+func equip_weapon_slot(slot: int):
+	"""Alias for switch_weapon - used by weapon wheel"""
+	_switch_weapon(slot)
+
+func get_weapons() -> Array:
+	"""Return equipped weapons array - used by weapon wheel"""
+	return equipped_weapons
+
+func get_current_weapon() -> Resource:
+	"""Get currently equipped weapon"""
+	return current_weapon_data
+
+func get_weapon_ammo() -> Dictionary:
+	"""Get current weapon ammo state"""
+	return {
+		"current": current_ammo,
+		"reserve": reserve_ammo,
+		"max": current_weapon_data.magazine_size if current_weapon_data else 15
+	}
+
 func _fire_weapon():
 	if current_ammo <= 0:
 		# Play empty click sound
 		if has_node("/root/AudioManager"):
 			get_node("/root/AudioManager").play_sound_2d("weapon_empty", 0.5)
 		return
+
+	# Get weapon info for network broadcast
+	var weapon_type = "rifle"
+	if current_weapon_data:
+		weapon_type = current_weapon_data.item_name.to_lower().replace(" ", "_") if "item_name" in current_weapon_data else "rifle"
+
+	# Broadcast firing event to other players
+	var fire_origin = camera.global_position if camera else global_position
+	var fire_direction = -camera.global_transform.basis.z if camera else -global_transform.basis.z
+	_broadcast_fire(fire_origin, fire_direction, weapon_type)
 
 	# Check if weapon is melee
 	var is_melee = current_weapon_data and "is_melee" in current_weapon_data and current_weapon_data.is_melee
@@ -550,19 +657,31 @@ func _fire_hitscan_weapon():
 				if collider.current_health / collider.max_health < 0.3:
 					damage *= 1.5  # 50% bonus damage
 
-		# Deal damage
+		# Deal damage - use hit validator in multiplayer
 		if collider and collider.has_method("take_damage"):
-			collider.take_damage(damage, hit_point)
+			var use_server_validation = multiplayer.has_multiplayer_peer() and hit_validator
 
-			# Life steal skill
-			if skill_tree:
-				var life_steal = skill_tree.get_effect_value("life_steal")
-				if life_steal > 0:
-					heal(damage * life_steal / 100.0)
+			if use_server_validation:
+				# Client-side prediction: predict hit and wait for server confirmation
+				hit_validator.predict_hit(self, collider, hit_point, damage, is_headshot)
+				# Show immediate feedback (will be corrected if server rejects)
+				_show_hit_marker(is_headshot, false)
+			else:
+				# Single player: apply damage immediately
+				collider.take_damage(damage, hit_point)
 
-			# Spawn blood effect
+				# Life steal skill (immediate in single player)
+				if skill_tree:
+					var life_steal = skill_tree.get_effect_value("life_steal")
+					if life_steal > 0:
+						heal(damage * life_steal / 100.0)
+
+			# Spawn blood effect (immediate feedback)
 			if has_node("/root/GoreSystem"):
 				get_node("/root/GoreSystem").spawn_blood_effect(hit_point, hit_normal, 2 if is_headshot else 1)
+
+			# Broadcast hit effect to other players
+			_broadcast_hit_effect(hit_point, hit_normal, is_headshot, "flesh")
 
 			# Dismemberment on headshot kill
 			if is_headshot and "current_health" in collider and collider.current_health <= 0:
@@ -573,6 +692,9 @@ func _fire_hitscan_weapon():
 			var surface_type = _get_surface_type(collider)
 			if has_node("/root/VFXManager"):
 				get_node("/root/VFXManager").spawn_impact_effect(hit_point, hit_normal, surface_type)
+
+			# Broadcast environment hit
+			_broadcast_hit_effect(hit_point, hit_normal, false, surface_type)
 
 	# Check for ammo conservation skill (Lucky Shot)
 	var consume_ammo = true
@@ -605,6 +727,9 @@ func _reload_weapon():
 	if reserve_ammo <= 0:
 		return  # No ammo left
 
+	# Broadcast reload to network
+	_broadcast_reload()
+
 	# Start reload via viewmodel
 	if viewmodel and viewmodel.has_method("start_reload"):
 		await viewmodel.start_reload()
@@ -629,6 +754,10 @@ func _switch_weapon(index: int):
 
 	current_weapon_index = index
 	current_weapon_data = equipped_weapons[index]
+
+	# Broadcast weapon switch to network
+	var weapon_name = current_weapon_data.item_name if current_weapon_data and "item_name" in current_weapon_data else "unknown"
+	_broadcast_weapon_switch(weapon_name)
 
 	# Load weapon scene
 	var weapon_scene_path = _get_weapon_scene_path(current_weapon_data.item_name)
@@ -1405,3 +1534,181 @@ func _cancel_nailing(hud):
 
 func get_network_id() -> int:
 	return multiplayer.get_unique_id()
+
+func _broadcast_fire(origin: Vector3, direction: Vector3, weapon_type: String):
+	"""Broadcast weapon fire to all players"""
+	if not multiplayer.has_multiplayer_peer():
+		return
+
+	# Call network manager RPC
+	if network_manager and network_manager.has_method("player_shoot"):
+		network_manager.player_shoot.rpc(peer_id, origin, direction, weapon_type)
+	else:
+		# Fallback: broadcast directly
+		_remote_fire.rpc(origin, direction, weapon_type)
+
+func _broadcast_reload():
+	"""Broadcast reload to all players"""
+	if not multiplayer.has_multiplayer_peer():
+		return
+
+	var weapon_type = "rifle"
+	if current_weapon_data and "item_name" in current_weapon_data:
+		weapon_type = current_weapon_data.item_name.to_lower().replace(" ", "_")
+
+	if network_manager and network_manager.has_method("player_reload"):
+		network_manager.player_reload.rpc(peer_id, weapon_type)
+	else:
+		_remote_reload.rpc(weapon_type)
+
+func _broadcast_weapon_switch(weapon_name: String):
+	"""Broadcast weapon switch to all players"""
+	if not multiplayer.has_multiplayer_peer():
+		return
+
+	_remote_weapon_switch.rpc(weapon_name)
+
+func _broadcast_hit_effect(hit_position: Vector3, hit_normal: Vector3, is_headshot: bool, surface_type: String):
+	"""Broadcast hit effect to all players"""
+	if not multiplayer.has_multiplayer_peer():
+		return
+
+	if network_manager and network_manager.has_method("player_hit_effect"):
+		var stype = "flesh" if is_headshot else surface_type
+		network_manager.player_hit_effect.rpc(hit_position, hit_normal, stype)
+	else:
+		_remote_hit_effect.rpc(hit_position, hit_normal, is_headshot, surface_type)
+
+# ============================================
+# NETWORK RPCs
+# ============================================
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _remote_fire(origin: Vector3, direction: Vector3, weapon_type: String):
+	"""Receive fire event from remote player"""
+	# Spawn muzzle flash
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	if vfx_manager and vfx_manager.has_method("spawn_muzzle_flash"):
+		vfx_manager.spawn_muzzle_flash(origin, direction, weapon_type)
+
+	# Play sound
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager:
+		if audio_manager.has_method("play_sound_3d"):
+			audio_manager.play_sound_3d(weapon_type + "_shot", origin, 0.8)
+		elif audio_manager.has_method("play_sfx_3d"):
+			audio_manager.play_sfx_3d("gunshot", origin)
+
+	# Trigger viewmodel animation for observed player
+	if viewmodel and viewmodel.has_method("play_fire_animation"):
+		viewmodel.play_fire_animation()
+
+@rpc("any_peer", "call_remote", "reliable")
+func _remote_reload(weapon_type: String):
+	"""Receive reload event from remote player"""
+	# Play reload sound
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and audio_manager.has_method("play_sound_3d"):
+		audio_manager.play_sound_3d(weapon_type + "_reload", global_position, 0.7)
+
+	# Trigger viewmodel reload animation
+	if viewmodel and viewmodel.has_method("play_reload_animation"):
+		viewmodel.play_reload_animation()
+
+@rpc("any_peer", "call_remote", "reliable")
+func _remote_weapon_switch(weapon_name: String):
+	"""Receive weapon switch from remote player"""
+	# Update observed player's visible weapon
+	if has_method("set_visible_weapon"):
+		set_visible_weapon(weapon_name)
+
+	# Play equip sound
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and audio_manager.has_method("play_sound_3d"):
+		audio_manager.play_sound_3d("weapon_equip", global_position, 0.5)
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _remote_hit_effect(hit_position: Vector3, hit_normal: Vector3, is_headshot: bool, surface_type: String):
+	"""Receive hit effect from remote player"""
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	var gore_system = get_node_or_null("/root/GoreSystem")
+
+	if surface_type == "flesh" or is_headshot:
+		if gore_system and gore_system.has_method("spawn_blood_effect"):
+			gore_system.spawn_blood_effect(hit_position, hit_normal, 2 if is_headshot else 1)
+	else:
+		if vfx_manager and vfx_manager.has_method("spawn_impact_effect"):
+			vfx_manager.spawn_impact_effect(hit_position, hit_normal, surface_type)
+
+@rpc("authority", "call_local", "reliable")
+func _sync_health(health: float, max_hp: float):
+	"""Server syncs health to clients"""
+	current_health = health
+	max_health = max_hp
+	health_changed.emit(current_health, max_health)
+
+@rpc("authority", "call_local", "reliable")
+func _sync_ammo(ammo: int, reserve: int):
+	"""Server syncs ammo to clients"""
+	current_ammo = ammo
+	reserve_ammo = reserve
+	_update_hud()
+
+@rpc("authority", "call_local", "reliable")
+func _player_died(killer_id: int):
+	"""Called when player dies (networked)"""
+	die()
+	if has_node("/root/ChatSystem"):
+		var killer_name = "Enemy"
+		if network_manager and network_manager.players.has(killer_id):
+			killer_name = network_manager.players[killer_id].get("name", "Player %d" % killer_id)
+		get_node("/root/ChatSystem").emit_system_message("Killed by %s" % killer_name)
+
+@rpc("authority", "call_local", "reliable")
+func _player_respawned(spawn_position: Vector3):
+	"""Called when player respawns (networked)"""
+	global_position = spawn_position
+	current_health = max_health
+	health_changed.emit(current_health, max_health)
+
+	if has_node("/root/ChatSystem"):
+		get_node("/root/ChatSystem").emit_system_message("Respawned!")
+
+# ============================================
+# STATE SYNC (for multiplayer)
+# ============================================
+
+func get_player_state() -> Dictionary:
+	"""Get current player state for network sync"""
+	return {
+		"position": global_position,
+		"rotation": global_rotation,
+		"head_rotation": camera.rotation.x if camera else 0.0,
+		"velocity": velocity,
+		"health": current_health,
+		"max_health": max_health,
+		"is_sprinting": is_sprinting,
+		"is_crouching": false,  # Add crouch support later
+		"weapon": current_weapon_data.item_name if current_weapon_data and "item_name" in current_weapon_data else "none",
+		"is_reloading": false,  # Track reload state
+		"current_ammo": current_ammo,
+		"reserve_ammo": reserve_ammo
+	}
+
+func apply_player_state(state: Dictionary):
+	"""Apply state from network (for non-local players)"""
+	if is_local_player:
+		return
+
+	if state.has("position"):
+		global_position = state.position
+	if state.has("rotation"):
+		global_rotation = state.rotation
+	if state.has("head_rotation") and camera:
+		camera.rotation.x = state.head_rotation
+	if state.has("health"):
+		current_health = state.health
+	if state.has("max_health"):
+		max_health = state.max_health
+	if state.has("is_sprinting"):
+		is_sprinting = state.is_sprinting
