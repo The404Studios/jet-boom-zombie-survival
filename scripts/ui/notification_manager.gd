@@ -267,11 +267,14 @@ func _show_next_announcement():
 	out_tween.set_parallel(true)
 	out_tween.tween_property(panel, "scale", Vector2(0.8, 0.8), 0.2)
 	out_tween.tween_property(panel, "modulate:a", 0.0, 0.2)
-	out_tween.chain().tween_callback(func():
+	out_tween.chain().tween_callback(_on_announcement_finished.bind(panel))
+
+func _on_announcement_finished(panel: Control):
+	if panel:
 		panel.queue_free()
+	if announcement_container:
 		announcement_container.visible = false
-		_show_next_announcement()
-	)
+	_show_next_announcement()
 
 func _create_announcement(title: String, subtitle: String) -> Control:
 	var container = VBoxContainer.new()

@@ -500,10 +500,11 @@ func _on_main_menu_pressed():
 func _hide_screen():
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.2)
-	tween.tween_callback(func():
-		visible = false
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	)
+	tween.tween_callback(_on_screen_hidden)
+
+func _on_screen_hidden():
+	visible = false
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 # ============================================
 # UTILITY

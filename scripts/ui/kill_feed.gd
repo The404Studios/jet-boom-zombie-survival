@@ -286,10 +286,12 @@ func _schedule_removal(entry: Node):
 	# Fade out
 	var tween = create_tween()
 	tween.tween_property(entry, "modulate:a", 0.0, fade_duration)
-	tween.tween_callback(func():
+	tween.tween_callback(_on_entry_faded.bind(entry))
+
+func _on_entry_faded(entry: Control):
+	if entry:
 		active_entries.erase(entry)
 		entry.queue_free()
-	)
 
 # ============================================
 # EVENT HANDLERS

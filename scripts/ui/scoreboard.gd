@@ -110,9 +110,12 @@ func hide_scoreboard():
 	# Animate out
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.1)
-	tween.tween_callback(func(): visible = false)
+	tween.tween_callback(_hide_self)
 
 	scoreboard_closed.emit()
+
+func _hide_self():
+	visible = false
 
 func toggle_scoreboard():
 	if is_visible:

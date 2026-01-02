@@ -150,7 +150,7 @@ func show_damage_flash(intensity: float = 0.4, duration: float = 0.15):
 
 	damage_tween = create_tween()
 	damage_tween.tween_property(damage_overlay, "color:a", 0.0, duration)
-	damage_tween.tween_callback(func(): effect_finished.emit("damage"))
+	damage_tween.tween_callback(_emit_effect_finished.bind("damage"))
 
 func show_critical_damage():
 	"""Stronger flash for heavy damage"""
@@ -176,7 +176,7 @@ func show_heal_flash(intensity: float = 0.3, duration: float = 0.3):
 
 	heal_tween = create_tween()
 	heal_tween.tween_property(heal_overlay, "color:a", 0.0, duration).set_ease(Tween.EASE_OUT)
-	heal_tween.tween_callback(func(): effect_finished.emit("heal"))
+	heal_tween.tween_callback(_emit_effect_finished.bind("heal"))
 
 func show_full_heal():
 	"""Special effect when fully healed"""
@@ -197,7 +197,7 @@ func show_level_up():
 	level_tween = create_tween()
 	level_tween.tween_property(level_up_overlay, "color:a", 0.5, 0.2)
 	level_tween.tween_property(level_up_overlay, "color:a", 0.0, 0.8).set_ease(Tween.EASE_OUT)
-	level_tween.tween_callback(func(): effect_finished.emit("level_up"))
+	level_tween.tween_callback(_emit_effect_finished.bind("level_up"))
 
 # ============================================
 # KILL STREAK EFFECTS
@@ -232,7 +232,7 @@ func show_kill_streak_effect(intensity: float, _message: String = ""):
 
 	kill_tween = create_tween()
 	kill_tween.tween_property(kill_streak_overlay, "color:a", 0.0, 0.3)
-	kill_tween.tween_callback(func(): effect_finished.emit("kill_streak"))
+	kill_tween.tween_callback(_emit_effect_finished.bind("kill_streak"))
 
 func get_kill_streak() -> int:
 	return kill_streak_count
@@ -285,7 +285,7 @@ func show_flash(color: Color = Color.WHITE, intensity: float = 0.8, duration: fl
 
 	var tween = create_tween()
 	tween.tween_property(flash_overlay, "color:a", 0.0, duration)
-	tween.tween_callback(func(): effect_finished.emit("flash"))
+	tween.tween_callback(_emit_effect_finished.bind("flash"))
 
 func show_explosion_flash():
 	"""Orange/white flash for nearby explosions"""
@@ -298,7 +298,7 @@ func show_flashbang_effect(duration: float = 2.0):
 
 	var tween = create_tween()
 	tween.tween_property(flash_overlay, "color:a", 0.0, duration).set_ease(Tween.EASE_IN)
-	tween.tween_callback(func(): effect_finished.emit("flashbang"))
+	tween.tween_callback(_emit_effect_finished.bind("flashbang"))
 
 func show_poison_effect(duration: float = 0.5):
 	"""Green tint for poison damage"""
@@ -308,7 +308,7 @@ func show_poison_effect(duration: float = 0.5):
 
 	var tween = create_tween()
 	tween.tween_property(damage_overlay, "color:a", 0.0, duration)
-	tween.tween_callback(func(): effect_finished.emit("poison"))
+	tween.tween_callback(_emit_effect_finished.bind("poison"))
 
 func show_fire_effect(duration: float = 0.3):
 	"""Orange tint for fire damage"""
@@ -318,7 +318,7 @@ func show_fire_effect(duration: float = 0.3):
 
 	var tween = create_tween()
 	tween.tween_property(damage_overlay, "color:a", 0.0, duration)
-	tween.tween_callback(func(): effect_finished.emit("fire"))
+	tween.tween_callback(_emit_effect_finished.bind("fire"))
 
 func show_freeze_effect(duration: float = 0.4):
 	"""Blue tint for freeze/slow effects"""
@@ -328,7 +328,7 @@ func show_freeze_effect(duration: float = 0.4):
 
 	var tween = create_tween()
 	tween.tween_property(heal_overlay, "color:a", 0.0, duration)
-	tween.tween_callback(func(): effect_finished.emit("freeze"))
+	tween.tween_callback(_emit_effect_finished.bind("freeze"))
 
 func show_buff_effect(buff_color: Color = Color(0.5, 0.5, 1.0)):
 	"""Brief flash when gaining a buff"""
@@ -338,7 +338,7 @@ func show_buff_effect(buff_color: Color = Color(0.5, 0.5, 1.0)):
 
 	var tween = create_tween()
 	tween.tween_property(level_up_overlay, "color:a", 0.0, 0.4)
-	tween.tween_callback(func(): effect_finished.emit("buff"))
+	tween.tween_callback(_emit_effect_finished.bind("buff"))
 
 # ============================================
 # SCREEN SHAKE (Camera-based)
@@ -378,3 +378,10 @@ func on_enemy_killed(is_headshot: bool = false):
 	if is_headshot:
 		# Extra flash for headshot
 		show_flash(Color(1.0, 0.9, 0.7), 0.15, 0.1)
+
+# ============================================
+# CALLBACK HELPERS
+# ============================================
+
+func _emit_effect_finished(effect_name: String):
+	effect_finished.emit(effect_name)

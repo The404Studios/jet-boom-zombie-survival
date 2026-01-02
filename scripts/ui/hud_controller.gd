@@ -147,7 +147,7 @@ func _show_wave_announcement(text: String):
 		# Hide after 3 seconds
 		var tween = create_tween()
 		tween.tween_interval(3.0)
-		tween.tween_callback(func(): wave_announcement.visible = false)
+		tween.tween_callback(_hide_wave_announcement)
 
 func _process(delta):
 	if not player or not is_instance_valid(player):
@@ -272,7 +272,7 @@ func show_damage_indicator(_direction: Vector3 = Vector3.ZERO):
 		var tween = create_tween()
 		tween.tween_property(damage_indicator, "modulate:a", 1.0, 0.1)
 		tween.tween_property(damage_indicator, "modulate:a", 0.0, 0.3)
-		tween.tween_callback(func(): damage_indicator.visible = false)
+		tween.tween_callback(_hide_damage_indicator)
 
 func update_crosshair_spread(spread: float):
 	if crosshair and crosshair.has_method("set_spread"):
@@ -756,7 +756,12 @@ func show_hitmarker(is_headshot: bool = false, is_kill: bool = false):
 	var tween = create_tween()
 	tween.tween_property(hitmarker, "scale", Vector2.ONE, 0.15)
 	tween.tween_property(hitmarker, "modulate:a", 0.0, 0.1)
-	tween.tween_callback(func(): hitmarker.visible = false; hitmarker.modulate.a = 1.0)
+	tween.tween_callback(_reset_hitmarker)
+
+func _reset_hitmarker():
+	if hitmarker:
+		hitmarker.visible = false
+		hitmarker.modulate.a = 1.0
 
 func add_combo_kill():
 	"""Add to combo counter"""
@@ -935,4 +940,16 @@ func _show_wave_announcement_enhanced(text: String, subtitle: String = ""):
 	# Hold and fade out
 	tween.chain().tween_interval(2.0)
 	tween.tween_property(wave_announcement, "modulate:a", 0.0, 0.5)
-	tween.tween_callback(func(): wave_announcement.visible = false)
+	tween.tween_callback(_hide_wave_announcement)
+
+# ============================================
+# TWEEN CALLBACK HELPERS
+# ============================================
+
+func _hide_wave_announcement():
+	if wave_announcement:
+		wave_announcement.visible = false
+
+func _hide_damage_indicator():
+	if damage_indicator:
+		damage_indicator.visible = false

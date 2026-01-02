@@ -269,7 +269,7 @@ func _on_hover_end():
 	if pickup_prompt:
 		var tween = create_tween()
 		tween.tween_property(pickup_prompt, "modulate:a", 0.0, 0.1)
-		tween.tween_callback(func(): pickup_prompt.visible = false)
+		tween.tween_callback(_hide_pickup_prompt)
 
 	# Scale back
 	var tween = create_tween()
@@ -277,6 +277,10 @@ func _on_hover_end():
 
 	# Hide world tooltip
 	_hide_world_tooltip()
+
+func _hide_pickup_prompt():
+	if pickup_prompt:
+		pickup_prompt.visible = false
 
 func _show_world_tooltip():
 	"""Show world-space tooltip for this item"""
