@@ -36,7 +36,7 @@ signal friend_request_received(from_player_id: int, from_username: String)
 signal game_invite_received(from_player_id: int, from_username: String, server_info: Dictionary)
 signal achievement_unlocked(achievement_data: Dictionary)
 
-@export var hub_url: String = "ws://localhost:5000/hubs/game"
+@export var hub_url: String = "ws://162.248.94.23:5000/hubs/game"
 @export var auto_reconnect: bool = true
 @export var reconnect_delay: float = 5.0
 

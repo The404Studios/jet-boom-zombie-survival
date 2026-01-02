@@ -180,14 +180,29 @@ func _create_logo_section(parent: Control):
 	subtitle.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8, 0.8))
 	logo_container.add_child(subtitle)
 
-	# Server status
+	# Server status with animated indicator
+	var server_hbox = HBoxContainer.new()
+	server_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	server_hbox.add_theme_constant_override("separation", 8)
+	logo_container.add_child(server_hbox)
+
+	var status_dot = ColorRect.new()
+	status_dot.name = "StatusDot"
+	status_dot.custom_minimum_size = Vector2(8, 8)
+	status_dot.color = Color(0.3, 0.8, 0.3)
+	server_hbox.add_child(status_dot)
+
 	var server_label = Label.new()
 	server_label.name = "ServerStatus"
 	server_label.text = "Server: 162.248.94.23"
-	server_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	server_label.add_theme_font_size_override("font_size", 12)
 	server_label.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5, 0.7))
-	logo_container.add_child(server_label)
+	server_hbox.add_child(server_label)
+
+	# Animate the status dot pulsing
+	var dot_tween = create_tween().set_loops()
+	dot_tween.tween_property(status_dot, "modulate:a", 0.4, 1.0)
+	dot_tween.tween_property(status_dot, "modulate:a", 1.0, 1.0)
 
 func _create_form_panel(parent: Control):
 	form_container = PanelContainer.new()
