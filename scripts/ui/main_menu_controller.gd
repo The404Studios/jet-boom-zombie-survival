@@ -35,6 +35,7 @@ var login_panel: Control = null
 var server_browser_panel: Control = null
 var friends_panel: Control = null
 var global_chat: Control = null
+var auth_screen: Control = null
 
 # Steam integration
 var steam_username: String = "Survivor"
@@ -83,14 +84,16 @@ func _ready():
 
 	# Initialize all panels as hidden
 	_hide_all_panels()
-	if main_panel:
-		main_panel.visible = true
-	if top_tabs:
-		top_tabs.visible = true
-	if game_title:
-		game_title.visible = true
 
-	# Check authentication status
+	# Hide main menu until authenticated
+	if main_panel:
+		main_panel.visible = false
+	if top_tabs:
+		top_tabs.visible = false
+	if game_title:
+		game_title.visible = false
+
+	# Check authentication status (will show auth screen or main menu)
 	_check_authentication()
 
 func _connect_buttons():
@@ -687,18 +690,40 @@ func _show_profile_panel():
 	# Create a profile/stats panel
 	var panel = PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.custom_minimum_size = Vector2(400, 350)
-	panel.position = Vector2(-200, -175)
+	panel.custom_minimum_size = Vector2(420, 420)
+	panel.position = Vector2(-210, -210)
+
+	# Style the panel
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.12, 0.98)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_color = Color(1, 0.75, 0.2, 0.5)
+	panel.add_theme_stylebox_override("panel", style)
+
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 25)
+	margin.add_theme_constant_override("margin_right", 25)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(margin)
 
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	panel.add_child(vbox)
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
 
 	# Title
 	var title = Label.new()
 	title.text = "PLAYER PROFILE"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(1, 0.85, 0.4))
 	vbox.add_child(title)
 
 	# Player name
@@ -706,8 +731,16 @@ func _show_profile_panel():
 	name_label.text = steam_username
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 20)
-	name_label.add_theme_color_override("font_color", Color.GOLD)
+	name_label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
 	vbox.add_child(name_label)
+
+	# Server info
+	var server_label = Label.new()
+	server_label.text = "Connected to: 162.248.94.23"
+	server_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	server_label.add_theme_font_size_override("font_size", 11)
+	server_label.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5, 0.7))
+	vbox.add_child(server_label)
 
 	# Stats
 	_add_profile_stat(vbox, "Rank", str(player_rank))
@@ -717,14 +750,52 @@ func _show_profile_panel():
 	_add_profile_stat(vbox, "Waves Survived", str(total_waves_survived))
 	_add_profile_stat(vbox, "Play Time", _format_play_time(play_time_seconds))
 
+	# Buttons container
+	var btn_container = HBoxContainer.new()
+	btn_container.add_theme_constant_override("separation", 10)
+	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(btn_container)
+
 	# Close button
 	var close_btn = Button.new()
-	close_btn.text = "Close"
-	close_btn.custom_minimum_size = Vector2(100, 35)
+	close_btn.text = "CLOSE"
+	close_btn.custom_minimum_size = Vector2(120, 40)
 	close_btn.pressed.connect(func(): panel.queue_free())
-	vbox.add_child(close_btn)
+	btn_container.add_child(close_btn)
+
+	# Logout button
+	var logout_btn = Button.new()
+	logout_btn.text = "SIGN OUT"
+	logout_btn.custom_minimum_size = Vector2(120, 40)
+	logout_btn.pressed.connect(func():
+		panel.queue_free()
+		_perform_logout()
+	)
+
+	# Style logout button with red
+	var logout_style = StyleBoxFlat.new()
+	logout_style.bg_color = Color(0.6, 0.2, 0.2)
+	logout_style.corner_radius_top_left = 6
+	logout_style.corner_radius_top_right = 6
+	logout_style.corner_radius_bottom_left = 6
+	logout_style.corner_radius_bottom_right = 6
+	logout_btn.add_theme_stylebox_override("normal", logout_style)
+
+	var logout_hover = logout_style.duplicate()
+	logout_hover.bg_color = Color(0.7, 0.25, 0.25)
+	logout_btn.add_theme_stylebox_override("hover", logout_hover)
+
+	btn_container.add_child(logout_btn)
 
 	add_child(panel)
+
+func _perform_logout():
+	# Logout from backend
+	if backend:
+		backend.logout()
+
+	# Show auth screen again
+	_show_auth_screen()
 
 func _add_profile_stat(parent: Control, stat_name: String, stat_value: String):
 	var hbox = HBoxContainer.new()
@@ -924,9 +995,60 @@ func _check_authentication():
 	if backend and backend.is_authenticated:
 		# Already authenticated, load player data
 		_load_player_from_backend()
+		_show_main_menu()
 	else:
-		# Show login option or guest mode
-		pass
+		# Show authentication screen
+		_show_auth_screen()
+
+func _show_auth_screen():
+	# Hide main menu elements
+	if main_panel:
+		main_panel.visible = false
+	if top_tabs:
+		top_tabs.visible = false
+	if game_title:
+		game_title.visible = false
+
+	# Create auth screen if needed
+	if not auth_screen:
+		var auth_script = load("res://scripts/ui/auth_screen.gd")
+		auth_screen = Control.new()
+		auth_screen.set_script(auth_script)
+		auth_screen.set_anchors_preset(Control.PRESET_FULL_RECT)
+		auth_screen.authentication_complete.connect(_on_authentication_complete)
+		add_child(auth_screen)
+	else:
+		auth_screen.visible = true
+
+func _on_authentication_complete(player_data: Dictionary):
+	# Update player info
+	_on_backend_logged_in(player_data)
+
+	# Remove auth screen
+	if auth_screen:
+		auth_screen.queue_free()
+		auth_screen = null
+
+	# Show main menu with animation
+	_show_main_menu()
+
+func _show_main_menu():
+	# Show main menu elements with animation
+	if main_panel:
+		main_panel.visible = true
+		main_panel.modulate.a = 0
+		var tween = create_tween()
+		tween.tween_property(main_panel, "modulate:a", 1.0, 0.3)
+	if top_tabs:
+		top_tabs.visible = true
+		top_tabs.modulate.a = 0
+		var tween = create_tween()
+		tween.tween_property(top_tabs, "modulate:a", 1.0, 0.3).set_delay(0.1)
+	if game_title:
+		game_title.visible = true
+		game_title.modulate.a = 0
+		var tween = create_tween()
+		tween.tween_property(game_title, "modulate:a", 1.0, 0.3).set_delay(0.05)
 
 func _load_player_from_backend():
 	if not backend:

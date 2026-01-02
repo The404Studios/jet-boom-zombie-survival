@@ -12,15 +12,20 @@ signal request_completed(endpoint: String, response: Dictionary)
 signal request_failed(endpoint: String, error: String)
 
 # Server configuration
-@export var server_url: String = "http://localhost:5000"
+@export var server_url: String = "http://162.248.94.23:5000"
 @export var request_timeout: float = 30.0
 
 # Authentication state
 var auth_token: String = ""
 var refresh_token: String = ""
+var access_key: String = ""
 var token_expires_at: float = 0.0
 var current_player: Dictionary = {}
 var is_authenticated: bool = false
+var is_access_key_validated: bool = false
+
+signal access_key_validated
+signal access_key_failed(error: String)
 
 # Request queue
 var request_queue: Array = []
@@ -38,12 +43,28 @@ func _process(_delta):
 # AUTHENTICATION
 # ============================================
 
+func validate_access_key(key: String) -> void:
+	"""Validate a server-issued access key"""
+	var body = {"accessKey": key}
+
+	_make_request("POST", "/api/auth/validate-key", body, func(response):
+		if response.success:
+			access_key = key
+			is_access_key_validated = true
+			_save_access_key()
+			access_key_validated.emit()
+		else:
+			is_access_key_validated = false
+			access_key_failed.emit(response.get("error", "Invalid access key"))
+	, false)
+
 func register(username: String, email: String, password: String) -> void:
 	"""Register a new account"""
 	var body = {
 		"username": username,
 		"email": email,
-		"password": password
+		"password": password,
+		"accessKey": access_key
 	}
 
 	_make_request("POST", "/api/auth/register", body, func(response):
@@ -52,13 +73,14 @@ func register(username: String, email: String, password: String) -> void:
 			logged_in.emit(current_player)
 		else:
 			login_failed.emit(response.get("error", "Registration failed"))
-	)
+	, false)
 
 func login(username: String, password: String) -> void:
 	"""Login with existing credentials"""
 	var body = {
 		"username": username,
-		"password": password
+		"password": password,
+		"accessKey": access_key
 	}
 
 	_make_request("POST", "/api/auth/login", body, func(response):
@@ -67,7 +89,7 @@ func login(username: String, password: String) -> void:
 			logged_in.emit(current_player)
 		else:
 			login_failed.emit(response.get("error", "Login failed"))
-	)
+	, false)
 
 func logout() -> void:
 	"""Clear authentication state"""
@@ -465,6 +487,13 @@ func _save_tokens() -> void:
 	config.set_value("auth", "token", auth_token)
 	config.set_value("auth", "refresh_token", refresh_token)
 	config.set_value("auth", "expires_at", token_expires_at)
+	config.set_value("auth", "access_key", access_key)
+	config.save(TOKEN_FILE)
+
+func _save_access_key() -> void:
+	var config = ConfigFile.new()
+	config.load(TOKEN_FILE)  # Load existing if available
+	config.set_value("auth", "access_key", access_key)
 	config.save(TOKEN_FILE)
 
 func _load_tokens() -> void:
@@ -474,6 +503,11 @@ func _load_tokens() -> void:
 		auth_token = config.get_value("auth", "token", "")
 		refresh_token = config.get_value("auth", "refresh_token", "")
 		token_expires_at = config.get_value("auth", "expires_at", 0.0)
+		access_key = config.get_value("auth", "access_key", "")
+
+		# Check if we have a valid access key
+		if not access_key.is_empty():
+			is_access_key_validated = true
 
 		if not auth_token.is_empty() and not is_token_expired():
 			is_authenticated = true
@@ -483,7 +517,17 @@ func _load_tokens() -> void:
 			# Try to refresh
 			refresh_auth()
 
+func get_saved_access_key() -> String:
+	"""Return the saved access key without re-validating"""
+	return access_key
+
+func has_valid_access_key() -> bool:
+	"""Check if we have a validated access key"""
+	return is_access_key_validated and not access_key.is_empty()
+
 func clear_saved_tokens() -> void:
 	var dir = DirAccess.open("user://")
 	if dir and dir.file_exists("auth_tokens.cfg"):
 		dir.remove("auth_tokens.cfg")
+	access_key = ""
+	is_access_key_validated = false
