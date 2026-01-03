@@ -1006,15 +1006,10 @@ func _respawn():
 
 	# Network replicate respawn
 	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
-		_player_respawned.rpc(multiplayer.get_unique_id(), global_position)
+		_player_respawned.rpc(global_position)
 
 	if has_node("/root/ChatSystem"):
 		get_node("/root/ChatSystem").emit_system_message("Respawned!")
-
-@rpc("authority", "call_local", "reliable")
-func _player_respawned(_player_id: int, _spawn_position: Vector3):
-	"""Network replicated player respawn"""
-	pass  # Could add respawn effects here
 
 func _camera_shake(intensity: float, duration: float):
 	if not camera:
