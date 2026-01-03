@@ -480,14 +480,20 @@ func get_alive_count() -> int:
 func _connect_player_signals(player: Node, peer_id: int):
 	"""Connect to local player signals"""
 	if player.has_signal("died"):
-		player.died.connect(func(): on_player_died(peer_id))
+		player.died.connect(_on_local_player_died.bind(peer_id))
 	elif player.has_signal("player_died"):
-		player.player_died.connect(func(): on_player_died(peer_id))
+		player.player_died.connect(_on_local_player_died.bind(peer_id))
 
 func _connect_observed_player_signals(player: Node, peer_id: int):
 	"""Connect to observed player signals"""
 	if player.has_signal("player_died"):
-		player.player_died.connect(func(id): on_player_died(id))
+		player.player_died.connect(_on_observed_player_died)
+
+func _on_local_player_died(peer_id: int):
+	on_player_died(peer_id)
+
+func _on_observed_player_died(id: int):
+	on_player_died(id)
 
 func _on_player_connected(peer_id: int, player_info: Dictionary):
 	"""Handle new player connection"""

@@ -864,6 +864,9 @@ func _on_class_confirmed(overlay: Control):
 func _on_class_back_pressed(overlay: Control):
 	overlay.visible = false
 
+func _hide_overlay(overlay: Control):
+	overlay.visible = false
+
 func _create_simple_class_selection(parent: Control):
 	# Simple fallback class selection
 	var panel = PanelContainer.new()
@@ -909,7 +912,7 @@ func _create_simple_class_selection(parent: Control):
 	var close_btn = Button.new()
 	close_btn.text = "CLOSE"
 	close_btn.custom_minimum_size = Vector2(0, 35)
-	close_btn.pressed.connect(func(): parent.visible = false)
+	close_btn.pressed.connect(_hide_overlay.bind(parent))
 	vbox.add_child(close_btn)
 
 func _on_simple_class_selected(class_id: String, overlay: Control):
