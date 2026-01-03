@@ -296,14 +296,49 @@ func _complete_trade(trade_id: int):
 	# Player 2 receives Player 1's items
 
 	# This would integrate with InventorySystem
-	var inventory_system = get_node_or_null("/root/GameManager/InventorySystem")
+	var inventory_system = get_node_or_null("/root/InventorySystem")
+	if not inventory_system:
+		inventory_system = get_node_or_null("/root/GameManager/InventorySystem")
 
 	# Transfer currency
 	var player_persistence = get_node_or_null("/root/PlayerPersistence")
 	if player_persistence:
-		# Deduct from player 1, add to player 2
-		# Deduct from player 2, add to player 1
-		pass
+		# Get our player ID
+		var our_id = 0
+		if backend and backend.current_player:
+			our_id = backend.current_player.get("id", 0)
+
+		# Determine currency exchange
+		if our_id == trade.player1_id:
+			# We are player 1 - deduct our currency, add theirs
+			if trade.player1_currency > 0:
+				player_persistence.spend_currency("gold", trade.player1_currency)
+			if trade.player2_currency > 0:
+				player_persistence.add_currency("gold", trade.player2_currency)
+		elif our_id == trade.player2_id:
+			# We are player 2 - deduct our currency, add theirs
+			if trade.player2_currency > 0:
+				player_persistence.spend_currency("gold", trade.player2_currency)
+			if trade.player1_currency > 0:
+				player_persistence.add_currency("gold", trade.player1_currency)
+
+	# Transfer items via inventory system
+	if inventory_system:
+		var our_id = 0
+		if backend and backend.current_player:
+			our_id = backend.current_player.get("id", 0)
+
+		# Determine which items we receive
+		var items_to_receive = []
+		if our_id == trade.player1_id:
+			items_to_receive = trade.player2_items
+		elif our_id == trade.player2_id:
+			items_to_receive = trade.player1_items
+
+		# Add received items to inventory
+		for item in items_to_receive:
+			if item and inventory_system.has_method("add_item"):
+				inventory_system.add_item(item)
 
 	trade.status = "completed"
 	trade_completed.emit(trade_id)
@@ -415,11 +450,25 @@ func _on_backend_trade_completed(trade_id: int, items_received: Array):
 	print("Trade %d completed, received %d items" % [trade_id, items_received.size()])
 
 	# Add items to inventory
-	var inventory_system = get_node_or_null("/root/GameManager/InventorySystem")
+	var inventory_system = get_node_or_null("/root/InventorySystem")
+	if not inventory_system:
+		inventory_system = get_node_or_null("/root/GameManager/InventorySystem")
+
 	if inventory_system:
+		var player_persistence = get_node_or_null("/root/PlayerPersistence")
 		for item_data in items_received:
-			# Would add item to inventory here
-			pass
+			if item_data is Dictionary:
+				# Deserialize item from backend data
+				if player_persistence and player_persistence.has_method("deserialize_item"):
+					var item = player_persistence.deserialize_item(item_data)
+					if item and inventory_system.has_method("add_item"):
+						inventory_system.add_item(item)
+				elif inventory_system.has_method("add_item_from_data"):
+					inventory_system.add_item_from_data(item_data)
+			elif item_data is Resource:
+				# Already a resource, add directly
+				if inventory_system.has_method("add_item"):
+					inventory_system.add_item(item_data)
 
 	trade_completed.emit(trade_id)
 	if active_trades.has(trade_id):

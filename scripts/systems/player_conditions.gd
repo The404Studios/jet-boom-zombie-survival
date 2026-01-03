@@ -387,15 +387,99 @@ func _apply_condition_heal(amount: float):
 # EFFECT APPLICATION
 # ============================================
 
-func _apply_condition_effects(_condition_id: String):
+func _apply_condition_effects(condition_id: String):
 	"""Apply immediate effects of a condition"""
-	# Effects are generally queried through get_* methods
-	# This could trigger visual effects, sounds, etc.
-	pass
+	if not condition_data.has(condition_id):
+		return
 
-func _remove_condition_effects(_condition_id: String):
+	var data = condition_data[condition_id]
+
+	# Play application sound
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and audio_manager.has_method("play_sfx"):
+		match data.type:
+			ConditionType.DOT:
+				audio_manager.play_sfx("debuff_applied")
+			ConditionType.BUFF:
+				audio_manager.play_sfx("buff_applied")
+			ConditionType.CONTROL:
+				audio_manager.play_sfx("control_effect")
+
+	# Apply visual effects
+	var screen_effects = get_node_or_null("/root/ScreenEffects")
+	if not screen_effects and player:
+		screen_effects = player.get_node_or_null("ScreenEffects")
+
+	if screen_effects and screen_effects.has_method("apply_effect"):
+		match condition_id:
+			"poison":
+				screen_effects.apply_effect("poison_overlay", data.default_duration)
+			"burn":
+				screen_effects.apply_effect("burn_overlay", data.default_duration)
+			"freeze":
+				screen_effects.apply_effect("freeze_overlay", data.default_duration)
+			"bleed":
+				screen_effects.apply_effect("bleed_vignette", data.default_duration)
+			"rage":
+				screen_effects.apply_effect("rage_overlay", data.default_duration)
+
+	# Update player movement if it's a control effect
+	if data.type == ConditionType.CONTROL or "movement_slow" in data or "movement_boost" in data:
+		if player and player.has_method("update_movement_modifiers"):
+			player.update_movement_modifiers()
+
+	# Notify HUD
+	var hud = get_node_or_null("/root/HUDController")
+	if not hud and player:
+		hud = player.get_node_or_null("HUD")
+	if hud and hud.has_method("add_status_effect"):
+		var icon = data.get("icon", condition_id)
+		var color = data.get("color", Color.WHITE)
+		var duration = active_conditions[condition_id].remaining_time if active_conditions.has(condition_id) else data.default_duration
+		hud.add_status_effect(condition_id, data.name, icon, color, duration)
+
+func _remove_condition_effects(condition_id: String):
 	"""Remove effects when condition ends"""
-	pass
+	if not condition_data.has(condition_id):
+		return
+
+	var data = condition_data[condition_id]
+
+	# Remove visual effects
+	var screen_effects = get_node_or_null("/root/ScreenEffects")
+	if not screen_effects and player:
+		screen_effects = player.get_node_or_null("ScreenEffects")
+
+	if screen_effects and screen_effects.has_method("remove_effect"):
+		match condition_id:
+			"poison":
+				screen_effects.remove_effect("poison_overlay")
+			"burn":
+				screen_effects.remove_effect("burn_overlay")
+			"freeze":
+				screen_effects.remove_effect("freeze_overlay")
+			"bleed":
+				screen_effects.remove_effect("bleed_vignette")
+			"rage":
+				screen_effects.remove_effect("rage_overlay")
+
+	# Update player movement
+	if data.type == ConditionType.CONTROL or "movement_slow" in data or "movement_boost" in data:
+		if player and player.has_method("update_movement_modifiers"):
+			player.update_movement_modifiers()
+
+	# Notify HUD to remove status icon
+	var hud = get_node_or_null("/root/HUDController")
+	if not hud and player:
+		hud = player.get_node_or_null("HUD")
+	if hud and hud.has_method("remove_status_effect"):
+		hud.remove_status_effect(condition_id)
+
+	# Play removal sound for buffs
+	if data.type == ConditionType.BUFF:
+		var audio_manager = get_node_or_null("/root/AudioManager")
+		if audio_manager and audio_manager.has_method("play_sfx"):
+			audio_manager.play_sfx("buff_expired")
 
 func _get_resistance_for_condition(condition_id: String) -> float:
 	"""Get player's resistance to a condition type"""

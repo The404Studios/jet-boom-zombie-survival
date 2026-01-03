@@ -524,8 +524,17 @@ func _on_damage_dealt(attacker_id: int, _target: Node, damage: float, _position:
 		player_session_stats[attacker_id].damage_dealt += damage
 
 func _on_headshot(attacker_id: int, _target: Node):
-	# Tracked via zombie_killed
-	pass
+	# Track headshot in player stats
+	total_headshots += 1
+
+	if player_session_stats.has(attacker_id):
+		if not player_session_stats[attacker_id].has("headshots"):
+			player_session_stats[attacker_id].headshots = 0
+		player_session_stats[attacker_id].headshots += 1
+
+	# Show hitmarker effect
+	if hud_controller and hud_controller.has_method("show_headshot_hitmarker"):
+		hud_controller.show_headshot_hitmarker()
 
 func _on_round_started(round_num: int):
 	round_start_time = Time.get_unix_time_from_system()
@@ -552,10 +561,19 @@ func _on_wave_completed(wave_num: int):
 	if end_round_stats:
 		end_round_stats.show_round_complete(wave_num, stats, true)
 
-func _on_round_ended(_round_num: int, victory: bool):
+func _on_round_ended(round_num: int, victory: bool):
 	if not victory:
-		# Don't show stats here, wait for game over
-		pass
+		# Game over - show final stats
+		var round_time = Time.get_unix_time_from_system() - round_start_time
+		var stats = _compile_session_stats(false)
+		stats.round_time = round_time
+		stats.final_round = round_num
+
+		if end_round_stats:
+			end_round_stats.show_game_over(round_num, stats)
+
+		if notification_manager:
+			notification_manager.announce("GAME OVER", "Survived %d waves" % round_num)
 
 func _on_round_ended_rm(round_num: int, victory: bool):
 	if victory:
@@ -595,7 +613,41 @@ func _on_all_players_dead():
 
 func _on_phase_changed(phase):
 	# Update UI based on game phase
-	pass
+	var phase_name = ""
+	var phase_color = Color.WHITE
+
+	# Determine phase info (phase could be enum or string)
+	if phase is int:
+		match phase:
+			0:  # LOBBY/WAITING
+				phase_name = "Waiting for Players"
+				phase_color = Color(0.5, 0.5, 0.8)
+			1:  # WARMUP
+				phase_name = "Warmup"
+				phase_color = Color(0.8, 0.8, 0.2)
+			2:  # COMBAT
+				phase_name = "Combat"
+				phase_color = Color(0.8, 0.2, 0.2)
+			3:  # INTERMISSION
+				phase_name = "Intermission"
+				phase_color = Color(0.2, 0.8, 0.2)
+			4:  # BOSS
+				phase_name = "Boss Wave"
+				phase_color = Color(0.8, 0.2, 0.8)
+			5:  # ENDED
+				phase_name = "Game Over"
+				phase_color = Color(0.5, 0.5, 0.5)
+	elif phase is String:
+		phase_name = phase.capitalize()
+
+	# Notify HUD
+	if hud_controller and hud_controller.has_method("set_game_phase"):
+		hud_controller.set_game_phase(phase_name, phase_color)
+
+	# Show phase announcement for important transitions
+	if notification_manager and phase_name != "":
+		if phase is int and phase in [2, 4]:  # Combat or Boss
+			notification_manager.announce(phase_name.to_upper(), "")
 
 func _on_continue_from_stats():
 	# Resume game after viewing round stats
