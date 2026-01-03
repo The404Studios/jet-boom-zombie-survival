@@ -968,12 +968,6 @@ func _die():
 	await get_tree().create_timer(5.0).timeout
 	_respawn()
 
-@rpc("authority", "call_local", "reliable")
-func _player_died(_player_id: int):
-	"""Network replicated player death"""
-	if has_node("/root/ChatSystem"):
-		get_node("/root/ChatSystem").emit_system_message("Player died!")
-
 func _show_death_screen():
 	"""Show death UI"""
 	# Could create a death screen UI here
