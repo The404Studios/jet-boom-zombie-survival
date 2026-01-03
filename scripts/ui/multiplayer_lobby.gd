@@ -202,7 +202,7 @@ func _create_chat_panel(parent: Control):
 
 	var send_btn = Button.new()
 	send_btn.text = "Send"
-	send_btn.pressed.connect(func(): _on_chat_submitted(chat_input.text))
+	send_btn.pressed.connect(_on_chat_send_pressed)
 	input_hbox.add_child(send_btn)
 
 func _create_map_vote_panel(parent: Control):
@@ -278,7 +278,7 @@ func _create_map_button(map_data: Dictionary):
 	vbox.add_child(vote_label)
 
 	btn.add_child(vbox)
-	btn.pressed.connect(func(): _on_map_voted(map_data.id))
+	btn.pressed.connect(_on_map_voted.bind(map_data.id))
 
 	map_vote_container.add_child(btn)
 	map_buttons[map_data.id] = btn
@@ -584,7 +584,7 @@ func _create_player_entry(peer_id: int, player_data: Dictionary) -> Control:
 		var kick_btn = Button.new()
 		kick_btn.text = "X"
 		kick_btn.custom_minimum_size = Vector2(30, 30)
-		kick_btn.pressed.connect(func(): _kick_player(peer_id))
+		kick_btn.pressed.connect(_kick_player.bind(peer_id))
 		hbox.add_child(kick_btn)
 
 	return panel
@@ -673,6 +673,9 @@ func get_winning_map() -> String:
 # ============================================
 # CHAT
 # ============================================
+
+func _on_chat_send_pressed():
+	_on_chat_submitted(chat_input.text)
 
 func _on_chat_submitted(text: String):
 	if text.is_empty():

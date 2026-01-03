@@ -634,7 +634,7 @@ func _create_server_entry(server: Dictionary) -> Control:
 	var button = Button.new()
 	button.flat = true
 	button.set_anchors_preset(Control.PRESET_FULL_RECT)
-	button.pressed.connect(func(): _on_server_clicked(server))
+	button.pressed.connect(_on_server_clicked.bind(server))
 	panel.add_child(button)
 
 	var margin = MarginContainer.new()
