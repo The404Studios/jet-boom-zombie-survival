@@ -361,14 +361,31 @@ func receive_all_players(all_players: Dictionary):
 		if peer_id != local_player_id and not players.has(peer_id):
 			register_player(peer_id, all_players[peer_id])
 
-func spawn_player(peer_id: int, _player_info: Dictionary):
+func spawn_player(peer_id: int, player_info: Dictionary):
 	# Don't spawn if already exists
 	if player_nodes.has(peer_id):
 		return
 
-	# Spawn player node
-	var player_scene = preload("res://scenes/player/player_fps.tscn")
-	var player = player_scene.instantiate()
+	var player: Node
+	var is_local = peer_id == local_player_id
+
+	# Use different scenes for local vs remote players
+	if is_local:
+		# Local player uses FPS controller with viewmodel
+		var player_scene = preload("res://scenes/player/player_fps.tscn")
+		player = player_scene.instantiate()
+	else:
+		# Remote players use observed player (third person model)
+		var observed_scene = preload("res://scenes/player/observed_player.tscn")
+		player = observed_scene.instantiate()
+
+		# Set player info on observed player
+		if player.has_method("set_player_info"):
+			player.set_player_info(player_info)
+		if "peer_id" in player:
+			player.peer_id = peer_id
+		if "player_name" in player:
+			player.player_name = player_info.get("name", "Player %d" % peer_id)
 
 	player.name = "Player_%d" % peer_id
 	player.set_multiplayer_authority(peer_id)
@@ -386,7 +403,7 @@ func spawn_player(peer_id: int, _player_info: Dictionary):
 	scene.add_child(player)
 	player_nodes[peer_id] = player
 
-	print("Spawned player node for peer %d" % peer_id)
+	print("Spawned %s player node for peer %d" % ["local" if is_local else "observed", peer_id])
 
 func spawn_all_players():
 	"""Spawn player nodes for all connected players"""

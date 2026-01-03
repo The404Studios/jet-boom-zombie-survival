@@ -1,16 +1,60 @@
-[gd_scene load_steps=6 format=3 uid="uid://observed_player001"]
+[gd_scene load_steps=12 format=3 uid="uid://observed_player001"]
 
 [ext_resource type="Script" path="res://scripts/player/observed_player.gd" id="1"]
-[ext_resource type="PackedScene" path="res://Free_Character/male_zombie/male_z.glb" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.4
 height = 1.8
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_nameplate"]
+[sub_resource type="StandardMaterial3D" id="PlayerBodyMaterial"]
+albedo_color = Color(0.3, 0.35, 0.4, 1.0)
+roughness = 0.8
+
+[sub_resource type="CapsuleMesh" id="PlayerBodyMesh"]
+radius = 0.35
+height = 1.4
+
+[sub_resource type="SphereMesh" id="PlayerHeadMesh"]
+radius = 0.2
+
+[sub_resource type="StandardMaterial3D" id="HealthBarBackground"]
 shading_mode = 0
-albedo_color = Color(1, 1, 1, 1)
+albedo_color = Color(0.2, 0.2, 0.2, 0.8)
 billboard_mode = 1
+
+[sub_resource type="StandardMaterial3D" id="HealthBarFill"]
+shading_mode = 0
+albedo_color = Color(0.2, 0.9, 0.3, 1.0)
+billboard_mode = 1
+
+[sub_resource type="BoxMesh" id="HealthBarBackgroundMesh"]
+size = Vector3(0.6, 0.08, 0.01)
+
+[sub_resource type="BoxMesh" id="HealthBarFillMesh"]
+size = Vector3(0.58, 0.06, 0.01)
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_obs"]
+properties/0/path = NodePath(".:target_position")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:target_rotation")
+properties/1/spawn = true
+properties/1/replication_mode = 1
+properties/2/path = NodePath(".:target_head_rotation")
+properties/2/spawn = true
+properties/2/replication_mode = 1
+properties/3/path = NodePath(".:current_health")
+properties/3/spawn = true
+properties/3/replication_mode = 2
+properties/4/path = NodePath(".:max_health")
+properties/4/spawn = true
+properties/4/replication_mode = 2
+properties/5/path = NodePath(".:is_sprinting")
+properties/5/spawn = true
+properties/5/replication_mode = 1
+properties/6/path = NodePath(".:is_dead")
+properties/6/spawn = true
+properties/6/replication_mode = 2
 
 [node name="ObservedPlayer" type="CharacterBody3D" groups=["players", "observed_players"]]
 collision_layer = 2
@@ -21,14 +65,26 @@ script = ExtResource("1")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
 shape = SubResource("CapsuleShape3D_1")
 
-[node name="Model" parent="." instance=ExtResource("2")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_obs")
+replication_interval = 0.033
 
-[node name="WeaponHolder" type="Node3D" parent="Model"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.2, -0.2)
+[node name="Model" type="Node3D" parent="."]
+
+[node name="Body" type="MeshInstance3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("PlayerBodyMesh")
+surface_material_override/0 = SubResource("PlayerBodyMaterial")
 
 [node name="Head" type="Node3D" parent="Model"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.6, 0)
+
+[node name="HeadMesh" type="MeshInstance3D" parent="Model/Head"]
+mesh = SubResource("PlayerHeadMesh")
+surface_material_override/0 = SubResource("PlayerBodyMaterial")
+
+[node name="WeaponHolder" type="Node3D" parent="Model"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 1.2, -0.2)
 
 [node name="Nameplate" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
@@ -44,10 +100,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
 visible = false
 
 [node name="Background" type="MeshInstance3D" parent="HealthBar3D"]
-mesh = SubResource("CapsuleShape3D_1")
+mesh = SubResource("HealthBarBackgroundMesh")
+surface_material_override/0 = SubResource("HealthBarBackground")
 
 [node name="Fill" type="MeshInstance3D" parent="HealthBar3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.01)
+mesh = SubResource("HealthBarFillMesh")
+surface_material_override/0 = SubResource("HealthBarFill")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 

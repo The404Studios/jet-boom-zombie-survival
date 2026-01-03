@@ -283,6 +283,9 @@ func _physics_process(delta):
 	# Health regeneration from skills/attributes
 	_update_health_regen(delta)
 
+	# Network state broadcast for observed players
+	_update_network_state(delta)
+
 func _update_stamina(delta):
 	"""Handle stamina drain and regeneration"""
 	if is_sprinting and velocity.length() > 0.1:
@@ -1701,3 +1704,45 @@ func apply_player_state(state: Dictionary):
 		max_health = state.max_health
 	if state.has("is_sprinting"):
 		is_sprinting = state.is_sprinting
+
+# State broadcast timer for observed players
+var _state_broadcast_timer: float = 0.0
+const STATE_BROADCAST_INTERVAL: float = 0.033  # ~30Hz
+
+func _broadcast_state_to_observers():
+	"""Broadcast local player state to all clients for observed players"""
+	if not is_local_player:
+		return
+	if not multiplayer.has_multiplayer_peer():
+		return
+	if multiplayer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return
+
+	var state = get_player_state()
+	_receive_player_state.rpc(state)
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _receive_player_state(state: Dictionary):
+	"""Receive state from the authoritative player"""
+	# Forward to observed player representation
+	var sender_id = multiplayer.get_remote_sender_id()
+	if sender_id == multiplayer.get_unique_id():
+		return  # Don't process our own state
+
+	# Find the correct observed player node matching the sender
+	var observed_players = get_tree().get_nodes_in_group("observed_players")
+	for observed in observed_players:
+		if "peer_id" in observed and observed.peer_id == sender_id:
+			if observed.has_method("receive_state"):
+				observed.receive_state(state)
+			break
+
+# Call this in _physics_process for local player
+func _update_network_state(delta: float):
+	if not is_local_player:
+		return
+
+	_state_broadcast_timer += delta
+	if _state_broadcast_timer >= STATE_BROADCAST_INTERVAL:
+		_state_broadcast_timer = 0.0
+		_broadcast_state_to_observers()
