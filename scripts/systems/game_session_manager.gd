@@ -1,5 +1,5 @@
 extends Node
-class_name GameSessionManager
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Master game session manager - wires all systems together
 # Coordinates: GameEventManager, PlayerManager, RoundManager, WaveManager,

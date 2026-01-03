@@ -1,5 +1,5 @@
 extends Node
-class_name SpawnManager
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Manages spawn points for players, zombies, and items
 # Handles spawn selection, validation, and dynamic spawn creation

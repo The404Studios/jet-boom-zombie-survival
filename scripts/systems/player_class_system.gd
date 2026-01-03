@@ -1,5 +1,5 @@
 extends Node
-class_name PlayerClassSystem
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Player class/role system
 # Defines different playstyles with unique abilities and stat modifiers

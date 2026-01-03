@@ -1,5 +1,5 @@
 extends Node
-class_name InventorySystem
+# Note: Do not use class_name here - this script is an autoload singleton
 
 signal inventory_changed
 signal item_equipped(item)  # item: ItemData

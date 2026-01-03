@@ -1,5 +1,5 @@
 extends Node
-class_name WebSocketClient
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # WebSocket client for real-time communication with the backend
 # Uses SignalR protocol for server communication

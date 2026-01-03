@@ -1,5 +1,5 @@
 extends Node
-class_name BackendClient
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # HTTP client for communicating with the C# backend server
 # Handles authentication, player data, server browser, leaderboards, and shop

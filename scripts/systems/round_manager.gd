@@ -1,5 +1,5 @@
 extends Node
-class_name RoundManager
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Manages game rounds/sessions for zombie survival
 # Handles round states, win/lose conditions, and round transitions

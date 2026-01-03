@@ -1,5 +1,5 @@
 extends Node
-class_name PlayerManager
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Manages all players in the game (local and remote)
 # Handles spawning, respawning, tracking, and player state

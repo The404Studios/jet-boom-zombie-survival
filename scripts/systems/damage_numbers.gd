@@ -1,5 +1,5 @@
 extends Node
-class_name DamageNumbersManager
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Manages floating damage numbers for visual combat feedback
 # Supports different damage types, critical hits, and pooling

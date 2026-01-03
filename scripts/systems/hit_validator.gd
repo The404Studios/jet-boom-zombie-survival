@@ -1,5 +1,5 @@
 extends Node
-class_name HitValidator
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Server-side hit validation with lag compensation (backtrack)
 # Stores historical positions of all entities for hit verification

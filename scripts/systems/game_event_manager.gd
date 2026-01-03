@@ -1,5 +1,5 @@
 extends Node
-class_name GameEventManager
+# Note: Do not use class_name here - this script is an autoload singleton
 
 # Central event coordination hub
 # Connects all game systems and broadcasts events between them
