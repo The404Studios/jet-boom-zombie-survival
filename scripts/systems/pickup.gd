@@ -163,9 +163,37 @@ func _start_respawn():
 	visible = true
 
 func _play_pickup_sound():
-	# Would play sound here if AudioStreamPlayer exists
-	pass
+	# Play pickup sound via AudioManager
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and audio_manager.has_method("play_sfx"):
+		var sound_name = "pickup_item"
+		match pickup_type:
+			PickupType.AMMO_RIFLE, PickupType.AMMO_SHOTGUN, PickupType.AMMO_PISTOL, PickupType.AMMO_RPG:
+				sound_name = "pickup_ammo"
+			PickupType.HEALTH_SMALL, PickupType.HEALTH_MEDIUM, PickupType.HEALTH_LARGE:
+				sound_name = "pickup_health"
+			PickupType.GRENADE_EXPLOSIVE, PickupType.GRENADE_FLASHBANG, PickupType.GRENADE_SMOKE:
+				sound_name = "pickup_grenade"
+			PickupType.FOOD, PickupType.DRINK:
+				sound_name = "pickup_consumable"
+		audio_manager.play_sfx(sound_name, global_position)
+	else:
+		# Fallback: check for child AudioStreamPlayer3D
+		var audio_player = get_node_or_null("AudioStreamPlayer3D")
+		if audio_player:
+			audio_player.play()
 
 func _show_pickup_effect():
-	# Could spawn particles or flash effect
-	pass
+	# Spawn pickup effect via VFXManager
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	if vfx_manager and vfx_manager.has_method("spawn_effect"):
+		var effect_name = "pickup_sparkle"
+		var effect_color = Color.WHITE
+		match pickup_type:
+			PickupType.HEALTH_SMALL, PickupType.HEALTH_MEDIUM, PickupType.HEALTH_LARGE:
+				effect_color = Color(0.3, 1.0, 0.3)  # Green
+			PickupType.AMMO_RIFLE, PickupType.AMMO_SHOTGUN, PickupType.AMMO_PISTOL, PickupType.AMMO_RPG:
+				effect_color = Color(1.0, 0.8, 0.2)  # Yellow
+			PickupType.GRENADE_EXPLOSIVE, PickupType.GRENADE_FLASHBANG, PickupType.GRENADE_SMOKE:
+				effect_color = Color(1.0, 0.4, 0.2)  # Orange
+		vfx_manager.spawn_effect(effect_name, global_position, effect_color)

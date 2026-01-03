@@ -805,9 +805,125 @@ func _on_leave_pressed():
 	lobby_closed.emit()
 
 func _on_change_class_pressed():
-	# Would show class selection UI
-	# For now, emit signal that parent can handle
-	pass
+	# Show class selection overlay
+	var class_overlay = get_node_or_null("ClassSelectionOverlay")
+	if class_overlay:
+		class_overlay.visible = true
+		return
+
+	# Create class selection overlay
+	class_overlay = Control.new()
+	class_overlay.name = "ClassSelectionOverlay"
+	class_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(class_overlay)
+
+	# Semi-transparent background
+	var bg = ColorRect.new()
+	bg.color = Color(0, 0, 0, 0.8)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	class_overlay.add_child(bg)
+
+	# Try to load ClassSelectionUI
+	var ClassSelectionUIScript = load("res://scripts/ui/class_selection_ui.gd")
+	if ClassSelectionUIScript:
+		var class_ui = Control.new()
+		class_ui.set_script(ClassSelectionUIScript)
+		class_ui.set_anchors_preset(Control.PRESET_CENTER)
+		class_ui.custom_minimum_size = Vector2(800, 500)
+		class_ui.position = Vector2(-400, -250)
+		class_overlay.add_child(class_ui)
+
+		# Connect signals
+		class_ui.class_selected.connect(_on_class_selected)
+		class_ui.selection_confirmed.connect(_on_class_confirmed.bind(class_overlay))
+		class_ui.back_pressed.connect(_on_class_back_pressed.bind(class_overlay))
+	else:
+		# Fallback: simple class selection
+		_create_simple_class_selection(class_overlay)
+
+func _on_class_selected(class_id: String):
+	# Update local player's class display
+	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
+	update_player_class(local_id, class_id)
+
+	# Update class label in quick panel
+	var class_label = get_node_or_null("HBoxContainer/VBoxContainer/PanelContainer/MarginContainer/HBoxContainer/VBoxContainer/CurrentClassLabel")
+	if class_label:
+		class_label.text = "Selected Class: " + class_id.capitalize()
+
+func _on_class_confirmed(overlay: Control):
+	overlay.visible = false
+	# Sync class selection to network
+	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
+	if multiplayer.has_multiplayer_peer():
+		var class_system = get_node_or_null("/root/PlayerClassSystem")
+		if class_system and class_system.has_method("get_selected_class"):
+			var selected = class_system.get_selected_class()
+			rpc("_sync_player_class", local_id, selected)
+
+func _on_class_back_pressed(overlay: Control):
+	overlay.visible = false
+
+func _create_simple_class_selection(parent: Control):
+	# Simple fallback class selection
+	var panel = PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.custom_minimum_size = Vector2(400, 350)
+	panel.position = Vector2(-200, -175)
+	parent.add_child(panel)
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.12, 0.15)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", style)
+
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(margin)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 15)
+	margin.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "SELECT CLASS"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(1, 0.8, 0.3))
+	vbox.add_child(title)
+
+	var classes = ["survivor", "medic", "engineer", "scout", "tank", "demolitionist"]
+	for class_id in classes:
+		var btn = Button.new()
+		btn.text = class_id.capitalize()
+		btn.custom_minimum_size = Vector2(0, 40)
+		btn.pressed.connect(_on_simple_class_selected.bind(class_id, parent))
+		vbox.add_child(btn)
+
+	var close_btn = Button.new()
+	close_btn.text = "CLOSE"
+	close_btn.custom_minimum_size = Vector2(0, 35)
+	close_btn.pressed.connect(func(): parent.visible = false)
+	vbox.add_child(close_btn)
+
+func _on_simple_class_selected(class_id: String, overlay: Control):
+	_on_class_selected(class_id)
+	overlay.visible = false
+
+	# Sync to network
+	var local_id = multiplayer.get_unique_id() if multiplayer.has_multiplayer_peer() else 1
+	if multiplayer.has_multiplayer_peer():
+		rpc("_sync_player_class", local_id, class_id)
+
+@rpc("any_peer", "reliable")
+func _sync_player_class(peer_id: int, class_id: String):
+	update_player_class(peer_id, class_id)
 
 func _kick_player(peer_id: int):
 	if not is_host:
@@ -815,10 +931,22 @@ func _kick_player(peer_id: int):
 
 	player_kicked.emit(peer_id)
 
-	# Disconnect the peer
+	# Disconnect the peer via RPC to server
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		# Notify the player they're being kicked
+		rpc_id(peer_id, "_receive_kick_notification")
+		# Disconnect after a short delay to ensure message is sent
+		await get_tree().create_timer(0.1).timeout
+		multiplayer.multiplayer_peer.disconnect_peer(peer_id)
+
+@rpc("authority", "reliable")
+func _receive_kick_notification():
+	# Client was kicked - disconnect and return to menu
 	if multiplayer.has_multiplayer_peer():
-		# Would need to implement kick on server
-		pass
+		multiplayer.multiplayer_peer = null
+	_add_chat_message("[color=red]You have been kicked from the server[/color]")
+	await get_tree().create_timer(1.0).timeout
+	lobby_closed.emit()
 
 # ============================================
 # NETWORK CALLBACKS

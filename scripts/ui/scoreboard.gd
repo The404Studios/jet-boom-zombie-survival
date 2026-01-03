@@ -194,7 +194,7 @@ func _get_all_player_data() -> Array:
 				"deaths": data.deaths if data else 0,
 				"score": data.score if data else 0,
 				"is_alive": data.is_alive if data else true,
-				"ping": 0  # Would get from network
+				"ping": _get_player_ping(peer_id)
 			})
 	elif network_manager:
 		# Fallback to network manager
@@ -438,3 +438,34 @@ func _on_player_spawned(peer_id: int, _player: Node):
 
 func _on_player_despawned(peer_id: int):
 	_remove_player_row(peer_id)
+
+func _get_player_ping(peer_id: int) -> int:
+	"""Get ping for a player from network manager or multiplayer peer"""
+	# Try to get from network manager first
+	if network_manager:
+		if network_manager.has_method("get_player_ping"):
+			return network_manager.get_player_ping(peer_id)
+		if "player_pings" in network_manager:
+			var pings = network_manager.player_pings
+			if pings.has(peer_id):
+				return pings[peer_id]
+
+	# Try to get from ENet peer if available
+	if multiplayer.has_multiplayer_peer():
+		var peer = multiplayer.multiplayer_peer
+		if peer is ENetMultiplayerPeer:
+			# For local player, ping is 0
+			if peer_id == multiplayer.get_unique_id():
+				return 0
+			# Try to get peer connection info
+			var enet_peer = peer.get_peer(peer_id)
+			if enet_peer:
+				# ENet provides round trip time in ms
+				return enet_peer.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)
+
+	# Try WebSocket hub for server ping
+	var websocket_hub = get_node_or_null("/root/WebSocketHub")
+	if websocket_hub and "current_ping" in websocket_hub:
+		return websocket_hub.current_ping
+
+	return 0

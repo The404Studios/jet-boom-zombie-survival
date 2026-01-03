@@ -30,6 +30,9 @@ signal access_key_failed(error: String)
 # Request queue
 var request_queue: Array = []
 var active_requests: Dictionary = {}
+var max_concurrent_requests: int = 5
+var min_request_interval: float = 0.1  # 100ms between requests
+var last_request_time: float = 0.0
 
 func _ready():
 	# Try to load saved tokens
@@ -473,8 +476,46 @@ func _handle_request_error_with_data(request_data: Dictionary, error_message: St
 	request_failed.emit(request_data.endpoint, error_message)
 
 func _process_request_queue() -> void:
-	# Process queued requests (for rate limiting, etc.)
-	pass
+	# Process queued requests with rate limiting
+	if request_queue.is_empty():
+		return
+
+	# Check if we can send more requests
+	if active_requests.size() >= max_concurrent_requests:
+		return
+
+	# Rate limiting - ensure minimum interval between requests
+	var current_time = Time.get_ticks_msec() / 1000.0
+	if current_time - last_request_time < min_request_interval:
+		return
+
+	# Process next request in queue
+	var queued_request = request_queue.pop_front()
+	if queued_request:
+		last_request_time = current_time
+		_execute_queued_request(queued_request)
+
+func _execute_queued_request(request_data: Dictionary) -> void:
+	"""Execute a request from the queue"""
+	var method = request_data.get("method", "GET")
+	var endpoint = request_data.get("endpoint", "")
+	var body = request_data.get("body", {})
+	var callback = request_data.get("callback", Callable())
+	var require_auth = request_data.get("require_auth", true)
+	var extra_headers = request_data.get("extra_headers", {})
+
+	_make_request(method, endpoint, body, callback, require_auth, extra_headers)
+
+func queue_request(method: String, endpoint: String, body: Dictionary = {}, callback: Callable = Callable(), require_auth: bool = true, extra_headers: Dictionary = {}) -> void:
+	"""Add a request to the queue instead of executing immediately"""
+	request_queue.append({
+		"method": method,
+		"endpoint": endpoint,
+		"body": body,
+		"callback": callback,
+		"require_auth": require_auth,
+		"extra_headers": extra_headers
+	})
 
 # ============================================
 # TOKEN PERSISTENCE

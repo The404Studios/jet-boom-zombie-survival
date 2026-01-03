@@ -477,9 +477,39 @@ func _set_keybind(action_name: String, event: InputEvent):
 		InputMap.action_add_event(action_name, event)
 
 func _reset_keybinds():
-	# Would reload default keybindings from project settings
-	# For now, just refresh the UI
-	pass
+	# Reload default keybindings from project settings
+	var default_actions = [
+		"move_forward", "move_back", "move_left", "move_right",
+		"jump", "sprint", "crouch", "shoot", "aim", "reload",
+		"melee", "use_ability", "use_ultimate", "interact",
+		"use_item", "drop_item", "inventory", "ui_chat",
+		"voice_chat", "scoreboard"
+	]
+
+	# Reset each action to its default from ProjectSettings
+	for action_name in default_actions:
+		if InputMap.has_action(action_name):
+			# Get default events from project settings
+			var default_events = ProjectSettings.get_setting("input/" + action_name)
+			if default_events:
+				# Clear current events
+				InputMap.action_erase_events(action_name)
+				# Re-add default events
+				if default_events.has("events"):
+					for event in default_events.events:
+						InputMap.action_add_event(action_name, event)
+
+	# Refresh the controls tab UI
+	if controls_tab:
+		var content = controls_tab.get_node_or_null("MarginContainer/Content")
+		if content:
+			# Update all keybind buttons with new values
+			for child in content.get_children():
+				if child is HBoxContainer:
+					for sub_child in child.get_children():
+						if sub_child is Button and sub_child.has_meta("action"):
+							var action = sub_child.get_meta("action")
+							sub_child.text = _get_key_name(action, "Unbound")
 
 # ============================================
 # SETTINGS MANAGEMENT
