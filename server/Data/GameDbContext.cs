@@ -18,6 +18,7 @@ public class GameDbContext : DbContext
     public DbSet<FriendRelation> FriendRelations { get; set; }
     public DbSet<GameServer> GameServers { get; set; }
     public DbSet<ServerPlayer> ServerPlayers { get; set; }
+    public DbSet<PlayerBodyPartHealth> PlayerBodyPartHealths { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -104,6 +105,17 @@ public class GameDbContext : DbContext
         modelBuilder.Entity<ServerPlayer>(entity =>
         {
             entity.HasIndex(e => new { e.ServerId, e.PlayerId }).IsUnique();
+        });
+
+        // PlayerBodyPartHealth
+        modelBuilder.Entity<PlayerBodyPartHealth>(entity =>
+        {
+            entity.HasIndex(e => e.PlayerId).IsUnique();
+
+            entity.HasOne(e => e.Player)
+                  .WithMany()
+                  .HasForeignKey(e => e.PlayerId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Seed default unlocks that all players should have

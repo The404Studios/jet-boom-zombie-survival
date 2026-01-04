@@ -14,19 +14,34 @@ signal game_starting
 signal all_players_loaded
 
 const DEFAULT_PORT: int = 7777
-const MAX_PLAYERS: int = 4
+const MAX_PLAYERS: int = 8
+
+# Dedicated server configuration
+const DEDICATED_SERVER_IP: String = "162.248.94.149"
+const DEDICATED_SERVER_PORT: int = 7777
+const BACKEND_SERVER_URL: String = "http://162.248.94.149:5000"
 
 var is_server: bool = false
 var is_client: bool = false
+var is_dedicated_server: bool = false
 var local_player_id: int = 1
 var use_steam: bool = false
+var current_server_ip: String = ""
+var current_server_port: int = DEFAULT_PORT
 
 var players: Dictionary = {}  # peer_id -> player_info
 var player_nodes: Dictionary = {}  # peer_id -> Player node
 var players_loaded: Dictionary = {}  # peer_id -> bool
+var observed_players: Dictionary = {}  # peer_id -> ObservedPlayer node
 
 var steam_manager: Node = null
 var steam_p2p_peer: RefCounted = null
+
+# Network quality tracking
+var network_latency: float = 0.0
+var last_ping_time: float = 0.0
+var ping_interval: float = 1.0
+var connection_quality: int = 100  # 0-100
 
 func _ready():
 	# Get Steam manager reference
@@ -246,9 +261,9 @@ func join_server_steam(lobby_id: int) -> bool:
 	"""Legacy function - use join_steam_lobby instead"""
 	return join_steam_lobby(lobby_id)
 
-func join_server_lan(ip: String) -> bool:
+func join_server_lan(ip: String, port: int = DEFAULT_PORT) -> bool:
 	var peer = ENetMultiplayerPeer.new()
-	var result = peer.create_client(ip, DEFAULT_PORT)
+	var result = peer.create_client(ip, port)
 
 	if result != OK:
 		print("Failed to connect to server: ", result)
@@ -258,8 +273,24 @@ func join_server_lan(ip: String) -> bool:
 	multiplayer.multiplayer_peer = peer
 	is_client = true
 	use_steam = false
+	current_server_ip = ip
+	current_server_port = port
 
 	return true
+
+## Connect to the dedicated game server at 162.248.94.149
+func join_dedicated_server() -> bool:
+	print("Connecting to dedicated server at %s:%d" % [DEDICATED_SERVER_IP, DEDICATED_SERVER_PORT])
+	return join_server_lan(DEDICATED_SERVER_IP, DEDICATED_SERVER_PORT)
+
+## Connect to a specific server from the server browser
+func join_server_by_address(ip: String, port: int = DEFAULT_PORT) -> bool:
+	print("Connecting to server at %s:%d" % [ip, port])
+	return join_server_lan(ip, port)
+
+## Quick play - connect to the dedicated server
+func quick_play() -> bool:
+	return join_dedicated_server()
 
 func disconnect_from_server():
 	# Leave Steam lobby if in one
