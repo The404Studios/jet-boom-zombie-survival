@@ -12,8 +12,13 @@ signal request_completed(endpoint: String, response: Dictionary)
 signal request_failed(endpoint: String, error: String)
 
 # Server configuration
-@export var server_url: String = "http://localhost:5000"
+@export var server_url: String = "http://162.248.94.149:5000"
 @export var request_timeout: float = 30.0
+
+# Server addresses for different environments
+const PRODUCTION_SERVER: String = "http://162.248.94.149:5000"
+const LOCAL_SERVER: String = "http://localhost:5000"
+const DEVELOPMENT_SERVER: String = "http://162.248.94.149:5000"
 
 # Authentication state
 var auth_token: String = ""

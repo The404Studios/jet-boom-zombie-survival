@@ -12,8 +12,12 @@ signal connected_to_server
 signal disconnected_from_server
 
 # Configuration
-@export var server_url: String = "http://localhost:5000"
+@export var server_url: String = "http://162.248.94.149:5000"
 @export var auto_sync_interval: float = 5.0  # Seconds between auto-sync
+
+# Server addresses
+const PRODUCTION_SERVER: String = "http://162.248.94.149:5000"
+const LOCAL_SERVER: String = "http://localhost:5000"
 
 # HTTP Request nodes
 var http_request: HTTPRequest

@@ -29,16 +29,26 @@ signal panel_closed
 # State
 var steam_manager: Node = null
 var network_manager: Node = null
+var multiplayer_manager: Node = null
+var backend_client: Node = null
 var in_lobby: bool = false
 var is_host: bool = false
 var is_ready: bool = false
 var selected_lobby_id: int = 0
 var selected_friend_id: int = 0
+var selected_server_ip: String = ""
+var selected_server_port: int = 7777
+
+# Server configuration
+const DEDICATED_SERVER_IP: String = "162.248.94.149"
+const DEDICATED_SERVER_PORT: int = 7777
 
 func _ready():
 	# Get managers
 	steam_manager = get_node_or_null("/root/SteamManager")
 	network_manager = get_node_or_null("/root/NetworkManager")
+	multiplayer_manager = get_node_or_null("/root/MultiplayerManager")
+	backend_client = get_node_or_null("/root/BackendClient")
 
 	# Connect UI signals
 	_connect_buttons()
@@ -49,8 +59,51 @@ func _ready():
 	# Connect Network signals
 	_connect_network_signals()
 
+	# Connect MultiplayerManager signals
+	_connect_multiplayer_manager_signals()
+
 	# Initial state
 	_show_browser_view()
+
+func _connect_multiplayer_manager_signals():
+	if not multiplayer_manager:
+		return
+
+	if multiplayer_manager.has_signal("connection_state_changed"):
+		multiplayer_manager.connection_state_changed.connect(_on_connection_state_changed)
+	if multiplayer_manager.has_signal("player_joined"):
+		multiplayer_manager.player_joined.connect(_on_mm_player_joined)
+	if multiplayer_manager.has_signal("server_list_updated"):
+		multiplayer_manager.server_list_updated.connect(_on_server_list_updated)
+	if multiplayer_manager.has_signal("error_occurred"):
+		multiplayer_manager.error_occurred.connect(_on_error_occurred)
+
+func _on_connection_state_changed(state: int):
+	match state:
+		0:  # DISCONNECTED
+			_update_status("Disconnected")
+			_show_browser_view()
+		1:  # CONNECTING
+			_update_status("Connecting...")
+		2:  # CONNECTED
+			_update_status("Connected")
+		3:  # IN_LOBBY
+			_update_status("In lobby")
+			_show_room_view()
+		4:  # IN_GAME
+			_update_status("Game starting...")
+			game_started.emit()
+		5:  # RECONNECTING
+			_update_status("Reconnecting...")
+
+func _on_mm_player_joined(_peer_id: int, _player_info: Dictionary):
+	_refresh_player_list()
+
+func _on_server_list_updated(servers: Array):
+	_populate_server_browser(servers)
+
+func _on_error_occurred(_error_code: int, message: String):
+	_update_status("Error: " + message)
 
 func _connect_buttons():
 	if host_button:
@@ -280,17 +333,106 @@ func _on_game_starting():
 # ============================================
 
 func _refresh_lobbies():
+	_clear_lobby_browser()
+
+	# Always show Quick Play option for dedicated server
+	_add_quick_play_entry()
+
 	if steam_manager and steam_manager.is_initialized():
 		steam_manager.search_lobbies()
 	else:
-		# Show no lobbies message for LAN
-		_clear_lobby_browser()
+		# Show LAN option when Steam not available
 		_add_lobby_entry({
 			"id": 0,
-			"name": "No Steam - Use LAN",
+			"name": "Host LAN Game",
 			"members": 0,
-			"max_members": 4
+			"max_members": 8
 		})
+
+	# Also fetch servers from backend
+	if backend_client:
+		backend_client.get_servers({}, func(response):
+			if response.success and response.has("data"):
+				_populate_server_browser(response.data)
+		)
+
+func _add_quick_play_entry():
+	if not lobby_browser:
+		return
+
+	var entry = HBoxContainer.new()
+
+	var icon = Label.new()
+	icon.text = "[QUICK]"
+	icon.add_theme_color_override("font_color", Color.YELLOW)
+	entry.add_child(icon)
+
+	var name_label = Label.new()
+	name_label.text = "Quick Play - %s" % DEDICATED_SERVER_IP
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	entry.add_child(name_label)
+
+	var join_btn = Button.new()
+	join_btn.text = "PLAY"
+	join_btn.pressed.connect(_on_quick_play_pressed)
+	entry.add_child(join_btn)
+
+	lobby_browser.add_child(entry)
+
+func _on_quick_play_pressed():
+	_update_status("Connecting to game server...")
+
+	if multiplayer_manager:
+		multiplayer_manager.connect_to_dedicated_server()
+	elif network_manager:
+		network_manager.join_dedicated_server()
+
+func _populate_server_browser(servers: Array):
+	for server_data in servers:
+		_add_server_entry(server_data)
+
+func _add_server_entry(server_data: Dictionary):
+	if not lobby_browser:
+		return
+
+	var entry = HBoxContainer.new()
+
+	var name_label = Label.new()
+	name_label.text = server_data.get("name", "Game Server")
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	entry.add_child(name_label)
+
+	var map_label = Label.new()
+	map_label.text = server_data.get("map", "Unknown")
+	entry.add_child(map_label)
+
+	var count_label = Label.new()
+	count_label.text = "%d/%d" % [server_data.get("currentPlayers", 0), server_data.get("maxPlayers", 8)]
+	entry.add_child(count_label)
+
+	var ping_label = Label.new()
+	ping_label.text = "%dms" % server_data.get("ping", 0)
+	entry.add_child(ping_label)
+
+	var join_btn = Button.new()
+	join_btn.text = "Join"
+	var ip = server_data.get("ip", DEDICATED_SERVER_IP)
+	var port = server_data.get("port", DEDICATED_SERVER_PORT)
+	join_btn.pressed.connect(_on_server_entry_selected.bind(ip, port))
+	entry.add_child(join_btn)
+
+	lobby_browser.add_child(entry)
+
+func _on_server_entry_selected(ip: String, port: int):
+	selected_server_ip = ip
+	selected_server_port = port
+
+	_update_status("Connecting to %s:%d..." % [ip, port])
+
+	if multiplayer_manager:
+		multiplayer_manager.connect_to_server(ip, port)
+	elif network_manager:
+		network_manager.join_server_by_address(ip, port)
 
 func _refresh_friends():
 	if not friend_list:
