@@ -240,3 +240,82 @@ public class ApiResponse
     public static ApiResponse Ok(string? message = null) => new() { Success = true, Message = message };
     public static ApiResponse Fail(string error) => new() { Success = false, Error = error };
 }
+
+// ============================================
+// Body Part Health DTOs
+// ============================================
+
+public class BodyPartHealthDto
+{
+    public BodyPartDto Head { get; set; } = new();
+    public BodyPartDto Chest { get; set; } = new();
+    public BodyPartDto Thorax { get; set; } = new();
+    public BodyPartDto LeftArm { get; set; } = new();
+    public BodyPartDto RightArm { get; set; } = new();
+    public BodyPartDto LeftHand { get; set; } = new();
+    public BodyPartDto RightHand { get; set; } = new();
+    public BodyPartDto LeftLeg { get; set; } = new();
+    public BodyPartDto RightLeg { get; set; } = new();
+    public BodyPartDto LeftFoot { get; set; } = new();
+    public BodyPartDto RightFoot { get; set; } = new();
+
+    public List<BodyPartEffectDto> ActiveEffects { get; set; } = new();
+    public HealingStateDto? HealingState { get; set; }
+    public List<string> BlackedOutParts { get; set; } = new();
+    public bool HasBleedingDebuff { get; set; }
+}
+
+public class BodyPartDto
+{
+    public float CurrentHp { get; set; }
+    public float MaxHp { get; set; }
+    public float Percentage => MaxHp > 0 ? (CurrentHp / MaxHp) * 100 : 0;
+    public bool IsBlackedOut => CurrentHp <= 0;
+}
+
+public class BodyPartEffectDto
+{
+    public string Type { get; set; } = string.Empty;
+    public string BodyPart { get; set; } = string.Empty;
+    public float RemainingTime { get; set; }
+    public float TotalDuration { get; set; }
+    public float Progress => TotalDuration > 0 ? (1 - (RemainingTime / TotalDuration)) * 100 : 100;
+}
+
+public class HealingStateDto
+{
+    public bool IsHealing { get; set; }
+    public string? BodyPart { get; set; }
+    public float Progress { get; set; }
+}
+
+public class DamageBodyPartRequest
+{
+    public string BodyPart { get; set; } = string.Empty;
+    public float Amount { get; set; }
+}
+
+public class HealBodyPartRequest
+{
+    public string BodyPart { get; set; } = string.Empty;
+    public float Amount { get; set; }
+}
+
+public class StartHealingRequest
+{
+    public string BodyPart { get; set; } = string.Empty;
+}
+
+public class UpdateBodyPartHealthRequest
+{
+    public Dictionary<string, float> CurrentHpValues { get; set; } = new();
+    public List<BodyPartEffectDto>? ActiveEffects { get; set; }
+    public HealingStateDto? HealingState { get; set; }
+}
+
+public class BodyPartHealthSyncMessage
+{
+    public int PlayerId { get; set; }
+    public BodyPartHealthDto Health { get; set; } = new();
+    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+}

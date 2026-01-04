@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using ZombieSurvivalServer.Models;
 using ZombieSurvivalServer.Services;
 
 namespace ZombieSurvivalServer.Hubs;
@@ -192,6 +193,160 @@ public class GameHub : Hub
             WaveReached = waveReached,
             Stats = stats
         });
+    }
+
+    // ============================================
+    // BODY PART HEALTH METHODS
+    // ============================================
+
+    /// <summary>
+    /// Broadcast body part health update to all players in the same server
+    /// </summary>
+    public async Task BroadcastBodyPartHealth(int serverId, BodyPartHealthDto health)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("BodyPartHealthUpdated", new BodyPartHealthSyncMessage
+        {
+            PlayerId = userId.Value,
+            Health = health,
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Broadcast damage taken to a body part
+    /// </summary>
+    public async Task BroadcastBodyPartDamage(int serverId, string bodyPart, float damage, float currentHp, float maxHp)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("BodyPartDamaged", new
+        {
+            PlayerId = userId.Value,
+            BodyPart = bodyPart,
+            Damage = damage,
+            CurrentHp = currentHp,
+            MaxHp = maxHp,
+            IsBlackedOut = currentHp <= 0,
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Broadcast healing started on a body part
+    /// </summary>
+    public async Task BroadcastHealingStarted(int serverId, string bodyPart)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("HealingStarted", new
+        {
+            PlayerId = userId.Value,
+            BodyPart = bodyPart,
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Broadcast healing progress update
+    /// </summary>
+    public async Task BroadcastHealingProgress(int serverId, string bodyPart, float progress)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("HealingProgress", new
+        {
+            PlayerId = userId.Value,
+            BodyPart = bodyPart,
+            Progress = progress,
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Broadcast healing completed
+    /// </summary>
+    public async Task BroadcastHealingCompleted(int serverId, string bodyPart, float newHp, float maxHp)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("HealingCompleted", new
+        {
+            PlayerId = userId.Value,
+            BodyPart = bodyPart,
+            NewHp = newHp,
+            MaxHp = maxHp,
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Broadcast bleeding effect started (when body part is blacked out)
+    /// </summary>
+    public async Task BroadcastBleedingStarted(int serverId, string bodyPart)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("BleedingStarted", new
+        {
+            PlayerId = userId.Value,
+            BodyPart = bodyPart,
+            Timestamp = DateTime.UtcNow
+        });
+
+        _logger.LogInformation("Player {PlayerId} started bleeding from {BodyPart}", userId.Value, bodyPart);
+    }
+
+    /// <summary>
+    /// Broadcast bleeding effect stopped
+    /// </summary>
+    public async Task BroadcastBleedingStopped(int serverId, string bodyPart)
+    {
+        var userId = GetUserId();
+        if (!userId.HasValue)
+            return;
+
+        await Clients.Group($"server_{serverId}").SendAsync("BleedingStopped", new
+        {
+            PlayerId = userId.Value,
+            BodyPart = bodyPart,
+            Timestamp = DateTime.UtcNow
+        });
+    }
+
+    /// <summary>
+    /// Send body part health update to a specific player
+    /// </summary>
+    public static async Task SendBodyPartHealthToPlayer(IHubContext<GameHub> hubContext, int playerId, BodyPartHealthDto health)
+    {
+        string? connectionId;
+        lock (_lock)
+        {
+            _playerToConnection.TryGetValue(playerId, out connectionId);
+        }
+
+        if (connectionId != null)
+        {
+            await hubContext.Clients.Client(connectionId).SendAsync("BodyPartHealthUpdated", new BodyPartHealthSyncMessage
+            {
+                PlayerId = playerId,
+                Health = health,
+                Timestamp = DateTime.UtcNow
+            });
+        }
     }
 
     // ============================================

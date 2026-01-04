@@ -72,6 +72,7 @@ builder.Services.AddScoped<IServerBrowserService, ServerBrowserService>();
 builder.Services.AddScoped<IMatchmakingService, MatchmakingService>();
 builder.Services.AddScoped<ILeaderboardService, LeaderboardService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IBodyPartHealthService, BodyPartHealthService>();
 builder.Services.AddSingleton<IGameServerRegistry, GameServerRegistry>();
 
 var app = builder.Build();
