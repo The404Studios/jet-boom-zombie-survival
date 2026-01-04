@@ -40,6 +40,8 @@ var is_sprinting: bool = false
 
 # Phasing (Z key to phase through props)
 var is_phasing: bool = false
+const PHASE_SPEED_PENALTY: float = 0.5  # 50% movement speed reduction while phasing
+const PROP_COLLISION_LAYER: int = 8  # Layer 4 (props layer)
 
 # Weapon system
 var current_ammo: int = 15
@@ -300,6 +302,10 @@ func _physics_process(delta):
 	# Apply condition modifiers
 	if player_conditions:
 		speed_bonus *= player_conditions.get_movement_speed_modifier()
+
+	# Apply phasing speed penalty (50% slower when phasing through props)
+	if is_phasing:
+		speed_bonus *= PHASE_SPEED_PENALTY
 
 	current_speed = base_speed * speed_bonus
 
@@ -1147,24 +1153,96 @@ func _camera_shake(intensity: float, duration: float):
 # ============================================
 
 func _handle_phasing():
-	"""JetBoom mechanic - hold Z to phase through props"""
+	"""JetBoom mechanic - hold Z to phase through props with 50% speed penalty"""
 	var wants_phase = Input.is_key_pressed(KEY_Z)
 
 	if wants_phase and not is_phasing:
-		# Start phasing
-		is_phasing = true
-		var props = get_tree().get_nodes_in_group("props")
-		for prop in props:
-			if prop.has_method("enable_phasing"):
-				prop.enable_phasing()
-
+		_start_phasing()
 	elif not wants_phase and is_phasing:
-		# Stop phasing
-		is_phasing = false
-		var props = get_tree().get_nodes_in_group("props")
-		for prop in props:
-			if prop.has_method("disable_phasing"):
-				prop.disable_phasing()
+		_stop_phasing()
+
+func _start_phasing():
+	"""Start phasing through props"""
+	if is_phasing:
+		return
+
+	is_phasing = true
+
+	# Disable collision with props layer for this player
+	# This allows the player to walk through barricades
+	set_collision_mask_value(4, false)  # Disable props layer collision
+
+	# Notify all props that this player is phasing
+	var props = get_tree().get_nodes_in_group("props")
+	for prop in props:
+		if prop.has_method("set_phased_for_player"):
+			prop.set_phased_for_player(peer_id, true)
+
+	# Update HUD to show phasing indicator
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud:
+		if hud.has_method("show_phase_indicator"):
+			hud.show_phase_indicator(true)
+		# Also update prop health HUD if exists
+		var prop_hud = hud.get_node_or_null("PropHealthHUD")
+		if prop_hud and prop_hud.has_method("set_phasing"):
+			prop_hud.set_phasing(true)
+
+	# Play phase sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("phase_start", global_position, 0.5)
+
+	# Network sync
+	if multiplayer.has_multiplayer_peer():
+		_sync_phasing.rpc(true)
+
+func _stop_phasing():
+	"""Stop phasing through props"""
+	if not is_phasing:
+		return
+
+	is_phasing = false
+
+	# Re-enable collision with props layer
+	set_collision_mask_value(4, true)  # Enable props layer collision
+
+	# Notify all props that this player stopped phasing
+	var props = get_tree().get_nodes_in_group("props")
+	for prop in props:
+		if prop.has_method("set_phased_for_player"):
+			prop.set_phased_for_player(peer_id, false)
+
+	# Update HUD
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud:
+		if hud.has_method("show_phase_indicator"):
+			hud.show_phase_indicator(false)
+		var prop_hud = hud.get_node_or_null("PropHealthHUD")
+		if prop_hud and prop_hud.has_method("set_phasing"):
+			prop_hud.set_phasing(false)
+
+	# Play stop sound
+	if has_node("/root/AudioManager"):
+		get_node("/root/AudioManager").play_sound_3d("phase_stop", global_position, 0.4)
+
+	# Network sync
+	if multiplayer.has_multiplayer_peer():
+		_sync_phasing.rpc(false)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _sync_phasing(phasing: bool):
+	"""Sync phasing state from remote player"""
+	var sender_id = multiplayer.get_remote_sender_id()
+
+	# Update props for this remote player
+	var props = get_tree().get_nodes_in_group("props")
+	for prop in props:
+		if prop.has_method("set_phased_for_player"):
+			prop.set_phased_for_player(sender_id, phasing)
+
+func is_player_phasing() -> bool:
+	"""Check if player is currently phasing"""
+	return is_phasing
 
 # ============================================
 # PROP CARRYING SYSTEM (JetBoom-style)
@@ -1490,11 +1568,11 @@ func _start_interaction(collider: Node):
 		collider.interact(self)
 
 func _start_nailing(barricade: Node):
-	"""Begin the JetBoom-style nailing process"""
+	"""Begin the JetBoom-style nailing/repair process"""
 	if not barricade:
 		return
 
-	# Check if barricade needs nails
+	# Check if barricade needs repair
 	if "current_health" in barricade and "max_health" in barricade:
 		if barricade.current_health >= barricade.max_health:
 			return  # Already full
@@ -1513,6 +1591,10 @@ func _start_nailing(barricade: Node):
 		var nail_health = barricade.nail_health if "nail_health" in barricade else 20.0
 		nails_required = int(ceil(health_missing / nail_health))
 
+	# Notify barricade that repair started
+	if barricade.has_method("start_repair"):
+		barricade.start_repair(peer_id)
+
 	# Play starting sound
 	if has_node("/root/AudioManager"):
 		get_node("/root/AudioManager").play_sound_3d("hammer_start", barricade.global_position, 0.6)
@@ -1520,7 +1602,11 @@ func _start_nailing(barricade: Node):
 	# Update HUD
 	var hud = get_tree().get_first_node_in_group("hud")
 	if hud and hud.has_method("show_interact_prompt"):
-		hud.show_interact_prompt("Nailing... 0/%d" % nails_required)
+		hud.show_interact_prompt("Repairing... 0/%d" % nails_required)
+
+	# Network sync
+	if multiplayer.has_multiplayer_peer():
+		_sync_repair_start.rpc(barricade.get_path())
 
 func _process_nailing(delta, hud):
 	"""Process the ongoing nailing - JetBoom style hold-to-nail"""
@@ -1560,6 +1646,9 @@ func _place_nail(hud):
 	# Add health to barricade
 	if nailing_barricade.has_method("add_nail"):
 		nailing_barricade.add_nail()
+	elif nailing_barricade.has_method("heal"):
+		var nail_health = nailing_barricade.nail_health if "nail_health" in nailing_barricade else 20.0
+		nailing_barricade.heal(nail_health)
 	elif "current_health" in nailing_barricade and "max_health" in nailing_barricade:
 		var nail_health = nailing_barricade.nail_health if "nail_health" in nailing_barricade else 20.0
 		nailing_barricade.current_health = min(nailing_barricade.current_health + nail_health, nailing_barricade.max_health)
@@ -1577,9 +1666,13 @@ func _place_nail(hud):
 		)
 		get_node("/root/VFXManager").spawn_impact_effect(hit_pos, Vector3.UP, "wood")
 
+	# Network sync - broadcast nail placement to other players
+	if multiplayer.has_multiplayer_peer():
+		_sync_nail_placed.rpc(nailing_barricade.get_path(), nails_placed)
+
 	# Update HUD
 	if hud and hud.has_method("show_interact_prompt"):
-		hud.show_interact_prompt("Nailing... %d/%d" % [nails_placed, nails_required])
+		hud.show_interact_prompt("Repairing... %d/%d" % [nails_placed, nails_required])
 	if hud and hud.has_method("update_nail_progress"):
 		hud.update_nail_progress(float(nails_placed) / float(nails_required), true)
 
@@ -1617,7 +1710,16 @@ func _complete_nailing(hud):
 		hud.hide_interact_prompt()
 
 func _cancel_nailing(hud):
-	"""Cancel the nailing process"""
+	"""Cancel the nailing/repair process"""
+	# Notify barricade that repair stopped
+	if nailing_barricade and is_instance_valid(nailing_barricade):
+		if nailing_barricade.has_method("stop_repair"):
+			nailing_barricade.stop_repair()
+
+		# Network sync
+		if multiplayer.has_multiplayer_peer():
+			_sync_repair_stop.rpc(nailing_barricade.get_path())
+
 	is_nailing = false
 	nailing_barricade = null
 	nails_placed = 0
@@ -1774,6 +1876,43 @@ func _player_respawned(spawn_position: Vector3):
 		get_node("/root/ChatSystem").emit_system_message("Respawned!")
 
 # ============================================
+# REPAIR/NAILING NETWORK SYNC
+# ============================================
+
+@rpc("any_peer", "call_remote", "reliable")
+func _sync_repair_start(barricade_path: NodePath):
+	"""Sync repair start from remote player"""
+	var barricade = get_node_or_null(barricade_path)
+	if barricade and barricade.has_method("start_repair"):
+		var sender_id = multiplayer.get_remote_sender_id()
+		barricade.start_repair(sender_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _sync_repair_stop(barricade_path: NodePath):
+	"""Sync repair stop from remote player"""
+	var barricade = get_node_or_null(barricade_path)
+	if barricade and barricade.has_method("stop_repair"):
+		barricade.stop_repair()
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _sync_nail_placed(barricade_path: NodePath, _nails_count: int):
+	"""Sync nail placement from remote player"""
+	var barricade = get_node_or_null(barricade_path)
+	if barricade:
+		# Play hammer sound for remote player
+		if has_node("/root/AudioManager"):
+			get_node("/root/AudioManager").play_sound_3d("hammer", barricade.global_position, 0.6)
+
+		# Spawn visual effect
+		if has_node("/root/VFXManager"):
+			var hit_pos = barricade.global_position + Vector3(
+				randf_range(-0.3, 0.3),
+				randf_range(0.5, 1.5),
+				randf_range(-0.3, 0.3)
+			)
+			get_node("/root/VFXManager").spawn_impact_effect(hit_pos, Vector3.UP, "wood")
+
+# ============================================
 # STATE SYNC (for multiplayer)
 # ============================================
 
@@ -1788,6 +1927,8 @@ func get_player_state() -> Dictionary:
 		"max_health": max_health,
 		"is_sprinting": is_sprinting,
 		"is_crouching": false,  # Add crouch support later
+		"is_phasing": is_phasing,
+		"is_repairing": is_nailing,
 		"weapon": current_weapon_data.item_name if current_weapon_data and "item_name" in current_weapon_data else "none",
 		"is_reloading": false,  # Track reload state
 		"current_ammo": current_ammo,
