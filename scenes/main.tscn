@@ -1,6 +1,6 @@
 [gd_scene load_steps=16 format=3 uid="uid://main001"]
 
-[ext_resource type="PackedScene" uid="uid://player001" path="res://scenes/player/player.tscn" id="1"]
+[ext_resource type="PackedScene" uid="uid://player_fps001" path="res://scenes/player/player_fps.tscn" id="1"]
 [ext_resource type="PackedScene" uid="uid://zombie001" path="res://scenes/zombies/zombie.tscn" id="2"]
 [ext_resource type="PackedScene" uid="uid://sigil001" path="res://scenes/environment/sigil.tscn" id="3"]
 [ext_resource type="PackedScene" uid="uid://barricade_spot001" path="res://scenes/environment/barricade_spot.tscn" id="4"]

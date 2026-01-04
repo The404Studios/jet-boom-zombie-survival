@@ -29,4 +29,5 @@ func _ready():
 	print("R - Reload")
 	print("E - Interact")
 	print("I - Inventory")
+	print("H - Body Health UI (click limbs to heal)")
 	print("X - Extract (at Sigil)")

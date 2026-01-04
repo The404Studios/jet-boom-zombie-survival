@@ -29,11 +29,53 @@ func _ready():
 	# Emit game started signal
 	game_started.emit()
 
+	# Auto-find spawn points if not set
+	if zombie_spawn_points.is_empty():
+		_find_spawn_points()
+
 	# Start first wave after delay
 	await get_tree().create_timer(5.0).timeout
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	start_next_wave()
+
+func _find_spawn_points():
+	"""Automatically find zombie spawn points in the scene"""
+	# Look for nodes in zombie_spawn group
+	var group_spawns = get_tree().get_nodes_in_group("zombie_spawn")
+	for spawn in group_spawns:
+		if spawn is Node3D:
+			zombie_spawn_points.append(spawn)
+
+	# If still empty, look for ZombieSpawnPoints container
+	if zombie_spawn_points.is_empty():
+		var scene = get_tree().current_scene
+		if scene and scene.has_node("ZombieSpawnPoints"):
+			var spawn_container = scene.get_node("ZombieSpawnPoints")
+			for child in spawn_container.get_children():
+				if child is Marker3D or child is Node3D:
+					zombie_spawn_points.append(child)
+
+	# If still empty, create some default spawn points around the arena
+	if zombie_spawn_points.is_empty():
+		print("Warning: No zombie spawn points found. Creating defaults.")
+		var spawn_positions = [
+			Vector3(30, 0, 30),
+			Vector3(-30, 0, 30),
+			Vector3(30, 0, -30),
+			Vector3(-30, 0, -30),
+			Vector3(40, 0, 0),
+			Vector3(-40, 0, 0),
+			Vector3(0, 0, 40),
+			Vector3(0, 0, -40)
+		]
+		for pos in spawn_positions:
+			var marker = Marker3D.new()
+			marker.global_position = pos
+			add_child(marker)
+			zombie_spawn_points.append(marker)
+
+	print("Found %d zombie spawn points" % zombie_spawn_points.size())
 
 func _process(delta):
 	if not is_wave_active:

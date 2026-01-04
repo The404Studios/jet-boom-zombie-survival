@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://dq8j3kf7l2p9m"]
+
+[ext_resource type="Script" path="res://scripts/ui/body_part_health_ui.gd" id="1_bphui"]
+
+[node name="BodyPartHealthUI" type="Control"]
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -310.0
+offset_right = 210.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("1_bphui")

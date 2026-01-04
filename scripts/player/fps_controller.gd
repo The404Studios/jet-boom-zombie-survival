@@ -32,6 +32,7 @@ var peer_id: int = 1
 @onready var player_conditions: PlayerConditions = $PlayerConditions if has_node("PlayerConditions") else null
 @onready var inventory_system: Node = $InventorySystem if has_node("InventorySystem") else null
 @onready var rpg_menu: Control = $UI/RPGMenu if has_node("UI/RPGMenu") else null
+@onready var body_part_health: BodyPartHealth = $BodyPartHealth if has_node("BodyPartHealth") else null
 
 # Movement
 var current_speed: float = 5.0
@@ -101,6 +102,9 @@ func _ready():
 		character_attributes.attribute_changed.connect(_on_attribute_changed)
 		character_attributes.level_up.connect(_on_level_up)
 
+	# Initialize body part health system
+	_setup_body_part_health()
+
 	# Equip starting weapon
 	_equip_starting_weapon()
 
@@ -112,6 +116,28 @@ func _ready():
 
 	# Network setup
 	_setup_network()
+
+func _setup_body_part_health():
+	"""Initialize body part health system"""
+	if not body_part_health:
+		body_part_health = BodyPartHealth.new()
+		body_part_health.name = "BodyPartHealth"
+		add_child(body_part_health)
+
+	# Connect signals for death check
+	if body_part_health:
+		if not body_part_health.body_part_blacked_out.is_connected(_on_body_part_blacked_out):
+			body_part_health.body_part_blacked_out.connect(_on_body_part_blacked_out)
+
+func _on_body_part_blacked_out(part_name: String):
+	"""Handle a body part being blacked out"""
+	# Check if player should die
+	if body_part_health and body_part_health.is_dead():
+		_die()
+	else:
+		# Show notification about blacked out limb
+		if has_node("/root/ChatSystem"):
+			get_node("/root/ChatSystem").emit_system_message("%s blacked out! You are bleeding." % part_name)
 
 func _setup_network():
 	"""Initialize network components"""
@@ -216,6 +242,28 @@ func _input(event):
 	# Toggle mouse capture
 	if event.is_action_pressed("ui_cancel"):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		else:
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+	# Cancel healing if moving or pressing cancel
+	if body_part_health and body_part_health.is_healing:
+		if event is InputEventKey:
+			if event.pressed and event.keycode in [KEY_W, KEY_A, KEY_S, KEY_D, KEY_ESCAPE]:
+				cancel_healing()
+
+	# Toggle body health UI with H key
+	if event is InputEventKey and event.pressed and event.keycode == KEY_H:
+		_toggle_body_health_ui()
+
+func _toggle_body_health_ui():
+	"""Toggle visibility of body part health UI"""
+	var hud = get_tree().get_first_node_in_group("hud")
+	if hud and hud.has_node("BodyPartHealthUI"):
+		var body_ui = hud.get_node("BodyPartHealthUI")
+		body_ui.visible = not body_ui.visible
+		# Show mouse cursor when UI is visible for clicking to heal
+		if body_ui.visible:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -836,8 +884,8 @@ func _update_hud():
 # DAMAGE & HEALING
 # ============================================
 
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
-	"""Take damage with condition and skill modifiers"""
+func take_damage(amount: float, hit_position: Vector3 = Vector3.ZERO):
+	"""Take damage with condition and skill modifiers - distributes to body parts"""
 	var final_damage = amount
 
 	# Apply condition damage modifiers
@@ -857,8 +905,24 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	if character_attributes:
 		final_damage = character_attributes.calculate_incoming_damage(final_damage)
 
-	current_health -= final_damage
-	current_health = max(current_health, 0)
+	# Apply damage to body parts
+	if body_part_health:
+		if hit_position != Vector3.ZERO:
+			# Damage specific body part based on hit position
+			body_part_health.take_damage_at_position(final_damage, hit_position, global_position)
+		else:
+			# Random body part damage
+			body_part_health.take_damage_random(final_damage)
+
+		# Update overall health from body parts
+		var total_hp = body_part_health.get_total_health()
+		var total_max = body_part_health.get_total_max_health()
+		current_health = total_hp
+		max_health = total_max
+	else:
+		# Fallback to old health system
+		current_health -= final_damage
+		current_health = max(current_health, 0)
 
 	# Emit signal for UI
 	health_changed.emit(current_health, max_health)
@@ -869,13 +933,48 @@ func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
 	# Camera shake on damage
 	_camera_shake(0.2, 0.1)
 
-	if current_health <= 0:
+	# Check for death
+	if body_part_health:
+		if body_part_health.is_dead():
+			_die()
+	elif current_health <= 0:
 		_die()
 
 func heal(amount: float):
-	"""Heal the player"""
-	current_health = min(current_health + amount, max_health)
+	"""Heal the player - heals all non-blacked body parts"""
+	if body_part_health:
+		body_part_health.heal_all_parts(amount)
+		# Update overall health
+		current_health = body_part_health.get_total_health()
+		max_health = body_part_health.get_total_max_health()
+	else:
+		current_health = min(current_health + amount, max_health)
 	health_changed.emit(current_health, max_health)
+
+func heal_body_part(part: int) -> bool:
+	"""Start healing a specific body part (for med kit usage)"""
+	if body_part_health and body_part_health.can_heal_part(part):
+		return body_part_health.start_healing(part)
+	return false
+
+func cancel_healing():
+	"""Cancel current healing action"""
+	if body_part_health:
+		body_part_health.cancel_healing()
+
+func full_heal():
+	"""Fully heal all body parts (for respawn/level up)"""
+	if body_part_health:
+		body_part_health.full_heal()
+		current_health = body_part_health.get_total_health()
+		max_health = body_part_health.get_total_max_health()
+	else:
+		current_health = max_health
+	health_changed.emit(current_health, max_health)
+
+func get_body_part_health() -> BodyPartHealth:
+	"""Get reference to body part health system"""
+	return body_part_health
 
 func add_experience(amount: int):
 	"""Add experience to the player"""
@@ -986,8 +1085,8 @@ func _respawn():
 	if spectator_controller:
 		spectator_controller.disable_spectating()
 
-	# Reset health
-	current_health = max_health
+	# Reset health - full heal all body parts
+	full_heal()
 	current_stamina = max_stamina
 
 	# Find spawn point
