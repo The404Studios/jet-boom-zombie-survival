@@ -48,6 +48,7 @@ class PlayerData:
 	var is_alive: bool = true
 	var is_ready: bool = false
 	var class_type: String = "survivor"
+	var character_id: String = ""  # Selected character model
 	var loadout: Dictionary = {}
 
 	func to_dict() -> Dictionary:
@@ -59,7 +60,8 @@ class PlayerData:
 			"deaths": deaths,
 			"score": score,
 			"is_alive": is_alive,
-			"class_type": class_type
+			"class_type": class_type,
+			"character_id": character_id
 		}
 
 func _ready():
@@ -110,6 +112,9 @@ func spawn_local_player(spawn_position: Vector3 = Vector3.ZERO) -> Node:
 	local_player.set_multiplayer_authority(local_peer_id)
 	local_player.name = "Player_%d" % local_peer_id
 
+	# Apply selected character from account
+	_apply_selected_character(local_player)
+
 	# Get spawn position
 	if spawn_position == Vector3.ZERO and spawn_manager:
 		spawn_position = spawn_manager.get_spawn_position()
@@ -131,6 +136,31 @@ func spawn_local_player(spawn_position: Vector3 = Vector3.ZERO) -> Node:
 	local_player_ready.emit(local_player)
 
 	return local_player
+
+func _apply_selected_character(player: Node):
+	"""Apply the selected character model from AccountSystem"""
+	var account = get_node_or_null("/root/AccountSystem")
+	if not account:
+		return
+
+	var character_id = ""
+	if account.has_method("get_selected_character"):
+		character_id = account.get_selected_character()
+
+	if character_id.is_empty():
+		return
+
+	# Store character ID in player data
+	if player_data.has(local_peer_id):
+		player_data[local_peer_id].character_id = character_id
+
+	# Apply character model if player supports it
+	if player.has_method("set_character_model"):
+		player.set_character_model(character_id)
+	elif player.has_method("load_character"):
+		player.load_character(character_id)
+
+	print("Applied character: %s" % character_id)
 
 func spawn_observed_player(peer_id: int, player_info: Dictionary, spawn_position: Vector3 = Vector3.ZERO) -> Node:
 	"""Spawn a remote player representation"""
