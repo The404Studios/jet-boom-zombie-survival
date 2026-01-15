@@ -3,7 +3,7 @@
 [ext_resource type="Script" path="res://scripts/zombies/zombie_controller.gd" id="1"]
 [ext_resource type="Resource" path="res://resources/zombies/boss_behemoth.tres" id="3"]
 [ext_resource type="Script" path="res://scripts/systems/status_effect_system.gd" id="4"]
-[ext_resource type="PackedScene" path="res://Free_Character/Spawn/Spawn.glb" id="5"]
+[ext_resource type="PackedScene" path="res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.glb" id="5"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.6

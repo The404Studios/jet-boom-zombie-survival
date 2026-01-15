@@ -99,23 +99,37 @@ func _process(_delta):
 # HEALTH & STAMINA
 # ============================================
 
-func _on_health_changed(_old: float, new: float):
+func _on_health_changed(current_or_old: float, new_or_max: float):
+	# Handle both signal formats:
+	# - PlayerController emits (old_value, new_value)
+	# - FPSController emits (current, max)
+	# Use whichever makes sense - if second param > 100, it's likely max health
+	var current_value = current_or_old
+	if new_or_max <= 100 and new_or_max != current_or_old:
+		# Likely (old, new) format
+		current_value = new_or_max
+
 	if health_bar:
 		var max_hp = player.max_health if player else 100.0
 		if skill_system:
 			max_hp += skill_system.get_attribute("max_health")
 		health_bar.max_value = max_hp
-		health_bar.value = new
+		health_bar.value = current_value
 	if health_label:
-		health_label.text = "%.0f" % new
+		health_label.text = "%.0f" % current_value
 
-func _on_stamina_changed(_old: float, new: float):
+func _on_stamina_changed(current_or_old: float, new_or_max: float):
+	# Handle both signal formats
+	var current_value = current_or_old
+	if new_or_max <= 100 and new_or_max != current_or_old:
+		current_value = new_or_max
+
 	if stamina_bar:
 		var max_stam = player.max_stamina if player else 100.0
 		if skill_system:
 			max_stam += skill_system.get_attribute("max_stamina")
 		stamina_bar.max_value = max_stam
-		stamina_bar.value = new
+		stamina_bar.value = current_value
 
 func _update_health_display():
 	if player and health_bar:
