@@ -95,6 +95,11 @@ func _ready():
 	tick_interval = 1.0 / tick_rate
 	is_authority = not multiplayer.has_multiplayer_peer() or multiplayer.is_server()
 
+	# Connect to network manager for entity state updates
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	if network_manager and network_manager.has_signal("entity_states_received"):
+		network_manager.entity_states_received.connect(_on_entity_states_from_server)
+
 func _process(delta):
 	tick_timer += delta
 
@@ -408,3 +413,56 @@ func set_tick_rate(rate: int):
 
 func get_current_tick() -> int:
 	return current_tick
+
+# ============================================
+# DEDICATED SERVER STATE HANDLING
+# ============================================
+
+func _on_entity_states_from_server(states: Array):
+	"""Handle entity states received from dedicated server"""
+	for state_dict in states:
+		var entity_id = state_dict.get("entity_id", state_dict.get("id", 0))
+		if entity_id == 0:
+			continue
+
+		_apply_received_state(entity_id, state_dict)
+		state_received.emit(entity_id, state_dict)
+
+func get_interpolated_position(entity_id: int) -> Vector3:
+	"""Get interpolated position for an entity (for smooth rendering)"""
+	if not tracked_entities.has(entity_id):
+		return Vector3.ZERO
+
+	var state = tracked_entities[entity_id] as EntityState
+	return state.position
+
+func get_interpolated_rotation(entity_id: int) -> Vector3:
+	"""Get interpolated rotation for an entity"""
+	if not tracked_entities.has(entity_id):
+		return Vector3.ZERO
+
+	var state = tracked_entities[entity_id] as EntityState
+	return state.rotation
+
+func apply_state_to_node(entity_id: int, node: Node3D, interpolate: bool = true):
+	"""Apply tracked state to a node"""
+	if not tracked_entities.has(entity_id):
+		return
+
+	var state = tracked_entities[entity_id] as EntityState
+
+	if interpolate:
+		# Smooth interpolation
+		node.global_position = node.global_position.lerp(state.position, 0.3)
+		node.rotation = node.rotation.lerp(state.rotation, 0.3)
+	else:
+		node.global_position = state.position
+		node.rotation = state.rotation
+
+func is_entity_authority(entity_id: int) -> bool:
+	"""Check if we have authority over an entity"""
+	if not tracked_entities.has(entity_id):
+		return false
+
+	var state = tracked_entities[entity_id] as EntityState
+	return state.owner_id == multiplayer.get_unique_id()
