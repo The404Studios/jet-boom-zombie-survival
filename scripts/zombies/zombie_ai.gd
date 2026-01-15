@@ -163,6 +163,28 @@ func _is_target_dead(check_target: Node3D) -> bool:
 		return true
 	return false
 
+func _is_player_invulnerable(player: Node) -> bool:
+	"""Check if player is invulnerable (shouldn't be targeted)"""
+	if not is_instance_valid(player):
+		return true
+
+	# Check has_status_effect method
+	if player.has_method("has_status_effect"):
+		if player.has_status_effect("invulnerable"):
+			return true
+
+	# Check PlayerConditions child node
+	var conditions = player.get_node_or_null("PlayerConditions")
+	if conditions and conditions.has_method("has_condition"):
+		if conditions.has_condition("invulnerable"):
+			return true
+
+	# Check for spawning immunity (freshly spawned players)
+	if "spawn_immunity_timer" in player and player.spawn_immunity_timer > 0:
+		return true
+
+	return false
+
 func find_target():
 	"""JetBoom-style targeting priority:
 	1. Sigil (main objective - zombies want to destroy it)
@@ -229,6 +251,9 @@ func find_target():
 		if not is_instance_valid(player):
 			continue
 		if _is_target_dead(player):
+			continue
+		# Skip invulnerable players
+		if _is_player_invulnerable(player):
 			continue
 		var dist = global_position.distance_to(player.global_position)
 		# Only target players if very close or if no other targets

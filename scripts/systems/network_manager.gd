@@ -1059,16 +1059,78 @@ func _handle_zombie_death(data: Dictionary):
 			break
 
 func _handle_item_spawn(data: Dictionary):
-	"""Handle item spawn event"""
-	# Implement item spawning
-	pass
+	"""Handle item spawn event - spawn item on all clients"""
+	var item_id = data.get("item_id", "")
+	var position = data.get("position", Vector3.ZERO)
+	var network_id = data.get("network_id", 0)
+
+	if item_id.is_empty():
+		return
+
+	# Try survival system first for consumables
+	var survival_system = get_node_or_null("/root/SurvivalSystem")
+	if survival_system and survival_system.has_method("spawn_item_at"):
+		var item = survival_system.spawn_item_at(item_id, position)
+		if item and network_id > 0:
+			item.set_meta("network_id", network_id)
+		return
+
+	# Try loot spawner for other items
+	var loot_spawner = get_tree().get_first_node_in_group("loot_spawner")
+	if loot_spawner and loot_spawner.has_method("spawn_loot_at"):
+		var item = loot_spawner.spawn_loot_at(item_id, position)
+		if item and network_id > 0:
+			item.set_meta("network_id", network_id)
 
 func _handle_item_pickup(data: Dictionary):
-	"""Handle item pickup event"""
-	# Implement item pickup
-	pass
+	"""Handle item pickup event - sync pickup to all clients"""
+	var network_id = data.get("network_id", 0)
+	var player_peer_id = data.get("player_id", 0)
 
-func _spawn_drop(_drop_data: Dictionary):
-	"""Spawn a loot drop"""
-	# Implement loot drop spawning
-	pass
+	if network_id <= 0:
+		return
+
+	# Find the item by network_id
+	var items = get_tree().get_nodes_in_group("pickups")
+	for item in items:
+		if item.has_meta("network_id") and item.get_meta("network_id") == network_id:
+			# Remove item from world
+			if item.has_method("on_picked_up"):
+				item.on_picked_up()
+			else:
+				item.queue_free()
+			break
+
+	# Also check consumables group
+	var consumables = get_tree().get_nodes_in_group("consumables")
+	for item in consumables:
+		if item.has_meta("network_id") and item.get_meta("network_id") == network_id:
+			if item.has_method("on_picked_up"):
+				item.on_picked_up()
+			else:
+				item.queue_free()
+			break
+
+func _spawn_drop(drop_data: Dictionary):
+	"""Spawn a loot drop (from zombie death, etc.)"""
+	var item_id = drop_data.get("item_id", "")
+	var position = drop_data.get("position", Vector3.ZERO)
+	var rarity = drop_data.get("rarity", "common")
+
+	if item_id.is_empty():
+		return
+
+	# Generate network ID for sync
+	var network_id = randi()
+
+	# Spawn locally
+	var spawn_data = {
+		"item_id": item_id,
+		"position": position,
+		"network_id": network_id
+	}
+	_handle_item_spawn(spawn_data)
+
+	# Broadcast to other clients if server
+	if multiplayer.is_server():
+		broadcast_game_event.rpc("item_spawned", spawn_data)

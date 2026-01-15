@@ -211,8 +211,27 @@ func set_player(p: Node):
 			player.weapon_changed.connect(_on_weapon_changed)
 		if player.has_signal("ammo_changed"):
 			player.ammo_changed.connect(_on_ammo_changed)
+		if player.has_signal("hunger_changed"):
+			player.hunger_changed.connect(_on_hunger_changed_signal)
+		if player.has_signal("thirst_changed"):
+			player.thirst_changed.connect(_on_thirst_changed_signal)
+		if player.has_signal("died"):
+			player.died.connect(_on_player_died)
 		_update_health_display()
 		_update_stamina_display()
+		_update_survival_display()
+
+func _on_hunger_changed_signal(_old_value: float, new_value: float):
+	if hunger_bar:
+		hunger_bar.value = new_value
+
+func _on_thirst_changed_signal(_old_value: float, new_value: float):
+	if thirst_bar:
+		thirst_bar.value = new_value
+
+func _on_player_died(_killer_name: String):
+	# Could show death screen overlay
+	pass
 
 func _process(_delta):
 	_update_minimap()
