@@ -624,7 +624,7 @@ func _get_zombie_type_for_loot() -> int:
 	if not zombie_class_data:
 		return 0  # NORMAL
 
-	var class_name_lower = zombie_class_data.class_name.to_lower()
+	var class_name_lower = zombie_class_data.display_name.to_lower()
 
 	if "runner" in class_name_lower or "fast" in class_name_lower:
 		return 1  # FAST

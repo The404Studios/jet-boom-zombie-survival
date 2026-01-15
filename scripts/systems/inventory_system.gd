@@ -441,3 +441,39 @@ func count_item(item_id: String) -> int:
 			if item.item_id == item_id:
 				found += item.current_stack
 	return found
+
+func add_item_by_id(item_id: String, container_id: String = "backpack", quantity: int = 1) -> InventoryItem:
+	"""Create an item from database and add it to specified container"""
+	var item = create_item(item_id, quantity)
+	if not item:
+		return null
+	if add_item(item, container_id):
+		return item
+	# Try stash if backpack full
+	if container_id == "backpack" and add_item(item, "stash"):
+		return item
+	return null
+
+func find_item_by_id(item_id: String) -> InventoryItem:
+	"""Find first item matching ID in any container"""
+	for cid in containers:
+		for item in containers[cid].get_all_items():
+			if item.item_id == item_id:
+				return item
+	return null
+
+func remove_item_by_id(item_id: String, quantity: int = 1) -> bool:
+	"""Remove specified quantity of item from inventory"""
+	var remaining = quantity
+	for cid in containers:
+		for item in containers[cid].get_all_items():
+			if item.item_id == item_id:
+				if item.current_stack <= remaining:
+					remaining -= item.current_stack
+					remove_item(item)
+				else:
+					item.current_stack -= remaining
+					remaining = 0
+				if remaining <= 0:
+					return true
+	return remaining <= 0

@@ -15,6 +15,7 @@ signal extraction_cancelled(player_peer_id: int)
 signal round_started(round_number: int)
 signal round_completed(round_number: int)
 signal teleport_triggered(new_area: String)
+signal final_extraction_complete
 
 # Sigil configuration
 @export var sigil_max_health: float = 1000.0
@@ -183,6 +184,15 @@ func _complete_extraction(peer_id: int):
 	players_extracting.erase(peer_id)
 	_sync_extraction_completed.rpc(peer_id)
 	extraction_completed.emit(peer_id)
+
+	# Check if this was final extraction
+	if current_round >= final_extraction_round:
+		_sync_final_extraction.rpc()
+		final_extraction_complete.emit()
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_final_extraction():
+	final_extraction_complete.emit()
 
 @rpc("authority", "call_remote", "reliable")
 func _sync_extraction_started(_peer_id: int):

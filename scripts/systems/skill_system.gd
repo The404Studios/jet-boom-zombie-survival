@@ -504,13 +504,13 @@ func _check_subclass_unlocks():
 		var subclass = subclass_definitions[subclass_id]
 		var can_unlock = true
 
-		if category_budgets.offense < subclass.get("required_offense_budget", 0.0):
+		if category_budgets["offense"] < subclass.get("required_offense_budget", 0.0):
 			can_unlock = false
-		if category_budgets.defense < subclass.get("required_defense_budget", 0.0):
+		if category_budgets["defense"] < subclass.get("required_defense_budget", 0.0):
 			can_unlock = false
-		if category_budgets.handling < subclass.get("required_handling_budget", 0.0):
+		if category_budgets["handling"] < subclass.get("required_handling_budget", 0.0):
 			can_unlock = false
-		if category_budgets.conditioning < subclass.get("required_conditioning_budget", 0.0):
+		if category_budgets["conditioning"] < subclass.get("required_conditioning_budget", 0.0):
 			can_unlock = false
 
 		if can_unlock:
