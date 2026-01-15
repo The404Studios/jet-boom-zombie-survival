@@ -18,6 +18,8 @@ var account_data: Dictionary = {
 	"rank": 1,
 	"prestige": 0,
 	"experience": 0,
+	"selected_character": "",  # Character model ID (dizzy, piggy, etc.)
+	"selected_class": "survivor",  # Player class
 	"currency": {
 		"coins": 0,
 		"premium": 0
@@ -272,8 +274,34 @@ func get_setting(setting_name: String):
 func needs_account_setup() -> bool:
 	return account_data.username.is_empty()
 
+func needs_character_setup() -> bool:
+	return account_data.selected_character.is_empty()
+
 func load_account():
 	_load_account()
+
+# ============================================
+# CHARACTER SELECTION
+# ============================================
+
+func set_selected_character(character_id: String):
+	account_data.selected_character = character_id
+	save_account()
+	print("Character selected: %s" % character_id)
+
+func get_selected_character() -> String:
+	return account_data.selected_character
+
+func set_selected_class(class_id: String):
+	account_data.selected_class = class_id
+	save_account()
+	print("Class selected: %s" % class_id)
+
+func get_selected_class() -> String:
+	return account_data.selected_class
+
+func has_character_selected() -> bool:
+	return not account_data.selected_character.is_empty()
 
 # ============================================
 # BACKEND SYNC

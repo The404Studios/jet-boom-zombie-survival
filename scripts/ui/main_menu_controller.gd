@@ -48,6 +48,9 @@ var play_time_seconds: int = 0
 # Current open panel tracking
 var current_open_panel: Control = null
 
+var boot_screen_shown: bool = false
+var boot_screen: Node = null
+
 func _ready():
 	# Initialize backend connections
 	backend = get_node_or_null("/root/Backend")
@@ -73,7 +76,12 @@ func _ready():
 
 	# Update version label
 	if version_label:
-		version_label.text = "v1.0.0 - Build " + str(Time.get_unix_time_from_system()).substr(0, 8)
+		version_label.text = "SVERA Zombies Online v1.0.0"
+
+	# Show boot screen on first launch
+	if not boot_screen_shown:
+		_show_boot_screen()
+		return  # Don't continue until boot completes
 
 	# Play menu music if available
 	if has_node("/root/AudioManager"):
@@ -841,6 +849,101 @@ func _on_account_loaded():
 	# Refresh player info when account loads
 	_load_player_info()
 	_update_player_info()
+
+# ============================================
+# BOOT SCREEN & STARTUP FLOW
+# ============================================
+
+func _show_boot_screen():
+	"""Show the SVERA boot screen animation"""
+	# Hide main UI during boot
+	if main_panel:
+		main_panel.visible = false
+	if top_tabs:
+		top_tabs.visible = false
+	if game_title:
+		game_title.visible = false
+
+	# Load and show boot screen
+	var boot_scene = load("res://scenes/ui/boot_screen.tscn")
+	if boot_scene:
+		boot_screen = boot_scene.instantiate()
+		add_child(boot_screen)
+
+		# Connect to boot complete signal
+		if boot_screen.has_signal("boot_complete"):
+			boot_screen.boot_complete.connect(_on_boot_complete)
+	else:
+		# Fallback if boot screen doesn't exist
+		_on_boot_complete()
+
+func _on_boot_complete():
+	"""Called when boot screen finishes"""
+	boot_screen_shown = true
+
+	if boot_screen and is_instance_valid(boot_screen):
+		boot_screen.queue_free()
+		boot_screen = null
+
+	# Check if first-time player needs character selection
+	var account = get_node_or_null("/root/AccountSystem")
+	if account and account.has_method("needs_character_setup"):
+		if account.needs_character_setup():
+			_show_first_time_character_select()
+			return
+
+	# Show normal main menu
+	_show_main_menu()
+
+func _show_first_time_character_select():
+	"""Show character selection for first-time players"""
+	if main_panel:
+		main_panel.visible = false
+	if top_tabs:
+		top_tabs.visible = false
+	if game_title:
+		game_title.visible = true
+		game_title.text = "Choose Your Survivor"
+
+	if character_select_panel:
+		character_select_panel.visible = true
+
+		# Connect to selection if not already
+		if character_select_panel.has_signal("continue_pressed"):
+			if not character_select_panel.continue_pressed.is_connected(_on_first_character_selected):
+				character_select_panel.continue_pressed.connect(_on_first_character_selected, CONNECT_ONE_SHOT)
+
+func _on_first_character_selected():
+	"""Called after first-time character selection"""
+	if character_select_panel:
+		character_select_panel.visible = false
+
+	if game_title:
+		game_title.text = "SVERA ZOMBIES"
+
+	_show_main_menu()
+
+func _show_main_menu():
+	"""Show the main menu after boot/character selection"""
+	# Show main UI
+	if main_panel:
+		main_panel.visible = true
+	if top_tabs:
+		top_tabs.visible = true
+	if game_title:
+		game_title.visible = true
+		game_title.text = "SVERA ZOMBIES"
+
+	# Play menu music
+	if has_node("/root/AudioManager"):
+		var audio = get_node("/root/AudioManager")
+		if audio.has_method("play_music"):
+			audio.play_music("menu_theme")
+
+	# Fade in effect
+	modulate.a = 0.0
+	var tween = create_tween()
+	tween.tween_property(self, "modulate:a", 1.0, 0.5)
 
 func show_trading_panel():
 	_show_panel(trading_panel)
