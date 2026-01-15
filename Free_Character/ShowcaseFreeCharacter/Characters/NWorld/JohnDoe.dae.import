@@ -6,7 +6,7 @@ path="res://.import/JohnDoe.dae-87aba6c4ebf1b9e58ed4f0f27b4faa67.scn"
 
 [deps]
 
-source_file="res://Characters/NWorld/JohnDoe.dae"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/JohnDoe.dae"
 dest_files=[ "res://.import/JohnDoe.dae-87aba6c4ebf1b9e58ed4f0f27b4faa67.scn" ]
 
 [params]

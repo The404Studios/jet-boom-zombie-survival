@@ -6,7 +6,7 @@ path="res://.import/Dizzy.glb-01241e9a4f961eb916bf654fed16c84f.scn"
 
 [deps]
 
-source_file="res://Characters/Street/Dizzy.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Street/Dizzy.glb"
 dest_files=[ "res://.import/Dizzy.glb-01241e9a4f961eb916bf654fed16c84f.scn" ]
 
 [params]

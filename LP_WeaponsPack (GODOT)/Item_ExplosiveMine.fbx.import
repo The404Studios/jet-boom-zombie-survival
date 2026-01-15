@@ -8,7 +8,7 @@ path="res://.godot/imported/Item_ExplosiveMine.fbx-ad49864577c0e0cac89407ec01cc7
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Item_ExplosiveMine.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Item_ExplosiveMine.fbx"
 dest_files=["res://.godot/imported/Item_ExplosiveMine.fbx-ad49864577c0e0cac89407ec01cc74fc.scn"]
 
 [params]

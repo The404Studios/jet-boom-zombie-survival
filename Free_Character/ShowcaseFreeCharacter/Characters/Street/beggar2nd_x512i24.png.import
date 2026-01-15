@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/Street/beggar2nd_x512i24.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Street/beggar2nd_x512i24.png"
 dest_files=[ "res://.import/beggar2nd_x512i24.png-2ea69a94c30a56be10a19a05bb91ded6.stex" ]
 
 [params]

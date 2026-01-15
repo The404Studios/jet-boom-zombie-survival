@@ -6,7 +6,7 @@ path="res://.import/male_z.glb-316c3cc0b71f3c1ec046b0c0da2d1275.scn"
 
 [deps]
 
-source_file="res://Characters/Zombie/male_z.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Zombie/male_z.glb"
 dest_files=[ "res://.import/male_z.glb-316c3cc0b71f3c1ec046b0c0da2d1275.scn" ]
 
 [params]

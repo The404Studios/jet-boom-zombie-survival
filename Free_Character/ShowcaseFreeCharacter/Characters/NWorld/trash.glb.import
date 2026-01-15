@@ -6,7 +6,7 @@ path="res://.import/trash.glb-e4c2df6b4c839036c4d0135846487aa6.scn"
 
 [deps]
 
-source_file="res://Characters/NWorld/trash.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/trash.glb"
 dest_files=[ "res://.import/trash.glb-e4c2df6b4c839036c4d0135846487aa6.scn" ]
 
 [params]

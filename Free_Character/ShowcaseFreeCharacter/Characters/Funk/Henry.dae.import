@@ -6,7 +6,7 @@ path="res://.import/Henry.dae-c6025a5b9287da304e88695c526760ec.scn"
 
 [deps]
 
-source_file="res://Characters/Funk/Henry.dae"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Funk/Henry.dae"
 dest_files=[ "res://.import/Henry.dae-c6025a5b9287da304e88695c526760ec.scn" ]
 
 [params]

@@ -1,6 +1,6 @@
 [gd_scene load_steps=16 format=2]
 
-[ext_resource path="res://Characters/Popcorn/Nanzy_x256_i86.png" type="Texture" id=1]
+[ext_resource path="res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy_x256_i86.png" type="Texture" id=1]
 
 [sub_resource type="ArrayMesh" id=1]
 resource_name = "Nanzy_Cube000"

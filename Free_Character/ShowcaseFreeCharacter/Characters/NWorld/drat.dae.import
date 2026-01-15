@@ -6,7 +6,7 @@ path="res://.import/drat.dae-e8398a44f242cbcae2c5c88fc05f2291.scn"
 
 [deps]
 
-source_file="res://Characters/NWorld/drat.dae"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/drat.dae"
 dest_files=[ "res://.import/drat.dae-e8398a44f242cbcae2c5c88fc05f2291.scn" ]
 
 [params]

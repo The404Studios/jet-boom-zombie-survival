@@ -8,7 +8,7 @@ path="res://.godot/imported/Grenade_GermanyExplosive.fbx-4d9ee45be3e94b286c855ca
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Grenade_GermanyExplosive.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Grenade_GermanyExplosive.fbx"
 dest_files=["res://.godot/imported/Grenade_GermanyExplosive.fbx-4d9ee45be3e94b286c855cac38b56509.scn"]
 
 [params]

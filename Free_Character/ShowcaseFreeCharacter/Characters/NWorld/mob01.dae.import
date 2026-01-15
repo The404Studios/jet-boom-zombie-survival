@@ -6,7 +6,7 @@ path="res://.import/mob01.dae-18c36ba3d92b7aad20b8320a9c0c95c8.scn"
 
 [deps]
 
-source_file="res://Characters/NWorld/mob01.dae"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/mob01.dae"
 dest_files=[ "res://.import/mob01.dae-18c36ba3d92b7aad20b8320a9c0c95c8.scn" ]
 
 [params]

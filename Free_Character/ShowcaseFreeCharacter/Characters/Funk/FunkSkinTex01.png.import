@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/Funk/FunkSkinTex01.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Funk/FunkSkinTex01.png"
 dest_files=[ "res://.import/FunkSkinTex01.png-32e88c7d566dddbb34de26bac2b0a9c0.stex" ]
 
 [params]

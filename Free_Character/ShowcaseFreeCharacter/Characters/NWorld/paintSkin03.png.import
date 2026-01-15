@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/NWorld/paintSkin03.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/paintSkin03.png"
 dest_files=[ "res://.import/paintSkin03.png-9689ebc1364ce521b800950404472bd9.stex" ]
 
 [params]

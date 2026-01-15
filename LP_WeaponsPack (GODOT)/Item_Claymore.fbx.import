@@ -8,7 +8,7 @@ path="res://.godot/imported/Item_Claymore.fbx-74c9a7bcd5a8f9f339880536b9e735c4.s
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Item_Claymore.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Item_Claymore.fbx"
 dest_files=["res://.godot/imported/Item_Claymore.fbx-74c9a7bcd5a8f9f339880536b9e735c4.scn"]
 
 [params]

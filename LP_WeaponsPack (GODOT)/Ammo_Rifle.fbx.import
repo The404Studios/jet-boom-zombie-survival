@@ -8,7 +8,7 @@ path="res://.godot/imported/Ammo_Rifle.fbx-821a65e3aab04ea403ca92ae14c8360e.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Ammo_Rifle.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Ammo_Rifle.fbx"
 dest_files=["res://.godot/imported/Ammo_Rifle.fbx-821a65e3aab04ea403ca92ae14c8360e.scn"]
 
 [params]

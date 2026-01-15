@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/NWorld/fatso02_x256.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/fatso02_x256.png"
 dest_files=[ "res://.import/fatso02_x256.png-feca777f47d3fce5e3b0b8709bc28f06.stex" ]
 
 [params]

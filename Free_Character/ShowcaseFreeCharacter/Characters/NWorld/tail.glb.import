@@ -6,7 +6,7 @@ path="res://.import/tail.glb-8cdd4775e3e10e0dfa103d15743f1b79.scn"
 
 [deps]
 
-source_file="res://Characters/NWorld/tail.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/tail.glb"
 dest_files=[ "res://.import/tail.glb-8cdd4775e3e10e0dfa103d15743f1b79.scn" ]
 
 [params]

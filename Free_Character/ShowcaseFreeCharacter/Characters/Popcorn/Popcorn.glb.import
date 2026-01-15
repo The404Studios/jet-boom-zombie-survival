@@ -6,7 +6,7 @@ path="res://.import/Popcorn.glb-89f773ab1e6d06b18339e91268eea27b.scn"
 
 [deps]
 
-source_file="res://Characters/Popcorn/Popcorn.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Popcorn.glb"
 dest_files=[ "res://.import/Popcorn.glb-89f773ab1e6d06b18339e91268eea27b.scn" ]
 
 [params]

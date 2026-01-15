@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/Zombie/female_fz005.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Zombie/female_fz005.png"
 dest_files=[ "res://.import/female_fz005.png-ef8c0ffd6de28917f6bce40c57ae1689.stex" ]
 
 [params]

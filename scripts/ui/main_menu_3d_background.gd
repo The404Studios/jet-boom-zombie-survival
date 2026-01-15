@@ -67,8 +67,8 @@ func _spawn_menu_zombies():
 
 	# Try to load zombie models
 	var zombie_models = [
-		"res://Free_Character/male_zombie/male_z.glb",
-		"res://Free_Character/female_zombies/female_z.glb"
+		"res://Free_Character/ShowcaseFreeCharacter/Characters/Zombie/male_z.glb",
+		"res://Free_Character/ShowcaseFreeCharacter/Characters/Zombie/female_z.glb"
 	]
 
 	for i in range(zombie_count):

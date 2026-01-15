@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/NWorld/mr_trash_x256.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/mr_trash_x256.png"
 dest_files=[ "res://.import/mr_trash_x256.png-bdf3b02641044c62b599a1b94ba40969.stex" ]
 
 [params]

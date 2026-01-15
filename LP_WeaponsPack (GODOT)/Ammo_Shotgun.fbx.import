@@ -8,7 +8,7 @@ path="res://.godot/imported/Ammo_Shotgun.fbx-9c633f5a3832113183ca187fe72c9891.sc
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Ammo_Shotgun.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Ammo_Shotgun.fbx"
 dest_files=["res://.godot/imported/Ammo_Shotgun.fbx-9c633f5a3832113183ca187fe72c9891.scn"]
 
 [params]

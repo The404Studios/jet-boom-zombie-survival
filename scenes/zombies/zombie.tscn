@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://zombie001"]
 
 [ext_resource type="Script" path="res://scripts/zombies/zombie_ai.gd" id="1"]
-[ext_resource type="PackedScene" path="res://Free_Character/male_zombie/male_z.glb" id="2"]
+[ext_resource type="PackedScene" path="res://Free_Character/ShowcaseFreeCharacter/Characters/Zombie/male_z.glb" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_zombie"]
 radius = 0.4

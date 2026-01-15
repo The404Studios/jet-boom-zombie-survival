@@ -8,7 +8,7 @@ path="res://.godot/imported/Grenade_Divine.fbx-7f52c24a7baa3c088dc28b68624a2093.
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Grenade_Divine.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Grenade_Divine.fbx"
 dest_files=["res://.godot/imported/Grenade_Divine.fbx-7f52c24a7baa3c088dc28b68624a2093.scn"]
 
 [params]
