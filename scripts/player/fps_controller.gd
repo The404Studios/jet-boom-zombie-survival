@@ -1754,8 +1754,8 @@ func _sync_ammo(ammo: int, reserve: int):
 	_update_hud()
 
 @rpc("authority", "call_local", "reliable")
-func _player_died(killer_id: int):
-	"""Called when player dies (networked)"""
+func _player_killed_by(killer_id: int):
+	"""Called when player is killed by another player (networked)"""
 	die()
 	if has_node("/root/ChatSystem"):
 		var killer_name = "Enemy"

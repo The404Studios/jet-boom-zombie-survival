@@ -1,5 +1,4 @@
 extends Node
-class_name RoundManager
 
 # Manages game rounds/sessions for zombie survival
 # Handles round states, win/lose conditions, and round transitions

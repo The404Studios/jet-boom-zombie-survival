@@ -1,5 +1,4 @@
 extends Node
-class_name WaveLootSystem
 
 ## Wave progression and loot drop system
 ## Handles difficulty scaling and zombie loot tables

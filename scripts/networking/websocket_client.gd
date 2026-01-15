@@ -1,8 +1,10 @@
 extends Node
-class_name WebSocketClient
 
 # WebSocket client for real-time communication with the backend
 # Uses SignalR protocol for server communication
+
+# SignalR record separator (Unicode char 0x1e)
+const RECORD_SEPARATOR = "\u001e"
 
 signal connected
 signal disconnected
@@ -128,15 +130,15 @@ func _on_disconnected() -> void:
 func _send_signalr_handshake() -> void:
 	# SignalR handshake message
 	var handshake = {"protocol": "json", "version": 1}
-	_send_raw(JSON.stringify(handshake) + "\x1e")  # Record separator
+	_send_raw(JSON.stringify(handshake) + RECORD_SEPARATOR)
 
 # ============================================
 # MESSAGE HANDLING
 # ============================================
 
 func _handle_message(raw_message: String) -> void:
-	# SignalR messages are separated by \x1e (record separator)
-	var messages = raw_message.split("\x1e")
+	# SignalR messages are separated by record separator
+	var messages = raw_message.split(RECORD_SEPARATOR)
 
 	for msg in messages:
 		if msg.is_empty():
@@ -329,7 +331,7 @@ func _handle_completion(data: Dictionary) -> void:
 				callback.call({"success": true, "result": result})
 
 func _send_pong() -> void:
-	_send_raw(JSON.stringify({"type": 6}) + "\x1e")
+	_send_raw(JSON.stringify({"type": 6}) + RECORD_SEPARATOR)
 
 # ============================================
 # HUB METHODS - GAME
@@ -485,7 +487,7 @@ func _invoke(method: String, arguments: Array, callback: Callable = Callable()) 
 	if callback.is_valid():
 		pending_invocations[inv_id] = callback
 
-	_send_raw(JSON.stringify(message) + "\x1e")
+	_send_raw(JSON.stringify(message) + RECORD_SEPARATOR)
 
 func _send_raw(data: String) -> void:
 	if socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
@@ -543,7 +545,7 @@ func poll_dedicated_socket() -> void:
 func _send_signalr_handshake_dedicated() -> void:
 	"""Send SignalR handshake to dedicated hub"""
 	var handshake = {"protocol": "json", "version": 1}
-	_send_dedicated_raw(JSON.stringify(handshake) + "\x1e")
+	_send_dedicated_raw(JSON.stringify(handshake) + RECORD_SEPARATOR)
 
 func _send_dedicated_raw(data: String) -> void:
 	if dedicated_socket and dedicated_socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
@@ -569,11 +571,11 @@ func _invoke_dedicated(method: String, arguments: Array, callback: Callable = Ca
 	if callback.is_valid():
 		pending_invocations[inv_id] = callback
 
-	_send_dedicated_raw(JSON.stringify(message) + "\x1e")
+	_send_dedicated_raw(JSON.stringify(message) + RECORD_SEPARATOR)
 
 func _handle_dedicated_message(raw_message: String) -> void:
 	"""Handle messages from dedicated server hub"""
-	var messages = raw_message.split("\x1e")
+	var messages = raw_message.split(RECORD_SEPARATOR)
 
 	for msg in messages:
 		if msg.is_empty():
@@ -595,7 +597,7 @@ func _handle_dedicated_message(raw_message: String) -> void:
 			3:  # Completion
 				_handle_completion(data)
 			6:  # Ping
-				_send_dedicated_raw(JSON.stringify({"type": 6}) + "\x1e")
+				_send_dedicated_raw(JSON.stringify({"type": 6}) + RECORD_SEPARATOR)
 
 func _handle_dedicated_invocation(data: Dictionary) -> void:
 	"""Handle invocations from dedicated server hub"""

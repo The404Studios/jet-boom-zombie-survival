@@ -268,18 +268,22 @@ func show_loading(title: String = "Loading...", allow_cancel: bool = false):
 
 	# Fade in
 	visible = true
-	modulate.a = 0.0
-	var tween = create_tween()
-	tween.tween_property(self, "modulate:a", 1.0, fade_duration)
+	if background:
+		background.modulate.a = 0.0
+		var tween = create_tween()
+		tween.tween_property(background, "modulate:a", 1.0, fade_duration)
 
 func hide_loading():
 	"""Hide the loading screen"""
 	is_loading = false
 
 	# Fade out
-	var tween = create_tween()
-	tween.tween_property(self, "modulate:a", 0.0, fade_duration)
-	tween.tween_callback(_hide_self)
+	if background:
+		var tween = create_tween()
+		tween.tween_property(background, "modulate:a", 0.0, fade_duration)
+		tween.tween_callback(_hide_self)
+	else:
+		_hide_self()
 
 func _hide_self():
 	visible = false

@@ -1,5 +1,4 @@
 extends Node
-class_name PlayerManager
 
 # Manages all players in the game (local and remote)
 # Handles spawning, respawning, tracking, and player state

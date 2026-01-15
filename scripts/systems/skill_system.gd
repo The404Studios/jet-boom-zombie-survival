@@ -1,5 +1,4 @@
 extends Node
-class_name SkillSystem
 
 ## Network-replicated skill and skill tree system
 ## Based on Offense/Defense/Handling/Conditioning categories

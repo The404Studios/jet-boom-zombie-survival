@@ -539,7 +539,7 @@ func sync_player_health(player_id: int, health: float, max_health: float):
 			player.max_health = max_health
 
 @rpc("authority", "call_local")
-func player_died(player_id: int, _killer_id: int = -1):
+func on_player_died_rpc(player_id: int, _killer_id: int = -1):
 	if player_nodes.has(player_id):
 		var player = player_nodes[player_id]
 		if player.has_method("die"):

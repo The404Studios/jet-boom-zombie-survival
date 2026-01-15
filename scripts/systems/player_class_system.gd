@@ -1,5 +1,4 @@
 extends Node
-class_name PlayerClassSystem
 
 # Player class/role system
 # Defines different playstyles with unique abilities and stat modifiers

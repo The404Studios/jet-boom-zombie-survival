@@ -1,5 +1,4 @@
 extends Node
-class_name BuildingSystem
 
 ## Network-replicated building and prop system
 ## Props have HP and can be damaged/destroyed

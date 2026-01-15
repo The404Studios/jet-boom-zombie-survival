@@ -1,5 +1,4 @@
 extends Node3D
-class_name PropSpawner
 
 @export var prop_scenes: Array[PackedScene] = []
 @export var spawn_count: int = 50

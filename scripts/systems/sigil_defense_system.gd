@@ -1,5 +1,4 @@
 extends Node
-class_name SigilDefenseSystem
 
 ## Sigil Defense System - Tower Defense style gameplay
 ## Players protect a sigil from zombie waves

@@ -1,5 +1,4 @@
 extends Node
-class_name InventorySystem
 
 ## Tarkov-style grid inventory system
 ## Items occupy grid cells based on their size

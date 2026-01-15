@@ -536,7 +536,7 @@ func get_connection_type_name() -> String:
 		ConnectionType.MATCHMAKING: return "Matchmaking"
 	return "Unknown"
 
-func is_connected() -> bool:
+func is_network_connected() -> bool:
 	return connection_state in [ConnectionState.CONNECTED, ConnectionState.IN_LOBBY, ConnectionState.IN_GAME]
 
 func is_in_game() -> bool:

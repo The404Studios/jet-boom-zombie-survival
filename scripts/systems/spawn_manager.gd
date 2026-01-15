@@ -1,5 +1,4 @@
 extends Node
-class_name SpawnManager
 
 # Manages spawn points for players, zombies, and items
 # Handles spawn selection, validation, and dynamic spawn creation
