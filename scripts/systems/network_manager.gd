@@ -805,8 +805,8 @@ func broadcast_game_event(event_name: String, event_data: Dictionary):
 			print("Game event: %s" % event_name)
 
 @rpc("authority", "call_remote", "reliable")
-func _sync_player_ready(peer_id: int, is_ready: bool):
-	"""Receive player ready state update"""
+func _receive_player_ready_state(peer_id: int, is_ready: bool):
+	"""Receive player ready state update from server"""
 	if players.has(peer_id):
 		players[peer_id].ready = is_ready
 

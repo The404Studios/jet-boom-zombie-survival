@@ -433,8 +433,9 @@ func _on_item_purchased(item, cost: int):  # item: ItemDataExtended
 		get_node("/root/AudioManager").play_sfx("purchase")
 
 func spawn_coin_particles(amount: int):
-	# Spawn floating coin icons
-	var num_coins = mini(amount // 10, 10)  # Max 10 coin particles
+	# Spawn floating coin icons (max 10)
+	@warning_ignore("integer_division")
+	var num_coins = mini(amount / 10, 10)
 
 	for i in range(num_coins):
 		var coin = Label.new()

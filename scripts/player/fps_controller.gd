@@ -1117,9 +1117,9 @@ func _respawn():
 		get_node("/root/ChatSystem").emit_system_message("Respawned!")
 
 @rpc("authority", "call_local", "reliable")
-func _player_respawned(_player_id: int, _spawn_position: Vector3):
-	"""Network replicated player respawn"""
-	pass  # Could add respawn effects here
+func _on_other_player_respawned(_player_id: int, _spawn_position: Vector3):
+	"""Network notification when another player respawns"""
+	pass  # Could add respawn effects for other players here
 
 func _camera_shake(intensity: float, duration: float):
 	if not camera:
