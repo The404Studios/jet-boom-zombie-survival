@@ -276,10 +276,11 @@ func lock_door(door_id: int, locked: bool) -> bool:
 
 func place_barricade(position: Vector3, rotation: Vector3, placer_peer_id: int, barricade_type: String = "wooden") -> int:
 	"""Place a new barricade"""
-	# Load barricade scene
-	var scene_path = "res://scenes/props/barricade_%s.tscn" % barricade_type
+	# Load barricade scene - use correct path in environment folder
+	var scene_path = "res://scenes/environment/barricade.tscn"
 	if not ResourceLoader.exists(scene_path):
-		scene_path = "res://scenes/props/barricade_wooden.tscn"
+		push_warning("Barricade scene not found: %s" % scene_path)
+		return -1
 
 	var barricade_scene = load(scene_path)
 	if not barricade_scene:
@@ -371,10 +372,11 @@ func _sync_door_state(_door_id: int, _is_open: bool):
 func _sync_barricade_placed(_prop_id: int, _position: Vector3, _rotation: Vector3, _type: String):
 	"""Client receives barricade placement"""
 	if not is_server:
-		# Spawn barricade on client
-		var scene_path = "res://scenes/props/barricade_%s.tscn" % _type
+		# Spawn barricade on client - use correct path in environment folder
+		var scene_path = "res://scenes/environment/barricade.tscn"
 		if not ResourceLoader.exists(scene_path):
-			scene_path = "res://scenes/props/barricade_wooden.tscn"
+			push_warning("Barricade scene not found on client: %s" % scene_path)
+			return
 
 		var barricade_scene = load(scene_path)
 		if barricade_scene:
