@@ -1,423 +1,360 @@
 extends CharacterBody3D
-class_name Player
+class_name PlayerController
 
+## FPS Player Controller with full input handling
+## Supports movement, shooting, interaction, and inventory
+
+signal health_changed(old_value: float, new_value: float)
+signal stamina_changed(old_value: float, new_value: float)
+signal died(killer_name: String)
+signal respawned
+signal weapon_changed(weapon_index: int)
+signal ammo_changed(current: int, reserve: int)
+signal reload_started
+signal reload_finished
+signal interacted(target: Node)
+
+# Movement settings
+@export_group("Movement")
 @export var walk_speed: float = 5.0
 @export var sprint_speed: float = 8.0
-@export var jump_velocity: float = 6.0
-@export var mouse_sensitivity: float = 0.003
+@export var crouch_speed: float = 2.5
+@export var jump_velocity: float = 5.0
+@export var mouse_sensitivity: float = 0.002
+@export var gravity_mult: float = 2.0
+
+# Stats
+@export_group("Stats")
 @export var max_health: float = 100.0
 @export var max_stamina: float = 100.0
+@export var stamina_drain_rate: float = 15.0
+@export var stamina_regen_rate: float = 10.0
+@export var stamina_regen_delay: float = 1.5
 
+# Current state
 var current_health: float = 100.0
 var current_stamina: float = 100.0
-var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
+var is_dead: bool = false
 var is_sprinting: bool = false
-var can_shoot: bool = true
+var is_crouching: bool = false
+var is_aiming: bool = false
+
+# Stamina
+var stamina_regen_timer: float = 0.0
+var can_regen_stamina: bool = true
+
+# References
+@onready var camera: Camera3D = $Head/Camera3D
+@onready var head: Node3D = $Head
+@onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
+@onready var raycast: RayCast3D = $Head/Camera3D/InteractRay
+@onready var collision: CollisionShape3D = $CollisionShape3D
+
+# Weapon system
+var weapons: Array = []
+var current_weapon_index: int = 0
+var current_weapon: Node = null
 var is_reloading: bool = false
-var reserve_ammo: int = 90
 
-@onready var camera: Camera3D = $Camera3D
-@onready var weapon_holder: Node3D = $Camera3D/WeaponHolder
-@onready var interact_ray: RayCast3D = $Camera3D/InteractRay
-@onready var inventory: InventorySystem = $InventorySystem
-@onready var ui: Control = $UI
+# Input
+var mouse_captured: bool = true
+var input_direction: Vector2 = Vector2.ZERO
+var look_rotation: Vector2 = Vector2.ZERO
 
-# Grid-based inventory (optional - for grid UI system)
-var grid_inventory: GridInventorySystem
-
-var current_weapon: Node3D = null
-var shoot_timer: float = 0.0
-
-signal health_changed(new_health: float, max_health: float)
-signal stamina_changed(new_stamina: float, max_stamina: float)
-signal died
+# Network
+var peer_id: int = 1
+var is_local_player: bool = true
 
 func _ready():
-	add_to_group("player")
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	current_health = max_health
-	current_stamina = max_stamina
-	health_changed.emit(current_health, max_health)
-	stamina_changed.emit(current_stamina, max_stamina)
+	if multiplayer.has_multiplayer_peer():
+		peer_id = get_multiplayer_authority()
+		is_local_player = peer_id == multiplayer.get_unique_id()
+	
+	if is_local_player:
+		camera.current = true
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		_setup_weapons()
+	else:
+		camera.current = false
 
-	# Initialize grid inventory system
-	_setup_grid_inventory()
+func _setup_weapons():
+	for child in weapon_holder.get_children():
+		weapons.append(child)
+		child.visible = false
+	if weapons.size() > 0:
+		_equip_weapon(0)
 
-func _setup_grid_inventory():
-	# Create grid inventory if not already exists
-	if not grid_inventory:
-		grid_inventory = GridInventorySystem.new()
-		grid_inventory.name = "GridInventorySystem"
-		add_child(grid_inventory)
-		grid_inventory.add_to_group("grid_inventory")
-
-func _input(event):
-	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		rotate_y(-event.relative.x * mouse_sensitivity)
-		camera.rotate_x(-event.relative.y * mouse_sensitivity)
-		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
-
-	if event.is_action_pressed("inventory"):
-		toggle_inventory()
-
-	if event.is_action_pressed("extract"):
-		attempt_extract()
-
-	# Drop item with G key (if action exists)
-	if InputMap.has_action("drop_item") and event.is_action_pressed("drop_item"):
-		drop_held_item()
+func _unhandled_input(event):
+	if not is_local_player or is_dead:
+		return
+	
+	if event is InputEventMouseMotion and mouse_captured:
+		look_rotation.x -= event.relative.x * mouse_sensitivity
+		look_rotation.y -= event.relative.y * mouse_sensitivity
+		look_rotation.y = clamp(look_rotation.y, -1.5, 1.5)
+	
+	if event.is_action_pressed("ui_cancel"):
+		mouse_captured = not mouse_captured
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if mouse_captured else Input.MOUSE_MODE_VISIBLE
+	
+	if event.is_action_pressed("shoot"):
+		_shoot()
+	
+	if event.is_action_pressed("reload"):
+		_reload()
+	
+	if event.is_action_pressed("interact"):
+		_interact()
+	
+	if event.is_action_pressed("weapon_1"):
+		_equip_weapon(0)
+	elif event.is_action_pressed("weapon_2"):
+		_equip_weapon(1)
+	elif event.is_action_pressed("weapon_3"):
+		_equip_weapon(2)
+	
+	if event.is_action_pressed("scroll_up"):
+		_equip_weapon((current_weapon_index - 1 + weapons.size()) % weapons.size())
+	elif event.is_action_pressed("scroll_down"):
+		_equip_weapon((current_weapon_index + 1) % weapons.size())
 
 func _physics_process(delta):
-	# Stamina regeneration
-	if not is_sprinting and current_stamina < max_stamina:
-		current_stamina = min(current_stamina + 20.0 * delta, max_stamina)
-		stamina_changed.emit(current_stamina, max_stamina)
+	if not is_local_player:
+		return
+	
+	if is_dead:
+		return
+	
+	_update_look()
+	_update_movement(delta)
+	_update_stamina(delta)
 
-	# Gravity
+func _update_look():
+	rotation.y = look_rotation.x
+	head.rotation.x = look_rotation.y
+
+func _update_movement(delta):
+	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity") * gravity_mult
+	
 	if not is_on_floor():
 		velocity.y -= gravity * delta
-
-	# Jump
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	
+	if Input.is_action_just_pressed("jump") and is_on_floor() and not is_crouching:
 		velocity.y = jump_velocity
-
-	# Sprint
-	is_sprinting = Input.is_action_pressed("sprint") and current_stamina > 0
-
-	# Movement
-	var input_dir = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
-	var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
-
-	var current_speed = sprint_speed if is_sprinting else walk_speed
-
-	if is_sprinting and direction.length() > 0:
-		current_stamina = max(current_stamina - 30.0 * delta, 0)
-		stamina_changed.emit(current_stamina, max_stamina)
-
+	
+	is_sprinting = Input.is_action_pressed("sprint") and current_stamina > 0 and not is_crouching and not is_aiming
+	is_crouching = Input.is_action_pressed("crouch")
+	is_aiming = Input.is_action_pressed("aim")
+	
+	var speed = walk_speed
+	if is_sprinting:
+		speed = sprint_speed
+	elif is_crouching:
+		speed = crouch_speed
+	elif is_aiming:
+		speed = walk_speed * 0.7
+	
+	# Apply skill modifiers
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system:
+		speed *= skill_system.get_attribute("sprint_speed") if is_sprinting else 1.0
+		speed *= skill_system.get_attribute("move_speed")
+	
+	input_direction = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	var direction = (transform.basis * Vector3(input_direction.x, 0, input_direction.y)).normalized()
+	
 	if direction:
-		velocity.x = direction.x * current_speed
-		velocity.z = direction.z * current_speed
+		velocity.x = direction.x * speed
+		velocity.z = direction.z * speed
 	else:
-		velocity.x = move_toward(velocity.x, 0, current_speed)
-		velocity.z = move_toward(velocity.z, 0, current_speed)
-
+		velocity.x = move_toward(velocity.x, 0, speed)
+		velocity.z = move_toward(velocity.z, 0, speed)
+	
 	move_and_slide()
 
-	# Shooting
-	shoot_timer = max(shoot_timer - delta, 0)
-
-	if Input.is_action_pressed("shoot") and can_shoot and shoot_timer <= 0 and not is_reloading:
-		shoot()
-
-	if Input.is_action_just_pressed("reload") and not is_reloading:
-		reload_weapon()
-
-	# Interaction
-	if Input.is_action_just_pressed("interact"):
-		interact()
-
-func shoot():
-	if not inventory.equipped_weapon or inventory.equipped_weapon.is_empty():
-		return
-
-	var weapon_data = inventory.equipped_weapon.get("item")
-	if not weapon_data:
-		return
-	if inventory.equipped_weapon.get("current_ammo", 0) <= 0:
-		# Auto reload
-		reload_weapon()
-		return
-
-	inventory.equipped_weapon["current_ammo"] = inventory.equipped_weapon.get("current_ammo", 1) - 1
-
-	# Raycast for hit detection
-	var space_state = get_world_3d().direct_space_state
-	var from = camera.global_position
-	var to = from + (-camera.global_transform.basis.z * weapon_data.weapon_range)
-
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 0b001101  # Hit environment, zombies, barricades
-	var result = space_state.intersect_ray(query)
-
-	if result:
-		if result.collider.has_method("take_damage"):
-			result.collider.take_damage(weapon_data.damage, result.position)
-
-	# Set fire rate cooldown
-	shoot_timer = weapon_data.fire_rate
-
-	# Weapon animation and effects would go here
-	if current_weapon and current_weapon.has_method("play_shoot_animation"):
-		current_weapon.play_shoot_animation()
-
-	can_shoot = true
-
-func reload_weapon():
-	if not inventory.equipped_weapon or inventory.equipped_weapon.is_empty():
-		return
-
-	var weapon_data = inventory.equipped_weapon.get("item")
-	if not weapon_data:
-		return
-	if inventory.equipped_weapon.get("current_ammo", 0) >= weapon_data.magazine_size:
-		return
-
-	is_reloading = true
-
-	# Animation would play here
-	await get_tree().create_timer(weapon_data.reload_time).timeout
-
-	# Validate after await - player or weapon may have changed/been freed
-	if not is_instance_valid(self) or not is_inside_tree():
-		return
-	if not inventory or not inventory.equipped_weapon:
-		is_reloading = false
-		return
-
-	inventory.equipped_weapon["current_ammo"] = weapon_data.magazine_size
-	is_reloading = false
-
-func interact():
-	if not interact_ray:
-		return
-	if interact_ray.is_colliding():
-		var collider = interact_ray.get_collider()
-		if not collider:
-			return
-
-		if collider.has_method("interact"):
-			collider.interact(self)
-		elif collider.is_in_group("loot"):
-			pickup_item(collider)
-		elif collider.is_in_group("barricade_spot"):
-			place_barricade(collider)
-
-func pickup_item(item_node: Node3D):
-	"""Pick up a loot item from the world"""
-	if not item_node:
-		return
-
-	var item_data: Resource = null
-	var quantity: int = 1
-
-	# Get item data from the node
-	if item_node.has_method("get_item_data"):
-		item_data = item_node.get_item_data()
-	elif "item_data" in item_node:
-		item_data = item_node.item_data
-
-	# Get quantity if available
-	if "loot_quantity" in item_node:
-		quantity = item_node.loot_quantity
-
-	if not item_data:
-		# Try to handle special loot types (ammo, health, etc.)
-		if item_node is LootItem:
-			var loot = item_node as LootItem
-			if loot.loot_type != "":
-				_handle_special_pickup(loot)
-				return
-		return
-
-	# Try to add to grid inventory first
-	if grid_inventory and grid_inventory.has_method("add_item"):
-		if grid_inventory.add_item(item_data, quantity, false):
-			_on_pickup_success(item_node, item_data)
-			return
-
-	# Fallback to regular inventory
-	if inventory and inventory.has_method("add_item"):
-		if inventory.add_item(item_data, quantity):
-			_on_pickup_success(item_node, item_data)
-			return
-
-	# Inventory full
-	show_pickup_message("Inventory full!")
-
-func _handle_special_pickup(loot: LootItem):
-	"""Handle special loot types that don't use ItemData"""
-	var success = false
-
-	match loot.loot_type:
-		"ammo":
-			if "reserve_ammo" in self:
-				reserve_ammo += loot.loot_quantity
-				success = true
-		"health":
-			var heal_amount = loot.get_meta("heal_amount", 25)
-			heal(heal_amount)
-			success = true
-
-	if success:
-		show_pickup_message(loot._get_display_name())
-		loot.picked_up.emit(self)
-		loot.queue_free()
-
-func _on_pickup_success(item_node: Node3D, item_data: Resource):
-	"""Called when an item is successfully picked up"""
-	# Show pickup message
-	var item_name = item_data.item_name if "item_name" in item_data else "Item"
-	show_pickup_message(item_name)
-
-	# Play pickup sound
-	if has_node("/root/AudioManager"):
-		get_node("/root/AudioManager").play_sfx("pickup")
-
-	# Emit signal on loot item
-	if item_node.has_signal("picked_up"):
-		item_node.picked_up.emit(self)
-
-	# Free or return to pool
-	var pool_manager = get_node_or_null("/root/ObjectPoolManager")
-	if pool_manager and pool_manager.has_method("release"):
-		pool_manager.release("loot_item", item_node)
+func _update_stamina(delta):
+	if is_sprinting and input_direction.length() > 0:
+		current_stamina = max(0, current_stamina - stamina_drain_rate * delta)
+		stamina_regen_timer = stamina_regen_delay
+		can_regen_stamina = false
+		stamina_changed.emit(current_stamina + stamina_drain_rate * delta, current_stamina)
 	else:
-		item_node.queue_free()
+		if not can_regen_stamina:
+			stamina_regen_timer -= delta
+			if stamina_regen_timer <= 0:
+				can_regen_stamina = true
+		
+		if can_regen_stamina and current_stamina < max_stamina:
+			var old = current_stamina
+			var regen = stamina_regen_rate
+			var skill_system = get_node_or_null("/root/SkillSystem")
+			if skill_system:
+				regen *= skill_system.get_attribute("stamina_regen")
+			current_stamina = min(max_stamina, current_stamina + regen * delta)
+			stamina_changed.emit(old, current_stamina)
 
-func show_pickup_message(item_name: String):
-	"""Show a pickup notification to the player"""
-	# Try HUD notification
-	var hud = get_tree().get_first_node_in_group("hud")
-	if hud and hud.has_method("show_notification"):
-		hud.show_notification("+ %s" % item_name)
+# ============================================
+# COMBAT
+# ============================================
+
+func _shoot():
+	if is_reloading or not current_weapon:
 		return
+	
+	if current_weapon.has_method("shoot"):
+		current_weapon.shoot()
+		_send_shoot_action()
 
-	# Try chat system
-	if has_node("/root/ChatSystem"):
-		get_node("/root/ChatSystem").emit_system_message("Picked up: %s" % item_name)
+func _reload():
+	if is_reloading or not current_weapon:
 		return
+	
+	if current_weapon.has_method("reload"):
+		is_reloading = true
+		reload_started.emit()
+		current_weapon.reload()
+		
+		var reload_time = 2.0
+		if current_weapon.has_method("get_reload_time"):
+			reload_time = current_weapon.get_reload_time()
+		
+		var skill_system = get_node_or_null("/root/SkillSystem")
+		if skill_system:
+			reload_time /= skill_system.get_attribute("reload_speed")
+		
+		await get_tree().create_timer(reload_time).timeout
+		is_reloading = false
+		reload_finished.emit()
 
-	# Fallback to print
-	print("Picked up: %s" % item_name)
-
-func drop_held_item():
-	"""Drop the currently selected item from inventory"""
-	# Check if inventory UI is open and has selected item
-	var grid_ui = get_tree().get_first_node_in_group("grid_inventory_ui")
-	if grid_ui and grid_ui.is_open and "hovered_item" in grid_ui:
-		var hovered = grid_ui.hovered_item
-		if not hovered.is_empty() and "item" in hovered:
-			drop_item(hovered.item, hovered.get("quantity", 1))
-			return
-
-	# Otherwise, try to drop first inventory item
-	if grid_inventory:
-		var items = grid_inventory.get_all_items(false)
-		if items.size() > 0:
-			var first_item = items[0]
-			drop_item(first_item.item, 1)
-
-func drop_item(item_data: Resource, quantity: int = 1):
-	"""Drop an item from inventory into the world"""
-	if not item_data:
+func _equip_weapon(index: int):
+	if index < 0 or index >= weapons.size():
 		return
+	
+	if current_weapon:
+		current_weapon.visible = false
+	
+	current_weapon_index = index
+	current_weapon = weapons[index]
+	current_weapon.visible = true
+	
+	weapon_changed.emit(index)
 
-	# Remove from inventory
-	var removed = false
-	if grid_inventory and grid_inventory.has_method("remove_item"):
-		removed = grid_inventory.remove_item(item_data, quantity)
-	elif inventory and inventory.has_method("remove_item"):
-		removed = inventory.remove_item(item_data, quantity)
+func _send_shoot_action():
+	var network_manager = get_node_or_null("/root/NetworkManager")
+	if network_manager and network_manager.has_method("send_player_action"):
+		network_manager.send_player_action("shoot", {
+			"origin": camera.global_position,
+			"direction": -camera.global_transform.basis.z,
+			"weapon": current_weapon.name if current_weapon else "unknown"
+		})
 
-	if not removed:
+# ============================================
+# DAMAGE & HEALTH
+# ============================================
+
+func take_damage(amount: float, attacker_name: String = ""):
+	if is_dead:
 		return
-
-	# Spawn loot item in front of player
-	var drop_position = global_position + (-global_transform.basis.z * 1.5) + Vector3(0, 0.5, 0)
-
-	# Try to use object pool
-	var pool_manager = get_node_or_null("/root/ObjectPoolManager")
-	if pool_manager and pool_manager.has_method("spawn_loot"):
-		var loot = pool_manager.spawn_loot(drop_position, item_data, get_parent())
-		if loot:
-			return
-
-	# Fallback: create new loot item
-	var loot_scene = preload("res://scenes/items/loot_item.tscn")
-	var loot = loot_scene.instantiate()
-	get_parent().add_child(loot)
-	loot.global_position = drop_position
-
-	if loot.has_method("set_item_data"):
-		loot.set_item_data(item_data)
-	elif "item_data" in loot:
-		loot.item_data = item_data
-
-	# Apply small random velocity for visual effect
-	if loot is RigidBody3D:
-		loot.linear_velocity = Vector3(randf_range(-1, 1), 2, randf_range(-1, 1))
-
-	# Show drop message
-	var item_name = item_data.item_name if "item_name" in item_data else "Item"
-	show_pickup_message("Dropped: %s" % item_name)
-
-func place_barricade(spot: Node3D):
-	# Check if player has barricade material in inventory
-	var material_item = null  # ItemData
-	for inv_item in inventory.inventory:
-		var item = inv_item.get("item")
-		if item and item.item_type == 5:  # ItemData.ItemType.MATERIAL = 5
-			material_item = item
-			break
-
-	# If no material, check if spot has existing barricade to repair
-	if not material_item:
-		# Allow free repairs if barricade exists
-		if spot.has_method("interact"):
-			spot.interact(self)
-		return
-
-	# Try to interact with barricade spot (build or repair)
-	if spot.has_method("interact"):
-		# Remove material from inventory
-		inventory.remove_item(material_item, 1)
-		spot.interact(self)
-	elif spot.has_method("start_build"):
-		inventory.remove_item(material_item, 1)
-		spot.start_build(self)
-
-func take_damage(amount: float, _hit_position: Vector3 = Vector3.ZERO):
-	current_health -= amount
-	current_health = max(current_health, 0)
-	health_changed.emit(current_health, max_health)
-
+	
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system:
+		amount *= (1.0 - skill_system.get_attribute("damage_reduction"))
+	
+	var old_health = current_health
+	current_health = max(0, current_health - amount)
+	health_changed.emit(old_health, current_health)
+	
 	if current_health <= 0:
-		die()
+		die(attacker_name)
 
 func heal(amount: float):
-	current_health = min(current_health + amount, max_health)
-	health_changed.emit(current_health, max_health)
-
-func die():
-	died.emit()
-	# Handle death - maybe return to menu or restart
-
-func toggle_inventory():
-	if ui:
-		ui.toggle_inventory()
-		if ui.is_inventory_open():
-			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-
-func attempt_extract():
-	# Check if near extract point
-	if not interact_ray:
+	if is_dead:
 		return
-	if interact_ray.is_colliding():
-		var collider = interact_ray.get_collider()
-		if collider and collider.is_in_group("extract_zone"):
-			if collider.has_method("extract"):
-				collider.extract(self)
+	
+	var old_health = current_health
+	var skill_system = get_node_or_null("/root/SkillSystem")
+	if skill_system:
+		var max_hp = max_health + skill_system.get_attribute("max_health")
+		current_health = min(max_hp, current_health + amount)
+	else:
+		current_health = min(max_health, current_health + amount)
+	
+	health_changed.emit(old_health, current_health)
 
-func equip_weapon_item(weapon_data: ItemData):
-	# Clear current weapon visual
-	for child in weapon_holder.get_children():
-		child.queue_free()
+func die(killer_name: String = ""):
+	if is_dead:
+		return
+	
+	is_dead = true
+	died.emit(killer_name)
+	
+	if is_local_player:
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
-	# Instantiate new weapon model
-	if weapon_data.mesh_scene:
-		current_weapon = weapon_data.mesh_scene.instantiate()
-		weapon_holder.add_child(current_weapon)
+func respawn_at(pos: Vector3):
+	global_position = pos
+	current_health = max_health
+	current_stamina = max_stamina
+	is_dead = false
+	velocity = Vector3.ZERO
+	
+	if is_local_player:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	
+	respawned.emit()
 
-	inventory.equip_weapon(weapon_data)
+# ============================================
+# INTERACTION
+# ============================================
+
+func _interact():
+	if not raycast.is_colliding():
+		return
+	
+	var target = raycast.get_collider()
+	if not target:
+		return
+	
+	if target.has_method("interact"):
+		target.interact(self)
+		interacted.emit(target)
+	elif target.is_in_group("doors"):
+		var building_system = get_node_or_null("/root/BuildingSystem")
+		if building_system and "prop_id" in target:
+			building_system.request_toggle_door.rpc_id(1, target.prop_id)
+	elif target.is_in_group("extraction"):
+		var sigil_system = get_node_or_null("/root/SigilDefenseSystem")
+		if sigil_system:
+			sigil_system.request_start_extraction.rpc_id(1)
+
+# ============================================
+# NETWORK STATE
+# ============================================
+
+func get_state() -> Dictionary:
+	return {
+		"position": global_position,
+		"rotation": rotation,
+		"head_rotation": head.rotation,
+		"velocity": velocity,
+		"health": current_health,
+		"is_crouching": is_crouching,
+		"is_sprinting": is_sprinting,
+		"weapon_index": current_weapon_index
+	}
+
+func apply_state(state: Dictionary):
+	if state.has("position"):
+		global_position = global_position.lerp(state.position, 0.5)
+	if state.has("rotation"):
+		rotation = rotation.lerp(state.rotation, 0.5)
+	if state.has("head_rotation"):
+		head.rotation = head.rotation.lerp(state.head_rotation, 0.5)
+	if state.has("health"):
+		current_health = state.health
+	if state.has("is_crouching"):
+		is_crouching = state.is_crouching
+	if state.has("is_sprinting"):
+		is_sprinting = state.is_sprinting
+	if state.has("weapon_index") and state.weapon_index != current_weapon_index:
+		_equip_weapon(state.weapon_index)
