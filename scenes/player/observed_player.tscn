@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://observed_player001"]
 
 [ext_resource type="Script" path="res://scripts/player/observed_player.gd" id="1"]
-[ext_resource type="PackedScene" path="res://Free_Character/male_zombie/male_z.glb" id="2"]
+[ext_resource type="PackedScene" path="res://Characters_psx/Models/Male/Character_01.fbx" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
 radius = 0.4

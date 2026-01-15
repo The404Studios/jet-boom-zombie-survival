@@ -44,11 +44,13 @@ var stamina_regen_timer: float = 0.0
 var can_regen_stamina: bool = true
 
 # References
-@onready var camera: Camera3D = $Head/Camera3D
-@onready var head: Node3D = $Head
-@onready var weapon_holder: Node3D = $Head/Camera3D/WeaponHolder
-@onready var raycast: RayCast3D = $Head/Camera3D/InteractRay
+@onready var camera: Camera3D = $Camera3D
+@onready var weapon_holder: Node3D = $Camera3D/WeaponHolder
+@onready var raycast: RayCast3D = $Camera3D/InteractRay
 @onready var collision: CollisionShape3D = $CollisionShape3D
+
+# Head rotation tracking (camera acts as head)
+var head_rotation_x: float = 0.0
 
 # Weapon system
 var weapons: Array = []
@@ -131,7 +133,8 @@ func _physics_process(delta):
 
 func _update_look():
 	rotation.y = look_rotation.x
-	head.rotation.x = look_rotation.y
+	head_rotation_x = look_rotation.y
+	camera.rotation.x = look_rotation.y
 
 func _update_movement(delta):
 	var gravity = ProjectSettings.get_setting("physics/3d/default_gravity") * gravity_mult
@@ -160,7 +163,7 @@ func _update_movement(delta):
 		speed *= skill_system.get_attribute("sprint_speed") if is_sprinting else 1.0
 		speed *= skill_system.get_attribute("move_speed")
 	
-	input_direction = Input.get_vector("move_left", "move_right", "move_forward", "move_backward")
+	input_direction = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction = (transform.basis * Vector3(input_direction.x, 0, input_direction.y)).normalized()
 	
 	if direction:
@@ -335,7 +338,7 @@ func get_state() -> Dictionary:
 	return {
 		"position": global_position,
 		"rotation": rotation,
-		"head_rotation": head.rotation,
+		"camera_rotation": camera.rotation,
 		"velocity": velocity,
 		"health": current_health,
 		"is_crouching": is_crouching,
@@ -348,8 +351,8 @@ func apply_state(state: Dictionary):
 		global_position = global_position.lerp(state.position, 0.5)
 	if state.has("rotation"):
 		rotation = rotation.lerp(state.rotation, 0.5)
-	if state.has("head_rotation"):
-		head.rotation = head.rotation.lerp(state.head_rotation, 0.5)
+	if state.has("camera_rotation"):
+		camera.rotation = camera.rotation.lerp(state.camera_rotation, 0.5)
 	if state.has("health"):
 		current_health = state.health
 	if state.has("is_crouching"):
