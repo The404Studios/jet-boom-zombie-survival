@@ -160,7 +160,7 @@ func _bind_systems():
 		if wave_manager.has_signal("zombie_spawned"):
 			wave_manager.zombie_spawned.connect(_on_zombie_spawned)
 		if wave_manager.has_signal("boss_spawned"):
-			wave_manager.boss_spawned.connect
+			wave_manager.boss_spawned.connect(_on_boss_spawned)
 
 # ============================================
 # PLAYER EVENT HANDLERS
@@ -248,6 +248,15 @@ func _on_zombie_spawned(zombie: Node):
 		zombie_type = zombie.get_zombie_type()
 
 	zombie_spawned.emit(zombie, zombie_type)
+
+func _on_boss_spawned(boss: Node):
+	var boss_name = "Boss"
+	if boss.has_method("get_zombie_type"):
+		boss_name = boss.get_zombie_type()
+	elif "zombie_name" in boss:
+		boss_name = boss.zombie_name
+
+	boss_spawned.emit(boss, boss_name)
 
 # ============================================
 # COMBAT EVENT BROADCASTING

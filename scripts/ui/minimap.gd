@@ -180,19 +180,13 @@ func _find_local_player():
 func _update_entities():
 	# Scan for entities to track
 
-	# Players
-	var players = get_tree().get_nodes_in_group("players")
-	for player in players:
-		if player != local_player and is_instance_valid(player):
-			var peer_id = player.get("peer_id") if player.has("peer_id") else 0
+	# Players (all players are now in "player" group)
+	var players = get_tree().get_nodes_in_group("player")
+	for p in players:
+		if p != local_player and is_instance_valid(p):
+			var peer_id = p.get("peer_id") if "peer_id" in p else 0
 			if peer_id != local_peer_id:
-				_ensure_marker(player, MarkerType.TEAMMATE)
-
-	# Observed players (multiplayer)
-	var observed = get_tree().get_nodes_in_group("observed_players")
-	for obs_player in observed:
-		if is_instance_valid(obs_player):
-			_ensure_marker(obs_player, MarkerType.TEAMMATE)
+				_ensure_marker(p, MarkerType.TEAMMATE)
 
 	# Zombies
 	var zombies = get_tree().get_nodes_in_group("zombies")

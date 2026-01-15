@@ -60,7 +60,7 @@ func _record_all_positions():
 			_record_entity_position(zombie)
 
 	# Record players (for PvP if needed)
-	var players = get_tree().get_nodes_in_group("players")
+	var players = get_tree().get_nodes_in_group("player")
 	for player in players:
 		if is_instance_valid(player):
 			_record_entity_position(player)

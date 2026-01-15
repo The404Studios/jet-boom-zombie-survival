@@ -403,7 +403,7 @@ func _apply_effect(effect: Dictionary):
 			if "stamina" in player: player.stamina = min(player.max_stamina, player.stamina + effect.get("amount", 0.0))
 
 func _get_local_player() -> Node:
-	for p in get_tree().get_nodes_in_group("players"):
+	for p in get_tree().get_nodes_in_group("player"):
 		if p.get_multiplayer_authority() == multiplayer.get_unique_id(): return p
 	return null
 

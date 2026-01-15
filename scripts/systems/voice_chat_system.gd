@@ -258,7 +258,7 @@ func _get_voice_player(peer_id: int) -> AudioStreamPlayer3D:
 
 func _get_player_position(peer_id: int) -> Vector3:
 	# Find player node
-	var players = get_tree().get_nodes_in_group("players")
+	var players = get_tree().get_nodes_in_group("player")
 
 	for player in players:
 		if player.has_method("get_network_id"):

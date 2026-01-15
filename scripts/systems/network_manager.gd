@@ -959,7 +959,7 @@ func _array_to_vec3(arr: Array) -> Vector3:
 	return Vector3(arr[0], arr[1], arr[2])
 
 func _get_local_player() -> Node:
-	var players_group = get_tree().get_nodes_in_group("players")
+	var players_group = get_tree().get_nodes_in_group("player")
 	for player in players_group:
 		if player is Node3D:
 			var authority = player.get_multiplayer_authority() if player.has_method("get_multiplayer_authority") else 1

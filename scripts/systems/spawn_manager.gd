@@ -334,7 +334,7 @@ func _is_spawn_valid(position: Vector3, check_players: bool = true) -> bool:
 
 func _is_away_from_players(position: Vector3, min_distance: float) -> bool:
 	"""Check if position is far enough from all players"""
-	var players = get_tree().get_nodes_in_group("players")
+	var players = get_tree().get_nodes_in_group("player")
 
 	for player in players:
 		if player is Node3D:
@@ -346,7 +346,7 @@ func _is_away_from_players(position: Vector3, min_distance: float) -> bool:
 func _get_min_distance_to_players(position: Vector3) -> float:
 	"""Get minimum distance to any player"""
 	var min_dist = INF
-	var players = get_tree().get_nodes_in_group("players")
+	var players = get_tree().get_nodes_in_group("player")
 
 	for player in players:
 		if player is Node3D:
