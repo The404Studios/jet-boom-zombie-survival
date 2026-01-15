@@ -131,14 +131,47 @@ func _load_character(index: int):
 		current_model.queue_free()
 		current_model = null
 
-	# Always use placeholder models - the original character assets have broken/missing dependencies
-	# This prevents 1000+ errors from cascading resource load failures
-	current_model = _create_placeholder_model(char_id, char_data)
+	# Try to load actual model first (GLB fallback path)
+	current_model = _try_load_actual_model(char_data)
+
+	# Fall back to placeholder if model loading fails
+	if not current_model:
+		current_model = _create_placeholder_model(char_id, char_data)
+
 	if character_holder and current_model:
 		character_holder.add_child(current_model)
 
+		# Scale model to fit viewport
+		var model_scale = _calculate_model_scale(current_model)
+		current_model.scale = Vector3.ONE * model_scale
+
+		# Try to play idle animation
+		_play_idle_animation(current_model)
+
 	# Update UI
 	_update_character_info(char_data)
+
+func _try_load_actual_model(char_data: Dictionary) -> Node3D:
+	"""Try to load the actual character model"""
+	# First try the TSCN (has animations configured)
+	var model_path = char_data.get("model_path", "")
+	if not model_path.is_empty() and ResourceLoader.exists(model_path):
+		var scene = load(model_path)
+		if scene:
+			var instance = scene.instantiate()
+			if instance:
+				return instance
+
+	# Then try the GLB fallback
+	var glb_path = char_data.get("glb_fallback", "")
+	if not glb_path.is_empty() and ResourceLoader.exists(glb_path):
+		var scene = load(glb_path)
+		if scene:
+			var instance = scene.instantiate()
+			if instance:
+				return instance
+
+	return null
 
 func _calculate_model_scale(model: Node3D) -> float:
 	# Try to find the skeleton or mesh to determine appropriate scale
