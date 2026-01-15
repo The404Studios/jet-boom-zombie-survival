@@ -75,6 +75,28 @@ layout_mode = 2
 text = "Stamina: 100/100"
 horizontal_alignment = 2
 
+[node name="HungerBar" type="ProgressBar" parent="TopRight"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="HungerLabel" type="Label" parent="TopRight"]
+layout_mode = 2
+text = "Hunger: 100/100"
+horizontal_alignment = 2
+
+[node name="ThirstBar" type="ProgressBar" parent="TopRight"]
+layout_mode = 2
+max_value = 100.0
+value = 100.0
+show_percentage = false
+
+[node name="ThirstLabel" type="Label" parent="TopRight"]
+layout_mode = 2
+text = "Thirst: 100/100"
+horizontal_alignment = 2
+
 [node name="BottomCenter" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 7
