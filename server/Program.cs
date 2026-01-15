@@ -59,9 +59,10 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowGodot", policy =>
     {
-        policy.AllowAnyOrigin()
+        policy.SetIsOriginAllowed(_ => true)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials();
     });
 });
 
@@ -94,6 +95,7 @@ app.UseMiddleware<RequestLoggingMiddleware>();
 app.MapControllers();
 app.MapHub<GameHub>("/hubs/game");
 app.MapHub<MatchmakingHub>("/hubs/matchmaking");
+app.MapHub<DedicatedServerHub>("/hubs/dedicated");
 
 // Initialize database
 using (var scope = app.Services.CreateScope())

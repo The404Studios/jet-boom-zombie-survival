@@ -549,6 +549,19 @@ func _on_servers_received(server_list: Array):
 
 	_apply_filters()
 
+func _on_server_info_received(server_info: Dictionary):
+	"""Handle updated server info from matchmaking"""
+	# Update existing server entry if it exists
+	var server_id = server_info.get("id", -1)
+	for i in range(servers.size()):
+		if servers[i].get("id", -1) == server_id:
+			servers[i] = server_info
+			_apply_filters()
+			return
+	# Add as new server if not found
+	servers.append(server_info)
+	_apply_filters()
+
 func _apply_filters():
 	filtered_servers.clear()
 

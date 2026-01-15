@@ -588,7 +588,18 @@ func reward_nearby_players():
 			player.add_points(points_reward)
 
 func drop_loot():
-	"""Drop loot items when zombie dies"""
+	"""Drop loot items when zombie dies using WaveLootSystem"""
+	# Use WaveLootSystem for comprehensive loot drops
+	var wave_loot = get_node_or_null("/root/WaveLootSystem")
+	if wave_loot:
+		var zombie_type = _get_zombie_type_for_loot()
+		var items = wave_loot.on_zombie_killed(zombie_type, global_position, current_wave)
+
+		if items.size() > 0:
+			_spawn_loot_pickup(items)
+		return
+
+	# Fallback to legacy loot system
 	if not zombie_class_data:
 		return
 
@@ -607,6 +618,61 @@ func drop_loot():
 		else:
 			# Drop special item
 			_spawn_special_drop()
+
+func _get_zombie_type_for_loot() -> int:
+	"""Map zombie class to WaveLootSystem.ZombieType"""
+	if not zombie_class_data:
+		return 0  # NORMAL
+
+	var class_name_lower = zombie_class_data.display_name.to_lower()
+
+	if "runner" in class_name_lower or "fast" in class_name_lower:
+		return 1  # FAST
+	elif "tank" in class_name_lower or "brute" in class_name_lower:
+		return 2  # TANK
+	elif "spitter" in class_name_lower or "poison" in class_name_lower:
+		return 3  # SPITTER
+	elif "exploder" in class_name_lower or "boomer" in class_name_lower:
+		return 4  # EXPLODER
+	elif "elite" in class_name_lower or "berserker" in class_name_lower:
+		return 5  # ELITE
+	elif "boss" in class_name_lower or "monster" in class_name_lower:
+		return 6  # BOSS_BRUTE
+
+	return 0  # NORMAL
+
+func _spawn_loot_pickup(items: Array):
+	"""Spawn a loot pickup entity with dropped items"""
+	var loot_pickup_script = load("res://scripts/entities/loot_pickup.gd")
+	if not loot_pickup_script:
+		return
+
+	var pickup = Node3D.new()
+	pickup.set_script(loot_pickup_script)
+	pickup.items = items
+	pickup.pickup_id = randi()
+
+	get_parent().add_child(pickup)
+	pickup.global_position = global_position + Vector3(0, 0.5, 0)
+
+	# Network sync if multiplayer
+	if multiplayer.has_multiplayer_peer() and multiplayer.is_server():
+		_sync_loot_spawn.rpc(global_position, items, pickup.pickup_id)
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_loot_spawn(pos: Vector3, items: Array, pickup_id: int):
+	"""Sync loot spawn to clients"""
+	var loot_pickup_script = load("res://scripts/entities/loot_pickup.gd")
+	if not loot_pickup_script:
+		return
+
+	var pickup = Node3D.new()
+	pickup.set_script(loot_pickup_script)
+	pickup.items = items
+	pickup.pickup_id = pickup_id
+
+	get_parent().add_child(pickup)
+	pickup.global_position = pos + Vector3(0, 0.5, 0)
 
 func _spawn_ammo_drop():
 	"""Spawn ammo pickup"""

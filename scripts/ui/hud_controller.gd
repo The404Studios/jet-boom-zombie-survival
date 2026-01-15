@@ -12,6 +12,10 @@ extends Control
 @onready var health_label = $TopRight/HealthLabel if has_node("TopRight/HealthLabel") else null
 @onready var stamina_bar = $TopRight/StaminaBar if has_node("TopRight/StaminaBar") else null
 @onready var stamina_label = $TopRight/StaminaLabel if has_node("TopRight/StaminaLabel") else null
+@onready var hunger_bar = $TopRight/HungerBar if has_node("TopRight/HungerBar") else null
+@onready var hunger_label = $TopRight/HungerLabel if has_node("TopRight/HungerLabel") else null
+@onready var thirst_bar = $TopRight/ThirstBar if has_node("TopRight/ThirstBar") else null
+@onready var thirst_label = $TopRight/ThirstLabel if has_node("TopRight/ThirstLabel") else null
 
 @onready var weapon_label = $BottomCenter/WeaponLabel if has_node("BottomCenter/WeaponLabel") else null
 @onready var ammo_label = $BottomCenter/AmmoLabel if has_node("BottomCenter/AmmoLabel") else null
@@ -156,6 +160,8 @@ func _process(delta):
 
 	_update_health()
 	_update_stamina()
+	_update_hunger()
+	_update_thirst()
 	_update_weapon_info()
 	_update_combo(delta)
 	_update_low_health_effect()
@@ -192,6 +198,60 @@ func _update_stamina():
 			stamina_bar.max_value = max_stamina
 		if stamina_label:
 			stamina_label.text = "SP: %d/%d" % [int(stamina), int(max_stamina)]
+
+func _update_hunger():
+	if not player:
+		return
+
+	if "current_hunger" in player and "max_hunger" in player:
+		var hunger = player.current_hunger
+		var max_hunger = player.max_hunger
+
+		if hunger_bar:
+			hunger_bar.value = hunger
+			hunger_bar.max_value = max_hunger
+			# Color feedback
+			var hunger_percent = hunger / max_hunger if max_hunger > 0 else 1.0
+			if hunger_percent < 0.2:
+				hunger_bar.modulate = Color(1.0, 0.3, 0.3)  # Red when critical
+			elif hunger_percent < 0.4:
+				hunger_bar.modulate = Color(1.0, 0.7, 0.3)  # Orange when low
+			else:
+				hunger_bar.modulate = Color(0.8, 0.6, 0.3)  # Normal brown/tan
+
+		if hunger_label:
+			hunger_label.text = "Food: %d/%d" % [int(hunger), int(max_hunger)]
+			# Flash when critical
+			if hunger < 20:
+				var pulse = (sin(Time.get_ticks_msec() * 0.008) + 1) * 0.5
+				hunger_label.modulate.a = 0.5 + pulse * 0.5
+
+func _update_thirst():
+	if not player:
+		return
+
+	if "current_thirst" in player and "max_thirst" in player:
+		var thirst = player.current_thirst
+		var max_thirst = player.max_thirst
+
+		if thirst_bar:
+			thirst_bar.value = thirst
+			thirst_bar.max_value = max_thirst
+			# Color feedback
+			var thirst_percent = thirst / max_thirst if max_thirst > 0 else 1.0
+			if thirst_percent < 0.2:
+				thirst_bar.modulate = Color(1.0, 0.3, 0.3)  # Red when critical
+			elif thirst_percent < 0.4:
+				thirst_bar.modulate = Color(1.0, 0.7, 0.3)  # Orange when low
+			else:
+				thirst_bar.modulate = Color(0.3, 0.6, 0.9)  # Normal blue
+
+		if thirst_label:
+			thirst_label.text = "Water: %d/%d" % [int(thirst), int(max_thirst)]
+			# Flash when critical
+			if thirst < 20:
+				var pulse = (sin(Time.get_ticks_msec() * 0.008) + 1) * 0.5
+				thirst_label.modulate.a = 0.5 + pulse * 0.5
 
 func _update_weapon_info():
 	if not player:

@@ -223,7 +223,12 @@ func _update_character_info(char_data: Dictionary):
 func _on_continue_pressed():
 	var selected_id = character_keys[current_index]
 
-	# Save selection to GameSettings
+	# Save selection to AccountSystem (persistent across sessions)
+	var account_system = get_node_or_null("/root/AccountSystem")
+	if account_system and account_system.has_method("set_selected_character"):
+		account_system.set_selected_character(selected_id)
+
+	# Also save to GameSettings for current session
 	if has_node("/root/GameSettings"):
 		var settings = get_node("/root/GameSettings")
 		settings.set_meta("selected_character", selected_id)

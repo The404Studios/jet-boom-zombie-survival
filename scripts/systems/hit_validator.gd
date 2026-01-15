@@ -1,5 +1,4 @@
 extends Node
-class_name HitValidator
 
 # Server-side hit validation with lag compensation (backtrack)
 # Stores historical positions of all entities for hit verification

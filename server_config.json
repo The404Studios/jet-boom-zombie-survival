@@ -1,0 +1,30 @@
+{
+  "server": {
+    "name": "Zombie Survival Server",
+    "port": 7777,
+    "maxPlayers": 8,
+    "region": "us-east",
+    "map": "arena_01",
+    "gameMode": "survival",
+    "difficulty": "Normal"
+  },
+  "backend": {
+    "apiUrl": "http://162.248.94.149:5000",
+    "signalRUrl": "ws://162.248.94.149:5000/hubs/dedicated",
+    "heartbeatInterval": 30
+  },
+  "game": {
+    "autoStartDelay": 30,
+    "minPlayersToStart": 1,
+    "respawnDelay": 5,
+    "waveIntermissionTime": 10,
+    "maxWaves": 50
+  },
+  "network": {
+    "tickRate": 20,
+    "maxPacketSize": 1024,
+    "connectionTimeout": 30,
+    "reconnectAttempts": 3,
+    "reconnectDelay": 2
+  }
+}

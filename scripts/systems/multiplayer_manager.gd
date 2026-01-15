@@ -123,11 +123,33 @@ func _connect_signals():
 		network_manager.game_starting.connect(_on_game_starting)
 		network_manager.all_players_loaded.connect(_on_all_players_loaded)
 
+		# Connect new dedicated server signals
+		if network_manager.has_signal("server_info_received"):
+			network_manager.server_info_received.connect(_on_server_info_received)
+		if network_manager.has_signal("wave_started"):
+			network_manager.wave_started.connect(_on_wave_started)
+		if network_manager.has_signal("wave_completed"):
+			network_manager.wave_completed.connect(_on_wave_completed)
+		if network_manager.has_signal("game_ended"):
+			network_manager.game_ended.connect(_on_game_ended)
+		if network_manager.has_signal("entity_states_received"):
+			network_manager.entity_states_received.connect(_on_entity_states_received)
+		if network_manager.has_signal("player_spawned"):
+			network_manager.player_spawned.connect(_on_player_spawned)
+		if network_manager.has_signal("player_died"):
+			network_manager.player_died.connect(_on_player_died)
+		if network_manager.has_signal("player_respawned"):
+			network_manager.player_respawned.connect(_on_player_respawned)
+
 	if matchmaking_system:
-		matchmaking_system.matchmaking_started.connect(_on_matchmaking_started)
-		matchmaking_system.matchmaking_stopped.connect(_on_matchmaking_stopped)
-		matchmaking_system.match_found.connect(_on_match_found)
-		matchmaking_system.matchmaking_failed.connect(_on_matchmaking_failed)
+		if matchmaking_system.has_signal("matchmaking_started"):
+			matchmaking_system.matchmaking_started.connect(_on_matchmaking_started)
+		if matchmaking_system.has_signal("matchmaking_stopped"):
+			matchmaking_system.matchmaking_stopped.connect(_on_matchmaking_stopped)
+		if matchmaking_system.has_signal("match_found"):
+			matchmaking_system.match_found.connect(_on_match_found)
+		if matchmaking_system.has_signal("matchmaking_failed"):
+			matchmaking_system.matchmaking_failed.connect(_on_matchmaking_failed)
 
 # ============================================
 # CONNECTION METHODS
@@ -514,7 +536,7 @@ func get_connection_type_name() -> String:
 		ConnectionType.MATCHMAKING: return "Matchmaking"
 	return "Unknown"
 
-func is_connected() -> bool:
+func is_network_connected() -> bool:
 	return connection_state in [ConnectionState.CONNECTED, ConnectionState.IN_LOBBY, ConnectionState.IN_GAME]
 
 func is_in_game() -> bool:
@@ -525,3 +547,90 @@ func is_in_lobby() -> bool:
 
 func can_start_game() -> bool:
 	return is_host and connection_state == ConnectionState.IN_LOBBY and are_all_players_ready()
+
+# ============================================
+# DEDICATED SERVER SIGNAL HANDLERS
+# ============================================
+
+func _on_server_info_received(info: Dictionary):
+	"""Handle server info received from dedicated server"""
+	print("Received server info from dedicated server")
+	print("  Server: %s" % info.get("server_name", "Unknown"))
+	print("  Map: %s" % info.get("map_name", "Unknown"))
+	print("  Status: %s" % str(info.get("game_status", "unknown")))
+
+	# Update existing players from server info
+	var existing_players = info.get("players", [])
+	for player_info in existing_players:
+		var peer_id = player_info.get("peer_id", 0)
+		if peer_id > 0 and peer_id != local_player_id:
+			var player_data = PlayerData.from_dict(player_info)
+			player_data.peer_id = peer_id
+			players[peer_id] = player_data
+			player_joined.emit(peer_id, player_data.to_dict())
+
+func _on_wave_started(wave_number: int):
+	"""Handle wave start notification"""
+	print("Wave %d starting!" % wave_number)
+
+func _on_wave_completed(wave_number: int):
+	"""Handle wave completion notification"""
+	print("Wave %d completed!" % wave_number)
+
+func _on_game_ended(victory: bool, wave_reached: int, _stats: Array):
+	"""Handle game end notification"""
+	_set_connection_state(ConnectionState.IN_LOBBY)
+	game_session_ended.emit()
+	print("Game ended! Victory: %s, Waves: %d" % [victory, wave_reached])
+
+func _on_entity_states_received(states: Array):
+	"""Handle entity state updates from server"""
+	# Forward to observed players for interpolation
+	for state in states:
+		var entity_id = state.get("entity_id", 0)
+		var entity_type = state.get("type", "")
+
+		if entity_type == "player" and entity_id != local_player_id:
+			update_observed_player_state(entity_id, state)
+
+func _on_player_spawned(position: Vector3):
+	"""Handle local player spawn notification"""
+	print("Local player spawned at %s" % position)
+
+	# Update local player if exists
+	if network_manager:
+		var local_player = network_manager._get_local_player()
+		if local_player:
+			local_player.global_position = position
+
+func _on_player_died(peer_id: int, killer_name: String):
+	"""Handle player death notification"""
+	print("Player %d killed by %s" % [peer_id, killer_name])
+
+	if peer_id == local_player_id:
+		# Local player died - show death screen
+		pass
+	else:
+		# Remote player died - play death animation on observed player
+		if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+			var obs = observed_players[peer_id]
+			if obs.has_method("die"):
+				obs.die()
+
+func _on_player_respawned(peer_id: int, position: Vector3):
+	"""Handle player respawn notification"""
+	print("Player %d respawned at %s" % [peer_id, position])
+
+	if peer_id == local_player_id:
+		# Local player respawned
+		if network_manager:
+			var local_player = network_manager._get_local_player()
+			if local_player:
+				local_player.global_position = position
+	else:
+		# Remote player respawned
+		if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+			var obs = observed_players[peer_id]
+			obs.global_position = position
+			if obs.has_method("respawn"):
+				obs.respawn()

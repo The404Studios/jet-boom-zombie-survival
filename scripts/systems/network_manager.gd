@@ -2,6 +2,7 @@ extends Node
 
 # Network manager for multiplayer using Steam P2P networking
 # Falls back to ENet for LAN play when Steam is unavailable
+# Supports dedicated server mode at 162.248.94.149
 
 signal player_connected(peer_id: int, player_info: Dictionary)
 signal player_disconnected(peer_id: int)
@@ -12,6 +13,15 @@ signal connection_failed
 signal disconnected_from_server
 signal game_starting
 signal all_players_loaded
+signal server_info_received(info: Dictionary)
+signal wave_started(wave_number: int)
+signal wave_completed(wave_number: int)
+signal game_ended(victory: bool, wave_reached: int, stats: Array)
+signal entity_states_received(states: Array)
+signal player_spawned(position: Vector3)
+signal player_died(peer_id: int, killer_name: String)
+signal player_respawned(peer_id: int, position: Vector3)
+signal chat_message_received(peer_id: int, username: String, message: String)
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 8
@@ -29,6 +39,11 @@ var use_steam: bool = false
 var current_server_ip: String = ""
 var current_server_port: int = DEFAULT_PORT
 
+# Server info (received when connecting to dedicated server)
+var server_info: Dictionary = {}
+var current_wave: int = 0
+var game_status: String = "waiting"
+
 var players: Dictionary = {}  # peer_id -> player_info
 var player_nodes: Dictionary = {}  # peer_id -> Player node
 var players_loaded: Dictionary = {}  # peer_id -> bool
@@ -42,6 +57,13 @@ var network_latency: float = 0.0
 var last_ping_time: float = 0.0
 var ping_interval: float = 1.0
 var connection_quality: int = 100  # 0-100
+
+# Reconnection settings
+var reconnect_attempts: int = 0
+var max_reconnect_attempts: int = 3
+var reconnect_delay: float = 2.0
+var last_server_address: String = ""
+var last_server_port: int = 0
 
 func _ready():
 	# Get Steam manager reference
@@ -517,7 +539,7 @@ func sync_player_health(player_id: int, health: float, max_health: float):
 			player.max_health = max_health
 
 @rpc("authority", "call_local")
-func player_died(player_id: int, _killer_id: int = -1):
+func on_player_died_rpc(player_id: int, _killer_id: int = -1):
 	if player_nodes.has(player_id):
 		var player = player_nodes[player_id]
 		if player.has_method("die"):
@@ -652,3 +674,401 @@ func are_all_players_ready() -> bool:
 
 func get_players() -> Dictionary:
 	return players
+
+# ============================================
+# DEDICATED SERVER RPC HANDLERS (Client receives these)
+# ============================================
+
+@rpc("authority", "reliable")
+func _send_server_info(info: Dictionary):
+	"""Receive server info when connecting to dedicated server"""
+	server_info = info
+	current_wave = info.get("current_wave", 0)
+	game_status = info.get("game_status", "waiting")
+
+	# Process existing players
+	var existing_players = info.get("players", [])
+	for player_info in existing_players:
+		var peer_id = player_info.get("peer_id", 0)
+		if peer_id > 0 and peer_id != local_player_id:
+			register_player(peer_id, player_info)
+
+	server_info_received.emit(info)
+	print("Received server info: %s" % info.get("server_name", "Unknown Server"))
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_player_joined(peer_id: int, player_info: Dictionary):
+	"""Receive notification that a player joined"""
+	if peer_id != local_player_id:
+		register_player(peer_id, player_info)
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_player_left(peer_id: int):
+	"""Receive notification that a player left"""
+	if players.has(peer_id):
+		players.erase(peer_id)
+	if players_loaded.has(peer_id):
+		players_loaded.erase(peer_id)
+	despawn_player(peer_id)
+	player_disconnected.emit(peer_id)
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_all_players(event: String, data: Dictionary):
+	"""Receive server-wide notification"""
+	match event:
+		"server_shutdown":
+			print("Server shutting down: %s" % data.get("reason", ""))
+			disconnect_from_server()
+		_:
+			print("Server event: %s - %s" % [event, data])
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_game_starting():
+	"""Receive notification that game is starting"""
+	game_status = "starting"
+	game_starting.emit()
+	print("Game starting!")
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_wave_start(wave_number: int):
+	"""Receive wave start notification"""
+	current_wave = wave_number
+	wave_started.emit(wave_number)
+	print("Wave %d started!" % wave_number)
+
+	# Update wave manager if exists
+	var wave_manager = get_node_or_null("/root/Main/WaveManager")
+	if wave_manager and "current_wave" in wave_manager:
+		wave_manager.current_wave = wave_number
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_wave_complete(wave_number: int):
+	"""Receive wave complete notification"""
+	wave_completed.emit(wave_number)
+	print("Wave %d complete!" % wave_number)
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_game_end(victory: bool, wave_reached: int, stats: Array):
+	"""Receive game end notification"""
+	game_status = "ended"
+	game_ended.emit(victory, wave_reached, stats)
+	print("Game ended! Victory: %s, Wave reached: %d" % [victory, wave_reached])
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_player_spawned(position: Vector3):
+	"""Receive notification that local player was spawned"""
+	player_spawned.emit(position)
+	print("Player spawned at %s" % position)
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_player_respawned(peer_id: int, position: Vector3):
+	"""Receive notification that a player respawned"""
+	player_respawned.emit(peer_id, position)
+
+	# Spawn or update observed player
+	if peer_id != local_player_id:
+		if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+			observed_players[peer_id].global_position = position
+		else:
+			_spawn_observed_player(peer_id, position)
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func broadcast_entity_states(states: Array):
+	"""Receive entity states from server"""
+	entity_states_received.emit(states)
+
+	# Update observed players and zombies
+	for state in states:
+		var entity_id = state.get("entity_id", 0)
+		var entity_type = state.get("type", "")
+		var pos = _array_to_vec3(state.get("pos", [0, 0, 0]))
+		var rot = _array_to_vec3(state.get("rot", [0, 0, 0]))
+
+		if entity_type == "player" and entity_id != local_player_id:
+			_update_observed_player(entity_id, pos, rot, state.get("data", {}))
+		elif entity_type == "zombie":
+			_update_zombie(entity_id, pos, rot, state.get("data", {}))
+
+@rpc("authority", "call_remote", "reliable")
+func broadcast_game_event(event_name: String, event_data: Dictionary):
+	"""Receive game event from server"""
+	match event_name:
+		"zombie_spawned":
+			_handle_zombie_spawn(event_data)
+		"zombie_died":
+			_handle_zombie_death(event_data)
+		"item_spawned":
+			_handle_item_spawn(event_data)
+		"item_picked_up":
+			_handle_item_pickup(event_data)
+		_:
+			print("Game event: %s" % event_name)
+
+@rpc("authority", "call_remote", "reliable")
+func _sync_player_ready(peer_id: int, is_ready: bool):
+	"""Receive player ready state update"""
+	if players.has(peer_id):
+		players[peer_id].ready = is_ready
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_player_damage(peer_id: int, damage: float, new_health: float):
+	"""Receive player damage notification"""
+	if peer_id == local_player_id:
+		# Apply to local player
+		var local_player = _get_local_player()
+		if local_player and local_player.has_method("apply_damage"):
+			local_player.apply_damage(damage)
+		elif local_player and "current_health" in local_player:
+			local_player.current_health = new_health
+	else:
+		# Update observed player health
+		if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+			var obs = observed_players[peer_id]
+			if "health" in obs:
+				obs.health = new_health
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_player_death(peer_id: int, killer_name: String):
+	"""Receive player death notification"""
+	player_died.emit(peer_id, killer_name)
+
+	if peer_id == local_player_id:
+		var local_player = _get_local_player()
+		if local_player and local_player.has_method("die"):
+			local_player.die()
+	else:
+		if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+			var obs = observed_players[peer_id]
+			if obs.has_method("die"):
+				obs.die()
+
+@rpc("authority", "call_remote", "unreliable_ordered")
+func _broadcast_shot(peer_id: int, origin: Vector3, direction: Vector3, weapon: String):
+	"""Receive shot broadcast from server"""
+	if peer_id == local_player_id:
+		return  # Skip own shots
+
+	# Spawn effects
+	var vfx_manager = get_node_or_null("/root/VFXManager")
+	if vfx_manager:
+		if vfx_manager.has_method("spawn_muzzle_flash"):
+			vfx_manager.spawn_muzzle_flash(origin, direction, weapon)
+		if vfx_manager.has_method("spawn_tracer"):
+			vfx_manager.spawn_tracer(origin, origin + direction * 100.0)
+
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and audio_manager.has_method("play_sound_3d"):
+		audio_manager.play_sound_3d(weapon + "_shot", origin)
+
+@rpc("authority", "call_remote", "reliable")
+func _broadcast_reload(peer_id: int, weapon: String):
+	"""Receive reload broadcast from server"""
+	if peer_id == local_player_id:
+		return
+
+	var audio_manager = get_node_or_null("/root/AudioManager")
+	if audio_manager and observed_players.has(peer_id):
+		var obs = observed_players[peer_id]
+		if is_instance_valid(obs) and audio_manager.has_method("play_sound_3d"):
+			audio_manager.play_sound_3d(weapon + "_reload", obs.global_position)
+
+@rpc("authority", "call_remote", "reliable")
+func _notify_zombie_killed(zombie_id: int, killer_peer_id: int, drop_data: Dictionary):
+	"""Receive zombie kill notification"""
+	# Find and kill the zombie
+	var zombies = get_tree().get_nodes_in_group("zombies")
+	for zombie in zombies:
+		if zombie.get_instance_id() == zombie_id:
+			if zombie.has_method("die"):
+				zombie.die()
+			else:
+				zombie.queue_free()
+			break
+
+	# Spawn drop if any
+	if not drop_data.is_empty():
+		_spawn_drop(drop_data)
+
+	# Award points to killer (UI update)
+	if killer_peer_id == local_player_id:
+		var hud = get_node_or_null("/root/HUD")
+		if hud and hud.has_method("show_points"):
+			hud.show_points(10)
+
+@rpc("authority", "call_local", "reliable")
+func _broadcast_chat_message(peer_id: int, username: String, message: String):
+	"""Receive chat message"""
+	chat_message_received.emit(peer_id, username, message)
+
+	var chat_ui = get_node_or_null("/root/ChatUI")
+	if chat_ui and chat_ui.has_method("add_message"):
+		chat_ui.add_message(username, message)
+
+@rpc("authority", "reliable")
+func _notify_kicked(reason: String):
+	"""Receive kick notification"""
+	print("Kicked from server: %s" % reason)
+	disconnect_from_server()
+
+# ============================================
+# CLIENT TO SERVER RPC
+# ============================================
+
+func send_player_state(state: Dictionary):
+	"""Send local player state to server"""
+	if is_client and multiplayer.has_multiplayer_peer():
+		receive_player_state.rpc_id(1, state)
+
+@rpc("any_peer", "unreliable_ordered")
+func receive_player_state(_state: Dictionary):
+	# Server handles this
+	pass
+
+func send_player_action(action_type: String, action_data: Dictionary):
+	"""Send player action to server"""
+	if is_client and multiplayer.has_multiplayer_peer():
+		player_action.rpc_id(1, action_type, action_data)
+
+@rpc("any_peer", "reliable")
+func player_action(_action_type: String, _action_data: Dictionary):
+	# Server handles this
+	pass
+
+func send_chat_message(message: String):
+	"""Send chat message to server"""
+	if multiplayer.has_multiplayer_peer():
+		_client_chat_message.rpc_id(1, message)
+
+@rpc("any_peer", "reliable")
+func _client_chat_message(message: String):
+	# Server handles this - broadcasts to all
+	var peer_id = multiplayer.get_remote_sender_id()
+	var username = "Unknown"
+	if players.has(peer_id):
+		username = players[peer_id].get("name", "Player")
+
+	_broadcast_chat_message.rpc(peer_id, username, message)
+
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
+
+func _array_to_vec3(arr: Array) -> Vector3:
+	if arr.size() < 3:
+		return Vector3.ZERO
+	return Vector3(arr[0], arr[1], arr[2])
+
+func _get_local_player() -> Node:
+	var players_group = get_tree().get_nodes_in_group("players")
+	for player in players_group:
+		if player is Node3D:
+			var authority = player.get_multiplayer_authority() if player.has_method("get_multiplayer_authority") else 1
+			if authority == local_player_id:
+				return player
+	return null
+
+func _spawn_observed_player(peer_id: int, position: Vector3):
+	"""Spawn an observed player for a remote peer"""
+	if observed_players.has(peer_id):
+		return
+
+	var observed_scene = load("res://scenes/player/observed_player.tscn")
+	if not observed_scene:
+		return
+
+	var observed = observed_scene.instantiate()
+	observed.name = "ObservedPlayer_%d" % peer_id
+
+	if "peer_id" in observed:
+		observed.peer_id = peer_id
+	if "player_name" in observed and players.has(peer_id):
+		observed.player_name = players[peer_id].get("name", "Player")
+
+	observed.global_position = position
+
+	var scene = get_tree().current_scene
+	if scene:
+		scene.add_child(observed)
+		observed_players[peer_id] = observed
+
+func _update_observed_player(peer_id: int, position: Vector3, rotation: Vector3, data: Dictionary):
+	"""Update observed player position"""
+	if not observed_players.has(peer_id):
+		_spawn_observed_player(peer_id, position)
+		return
+
+	var obs = observed_players[peer_id]
+	if not is_instance_valid(obs):
+		observed_players.erase(peer_id)
+		_spawn_observed_player(peer_id, position)
+		return
+
+	# Interpolate position
+	if obs.has_method("receive_state"):
+		obs.receive_state({
+			"position": position,
+			"rotation": rotation,
+			"data": data
+		})
+	else:
+		obs.global_position = position
+		obs.rotation = rotation
+
+		if "health" in obs and data.has("health"):
+			obs.health = data.health
+
+func _update_zombie(entity_id: int, position: Vector3, rotation: Vector3, _data: Dictionary):
+	"""Update zombie position (for non-authoritative zombies)"""
+	var zombies = get_tree().get_nodes_in_group("zombies")
+	for zombie in zombies:
+		if zombie.get_instance_id() == entity_id:
+			zombie.global_position = position
+			zombie.rotation = rotation
+			break
+
+func _handle_zombie_spawn(data: Dictionary):
+	"""Handle zombie spawn event"""
+	var zombie_type = data.get("zombie_type", "shambler")
+	var position = _array_to_vec3(data.get("position", [0, 0, 0]))
+	var zombie_id = data.get("zombie_id", 0)
+
+	var scene_path = "res://scenes/zombies/zombie_%s.tscn" % zombie_type
+	if not ResourceLoader.exists(scene_path):
+		scene_path = "res://scenes/zombies/zombie_shambler.tscn"
+
+	var zombie_scene = load(scene_path)
+	if zombie_scene:
+		var zombie = zombie_scene.instantiate()
+		zombie.name = "Zombie_%d" % zombie_id
+		zombie.global_position = position
+
+		var scene = get_tree().current_scene
+		if scene:
+			scene.add_child(zombie)
+
+func _handle_zombie_death(data: Dictionary):
+	"""Handle zombie death event"""
+	var zombie_id = data.get("zombie_id", 0)
+	var zombies = get_tree().get_nodes_in_group("zombies")
+	for zombie in zombies:
+		if zombie.get_instance_id() == zombie_id:
+			if zombie.has_method("die"):
+				zombie.die()
+			else:
+				zombie.queue_free()
+			break
+
+func _handle_item_spawn(data: Dictionary):
+	"""Handle item spawn event"""
+	# Implement item spawning
+	pass
+
+func _handle_item_pickup(data: Dictionary):
+	"""Handle item pickup event"""
+	# Implement item pickup
+	pass
+
+func _spawn_drop(_drop_data: Dictionary):
+	"""Spawn a loot drop"""
+	# Implement loot drop spawning
+	pass
