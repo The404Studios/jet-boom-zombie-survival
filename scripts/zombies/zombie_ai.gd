@@ -25,6 +25,7 @@ var explosion_damage: float = 0.0
 var explosion_radius: float = 0.0
 var tint_color: Color = Color.WHITE
 var model_scale: float = 1.0
+var current_wave: int = 1  # Wave number this zombie spawned in
 
 var current_health: float = 50.0
 var target: Node3D = null

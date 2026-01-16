@@ -18,9 +18,9 @@ enum NotificationType {
 	BOSS
 }
 
-# Containers
-@onready var notification_container: VBoxContainer = $NotificationContainer
-@onready var announcement_container: CenterContainer = $AnnouncementContainer
+# Containers (created dynamically in _setup_containers)
+var notification_container: VBoxContainer = null
+var announcement_container: CenterContainer = null
 
 # Settings
 @export var max_notifications: int = 5
@@ -111,7 +111,8 @@ func _exit_tree():
 	active_notifications.clear()
 
 func _setup_containers():
-	# Create notification container if not exists
+	# Try to find existing notification container first
+	notification_container = get_node_or_null("NotificationContainer")
 	if not notification_container:
 		notification_container = VBoxContainer.new()
 		notification_container.name = "NotificationContainer"
@@ -120,7 +121,8 @@ func _setup_containers():
 		notification_container.size = Vector2(280, 400)
 		add_child(notification_container)
 
-	# Create announcement container if not exists
+	# Try to find existing announcement container first
+	announcement_container = get_node_or_null("AnnouncementContainer")
 	if not announcement_container:
 		announcement_container = CenterContainer.new()
 		announcement_container.name = "AnnouncementContainer"

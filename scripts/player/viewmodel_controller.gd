@@ -161,6 +161,10 @@ func _play_fire_animation():
 		tween.tween_property(weapon_pivot, "position", base_position, 0.15)
 		tween.tween_property(weapon_pivot, "rotation:x", 0, 0.15)
 
+func play_fire_animation():
+	"""Public wrapper for fire animation"""
+	_play_fire_animation()
+
 func _apply_fire_recoil():
 	# Add recoil based on weapon
 	var recoil_amount = 1.0
@@ -249,6 +253,10 @@ func _play_reload_animation():
 		tween.tween_property(weapon_pivot, "position:y", base_position.y, reload_time * 0.3)
 
 		await tween.finished
+
+func play_reload_animation():
+	"""Public wrapper for reload animation"""
+	_play_reload_animation()
 
 # ============================================
 # WEAPON SWITCHING

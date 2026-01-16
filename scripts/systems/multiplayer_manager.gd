@@ -329,10 +329,6 @@ func spawn_observed_player(peer_id: int, player_info: Dictionary) -> Node:
 
 	var observed_player_scene = load("res://scenes/player/observed_player.tscn")
 	if not observed_player_scene:
-		# Try alternate path
-		observed_player_scene = load("res://scenes/player/player_observed.tscn")
-
-	if not observed_player_scene:
 		push_warning("Could not load observed player scene")
 		return null
 
@@ -398,12 +394,16 @@ func _receive_event(event_name: String, data: Dictionary):
 	match event_name:
 		"player_died":
 			var peer_id = data.get("peer_id", 0)
-			if observed_players.has(peer_id):
-				observed_players[peer_id].die()
+			if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+				var obs = observed_players[peer_id]
+				if obs.has_method("die"):
+					obs.die()
 		"player_respawned":
 			var peer_id = data.get("peer_id", 0)
-			if observed_players.has(peer_id):
-				observed_players[peer_id].respawn()
+			if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
+				var obs = observed_players[peer_id]
+				if obs.has_method("respawn"):
+					obs.respawn()
 
 # ============================================
 # CALLBACKS
@@ -599,7 +599,7 @@ func _on_player_spawned(position: Vector3):
 
 	# Update local player if exists
 	if network_manager:
-		var local_player = network_manager._get_local_player()
+		var local_player = network_manager.get_local_player()
 		if local_player:
 			local_player.global_position = position
 
@@ -624,7 +624,7 @@ func _on_player_respawned(peer_id: int, position: Vector3):
 	if peer_id == local_player_id:
 		# Local player respawned
 		if network_manager:
-			var local_player = network_manager._get_local_player()
+			var local_player = network_manager.get_local_player()
 			if local_player:
 				local_player.global_position = position
 	else:

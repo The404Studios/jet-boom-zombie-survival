@@ -18,8 +18,10 @@ func _ready():
 func setup(p: Node):  # p: Player
 	player = p
 	if player:
-		player.health_changed.connect(_on_health_changed)
-		player.stamina_changed.connect(_on_stamina_changed)
+		if player.has_signal("health_changed"):
+			player.health_changed.connect(_on_health_changed)
+		if player.has_signal("stamina_changed"):
+			player.stamina_changed.connect(_on_stamina_changed)
 
 func _on_health_changed(current: float, maximum: float):
 	if health_bar:

@@ -43,9 +43,12 @@ func _ready():
 	_setup_hotbar()
 	_setup_survival_ui()
 	_connect_signals()
-	extraction_panel.visible = false
+	if extraction_panel:
+		extraction_panel.visible = false
 
 func _setup_hotbar():
+	if not hotbar_container:
+		return
 	for i in range(4):
 		var slot = _create_hotbar_slot(i)
 		hotbar_container.add_child(slot)
@@ -468,19 +471,21 @@ func _on_extraction_available(_pos: Vector3):
 	pass
 
 func _on_extraction_started(peer_id: int):
-	if peer_id == multiplayer.get_unique_id():
+	if peer_id == multiplayer.get_unique_id() and extraction_panel:
 		extraction_panel.visible = true
 		_animate_extraction_progress()
 
 func _on_extraction_completed(peer_id: int):
-	if peer_id == multiplayer.get_unique_id():
+	if peer_id == multiplayer.get_unique_id() and extraction_panel:
 		extraction_panel.visible = false
 
 func _on_extraction_cancelled(peer_id: int):
-	if peer_id == multiplayer.get_unique_id():
+	if peer_id == multiplayer.get_unique_id() and extraction_panel:
 		extraction_panel.visible = false
 
 func _animate_extraction_progress():
+	if not extraction_progress:
+		return
 	extraction_progress.value = 0
 	var tween = create_tween()
 	tween.tween_property(extraction_progress, "value", 100, 15.0)

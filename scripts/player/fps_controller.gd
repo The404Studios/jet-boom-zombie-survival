@@ -99,8 +99,10 @@ func _ready():
 
 	# Connect to attribute changes
 	if character_attributes:
-		character_attributes.attribute_changed.connect(_on_attribute_changed)
-		character_attributes.level_up.connect(_on_level_up)
+		if not character_attributes.attribute_changed.is_connected(_on_attribute_changed):
+			character_attributes.attribute_changed.connect(_on_attribute_changed)
+		if not character_attributes.level_up.is_connected(_on_level_up):
+			character_attributes.level_up.connect(_on_level_up)
 
 	# Initialize body part health system
 	_setup_body_part_health()
@@ -162,9 +164,9 @@ func _setup_network():
 
 	# Connect to hit validator signals
 	if hit_validator:
-		if hit_validator.has_signal("hit_confirmed"):
+		if hit_validator.has_signal("hit_confirmed") and not hit_validator.hit_confirmed.is_connected(_on_hit_confirmed):
 			hit_validator.hit_confirmed.connect(_on_hit_confirmed)
-		if hit_validator.has_signal("hit_rejected"):
+		if hit_validator.has_signal("hit_rejected") and not hit_validator.hit_rejected.is_connected(_on_hit_rejected):
 			hit_validator.hit_rejected.connect(_on_hit_rejected)
 
 	# Disable camera and input for non-local players
@@ -841,6 +843,19 @@ func _get_weapon_scene_path(weapon_name: String) -> String:
 		return scene_map[name_lower]
 
 	return "res://scenes/weapons/weapon_pistol.tscn"  # Default
+
+func _set_visible_weapon(weapon_name: String):
+	"""Set the visible weapon model (for third-person view or observed players)"""
+	# This is called on remote clients to update visible weapon
+	var scene_path = _get_weapon_scene_path(weapon_name)
+	if not ResourceLoader.exists(scene_path):
+		return
+
+	# Update viewmodel if available
+	if viewmodel and viewmodel.has_method("equip_weapon"):
+		var scene = load(scene_path)
+		if scene:
+			viewmodel.equip_weapon(scene, current_weapon_data)
 
 func _check_headshot(target: Node, hit_position: Vector3) -> bool:
 	if not "global_position" in target:
@@ -1718,8 +1733,7 @@ func _remote_reload(weapon_type: String):
 func _remote_weapon_switch(weapon_name: String):
 	"""Receive weapon switch from remote player"""
 	# Update observed player's visible weapon
-	if has_method("set_visible_weapon"):
-		set_visible_weapon(weapon_name)
+	_set_visible_weapon(weapon_name)
 
 	# Play equip sound
 	var audio_manager = get_node_or_null("/root/AudioManager")
@@ -1756,7 +1770,7 @@ func _sync_ammo(ammo: int, reserve: int):
 @rpc("authority", "call_local", "reliable")
 func _player_killed_by(killer_id: int):
 	"""Called when player is killed by another player (networked)"""
-	die()
+	_die()
 	if has_node("/root/ChatSystem"):
 		var killer_name = "Enemy"
 		if network_manager and network_manager.players.has(killer_id):

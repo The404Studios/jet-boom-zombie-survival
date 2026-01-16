@@ -152,9 +152,11 @@ func emit_notification(message: String, type: String = "info", duration: float =
 func emit_player_kill(player: Node, peer_id: int, killer: Node, killer_id: int):
 	"""Convenience method for player death events"""
 	player_died.emit(player, peer_id, killer_id)
-	if killer:
-		# Emit score change for killer
-		pass
+	if killer and killer_id > 0:
+		# Award points for the kill
+		var points_system = get_node_or_null("/root/PointsSystem")
+		if points_system and points_system.has_method("add_points"):
+			points_system.add_points(killer_id, 100, "player_kill")
 
 func emit_wave_event(event_type: String, wave_number: int, _extra_data: Dictionary = {}):
 	"""Convenience method for wave events"""
@@ -179,3 +181,67 @@ func emit_network_event(event_type: String, _data: Dictionary = {}):
 			server_started.emit()
 		"server_stopped":
 			server_stopped.emit()
+
+# ============================================
+# UI BINDINGS
+# ============================================
+
+func bind_notification_manager(manager: Node):
+	"""Bind notification manager to receive events"""
+	if not manager:
+		return
+	if manager.has_method("show_notification"):
+		notification_requested.connect(func(msg, type, dur): manager.show_notification(msg, type, dur))
+	if manager.has_method("show_wave_notification"):
+		wave_started.connect(func(wave): manager.show_wave_notification("Wave %d Started!" % wave))
+		wave_completed.connect(func(wave): manager.show_wave_notification("Wave %d Complete!" % wave))
+
+func bind_kill_feed(feed: Node):
+	"""Bind kill feed UI to receive kill events"""
+	if not feed:
+		return
+	if feed.has_method("add_kill"):
+		player_died.connect(func(player, _peer_id, killer_id):
+			var player_name = player.player_name if "player_name" in player else "Player"
+			var killer_name = "Unknown"
+			var players = get_tree().get_nodes_in_group("player")
+			for p in players:
+				if "peer_id" in p and p.peer_id == killer_id:
+					killer_name = p.player_name if "player_name" in p else "Player"
+					break
+			feed.add_kill(killer_name, player_name, "")
+		)
+		zombie_died.connect(func(zombie, killer, _pos):
+			if killer and killer.is_in_group("player"):
+				var killer_name = killer.player_name if "player_name" in killer else "Player"
+				var zombie_type = zombie.zombie_type if "zombie_type" in zombie else "Zombie"
+				feed.add_kill(killer_name, zombie_type, "headshot" if zombie.get("was_headshot", false) else "")
+		)
+
+func bind_scoreboard(board: Node):
+	"""Bind scoreboard to receive score events"""
+	if not board:
+		return
+	if board.has_method("update_player_score"):
+		player_score_changed.connect(func(peer_id, score): board.update_player_score(peer_id, score))
+	if board.has_method("add_player"):
+		player_spawned.connect(func(player, peer_id):
+			var player_name = player.player_name if "player_name" in player else "Player"
+			board.add_player(peer_id, player_name)
+		)
+	if board.has_method("remove_player"):
+		player_died.connect(func(_player, peer_id, _killer_id): board.mark_player_dead(peer_id) if board.has_method("mark_player_dead") else null)
+
+func bind_damage_numbers(manager: Node):
+	"""Bind damage numbers manager to receive damage events"""
+	if not manager:
+		return
+	if manager.has_method("spawn_damage_number"):
+		zombie_damaged.connect(func(zombie, damage, _source):
+			if is_instance_valid(zombie):
+				manager.spawn_damage_number(zombie.global_position + Vector3.UP, damage, false)
+		)
+		player_damaged.connect(func(player, damage, _source):
+			if is_instance_valid(player):
+				manager.spawn_damage_number(player.global_position + Vector3.UP, damage, true)
+		)

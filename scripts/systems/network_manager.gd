@@ -815,7 +815,7 @@ func _notify_player_damage(peer_id: int, damage: float, new_health: float):
 	"""Receive player damage notification"""
 	if peer_id == local_player_id:
 		# Apply to local player
-		var local_player = _get_local_player()
+		var local_player = get_local_player()
 		if local_player and local_player.has_method("apply_damage"):
 			local_player.apply_damage(damage)
 		elif local_player and "current_health" in local_player:
@@ -833,7 +833,7 @@ func _notify_player_death(peer_id: int, killer_name: String):
 	player_died.emit(peer_id, killer_name)
 
 	if peer_id == local_player_id:
-		var local_player = _get_local_player()
+		var local_player = get_local_player()
 		if local_player and local_player.has_method("die"):
 			local_player.die()
 	else:
@@ -958,7 +958,8 @@ func _array_to_vec3(arr: Array) -> Vector3:
 		return Vector3.ZERO
 	return Vector3(arr[0], arr[1], arr[2])
 
-func _get_local_player() -> Node:
+func get_local_player() -> Node:
+	"""Get the local player node (public API)"""
 	var players_group = get_tree().get_nodes_in_group("player")
 	for player in players_group:
 		if player is Node3D:
