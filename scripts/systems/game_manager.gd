@@ -47,20 +47,33 @@ func _ready():
 	# Connect to SigilDefenseSystem signals
 	var sigil_defense = get_node_or_null("/root/SigilDefenseSystem")
 	if sigil_defense:
-		sigil_defense.sigil_destroyed.connect(_on_sigil_destroyed)
-		sigil_defense.extraction_available.connect(_on_extraction_available)
-		sigil_defense.final_extraction_complete.connect(_on_final_extraction)
+		if sigil_defense.has_signal("sigil_destroyed"):
+			sigil_defense.sigil_destroyed.connect(_on_sigil_destroyed)
+		if sigil_defense.has_signal("extraction_available"):
+			sigil_defense.extraction_available.connect(_on_extraction_available)
+		if sigil_defense.has_signal("final_extraction_complete"):
+			sigil_defense.final_extraction_complete.connect(_on_final_extraction)
 
 	# Connect to WaveLootSystem signals
 	var wave_loot = get_node_or_null("/root/WaveLootSystem")
-	if wave_loot:
+	if wave_loot and wave_loot.has_signal("boss_spawned"):
 		wave_loot.boss_spawned.connect(_on_boss_announced)
+
+	# Check if there's already an ArenaManager or WaveManager handling spawning
+	# If so, don't auto-start waves to avoid duplicate spawning
+	await get_tree().process_frame
+	var arena_manager = get_tree().get_first_node_in_group("arena_manager")
+	var wave_manager = get_tree().get_first_node_in_group("wave_manager")
+	if arena_manager or wave_manager:
+		print("GameManager: ArenaManager or WaveManager found, deferring to scene-based spawning")
+		set_process(false)  # Disable _process to prevent auto wave starting
+		return
 
 	# Auto-find spawn points if not set
 	if zombie_spawn_points.is_empty():
 		_find_spawn_points()
 
-	# Start first wave after delay
+	# Start first wave after delay (only if no other manager)
 	await get_tree().create_timer(5.0).timeout
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
