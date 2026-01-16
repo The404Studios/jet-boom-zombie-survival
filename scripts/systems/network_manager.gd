@@ -461,7 +461,9 @@ func despawn_all_players():
 
 @rpc("authority", "reliable")
 func sync_wave_state(wave: int, zombies_alive: int, is_intermission: bool):
-	var wave_manager = get_node_or_null("/root/Main/WaveManager")
+	var wave_manager = get_tree().get_first_node_in_group("wave_manager")
+	if not wave_manager:
+		wave_manager = get_node_or_null("/root/Main/WaveManager")
 	if wave_manager:
 		wave_manager.current_wave = wave
 		wave_manager.zombies_alive = zombies_alive
@@ -572,7 +574,9 @@ func _on_peer_connected(peer_id: int):
 		if players.size() > 0:
 			receive_all_players.rpc_id(peer_id, players)
 
-		var wave_manager = get_node_or_null("/root/Main/WaveManager")
+		var wave_manager = get_tree().get_first_node_in_group("wave_manager")
+		if not wave_manager:
+			wave_manager = get_node_or_null("/root/Main/WaveManager")
 		if wave_manager:
 			var wave = wave_manager.current_wave if "current_wave" in wave_manager else 1
 			var zombies = wave_manager.zombies_alive if "zombies_alive" in wave_manager else 0
@@ -737,7 +741,9 @@ func _notify_wave_start(wave_number: int):
 	print("Wave %d started!" % wave_number)
 
 	# Update wave manager if exists
-	var wave_manager = get_node_or_null("/root/Main/WaveManager")
+	var wave_manager = get_tree().get_first_node_in_group("wave_manager")
+	if not wave_manager:
+		wave_manager = get_node_or_null("/root/Main/WaveManager")
 	if wave_manager and "current_wave" in wave_manager:
 		wave_manager.current_wave = wave_number
 

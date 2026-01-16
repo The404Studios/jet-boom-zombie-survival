@@ -393,8 +393,8 @@ func _on_zombie_died(zombie: Node, points: int, experience: int):
 		loot_spawner.spawn_zombie_drop(zombie.global_position, zombie_type)
 
 	# Spawn gibs
-	if has_node("/root/GoreSystem"):
-		var gore = get_node("/root/GoreSystem")
+	var gore = get_node_or_null("/root/GoreSystem")
+	if gore and gore.has_method("spawn_gibs"):
 		gore.spawn_gibs(zombie.global_position, Vector3(0, 2, 0), 5)
 
 	# Award experience to player
