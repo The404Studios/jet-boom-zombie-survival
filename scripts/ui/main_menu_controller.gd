@@ -845,7 +845,7 @@ func _init_account_system():
 		if account.has_method("load_account"):
 			account.load_account()
 
-func _on_account_loaded():
+func _on_account_loaded(_account_data: Dictionary):
 	# Refresh player info when account loads
 	_load_player_info()
 	_update_player_info()

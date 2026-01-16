@@ -201,7 +201,7 @@ func _create_entry(killer: String, victim: String, weapon: String,
 
 	return panel
 
-func _create_zombie_entry(player: String, zombie_type: String, weapon: String,
+func _create_zombie_entry(player: String, zombie_type: String, _weapon: String,
 						   is_headshot: bool, is_local: bool) -> PanelContainer:
 	var panel = PanelContainer.new()
 

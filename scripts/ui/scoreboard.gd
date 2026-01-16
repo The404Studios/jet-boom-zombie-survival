@@ -429,7 +429,7 @@ func _setup_styling():
 # EVENTS
 # ============================================
 
-func _on_player_spawned(peer_id: int, _player: Node):
+func _on_player_spawned(_peer_id: int, _player: Node):
 	if is_visible:
 		refresh_scoreboard()
 

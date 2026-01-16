@@ -175,7 +175,7 @@ func _setup_network():
 			camera.current = false
 		set_process_input(false)
 
-func _on_hit_confirmed(_attacker_id: int, target: Node, damage: float, hit_data: Dictionary):
+func _on_hit_confirmed(_attacker_id: int, _target: Node, damage: float, hit_data: Dictionary):
 	"""Called when server confirms a hit"""
 	if not is_local_player:
 		return
