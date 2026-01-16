@@ -462,7 +462,7 @@ func _explode_on_death():
 			continue
 		if collider.has_method("take_damage"):
 			var dist = global_position.distance_to(collider.global_position)
-			var damage_falloff = 1.0 - (dist / explosion_radius)
+			var damage_falloff = 1.0 - (dist / max(explosion_radius, 1.0))
 			var final_damage = explosion_damage * max(damage_falloff, 0.3)
 			collider.take_damage(final_damage, global_position)
 

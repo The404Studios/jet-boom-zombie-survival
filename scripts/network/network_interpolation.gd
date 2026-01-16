@@ -272,7 +272,7 @@ func _update_latency(latency: float):
 	var sum = 0.0
 	for sample in latency_samples:
 		sum += sample
-	average_latency = sum / latency_samples.size()
+	average_latency = sum / latency_samples.size() if latency_samples.size() > 0 else 0.0
 
 	latency_updated.emit(average_latency * 1000.0)  # Emit in milliseconds
 

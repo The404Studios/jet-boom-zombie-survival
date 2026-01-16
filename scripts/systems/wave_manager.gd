@@ -272,7 +272,7 @@ func get_boss_for_wave(wave: int) -> ZombieClassData:
 		ZombieClassData.ZombieClass.BOSS_ABOMINATION
 	]
 
-	var boss_index = int(wave / boss_wave_interval - 1) % boss_types.size()
+	var boss_index = int(wave / max(boss_wave_interval, 1) - 1) % boss_types.size()
 	return get_zombie_class(boss_types[boss_index])
 
 func spawn_next_zombie():

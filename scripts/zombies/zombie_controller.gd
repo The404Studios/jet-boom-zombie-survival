@@ -565,7 +565,7 @@ func explode():
 			continue
 
 		var dist = global_position.distance_to(body.global_position)
-		if dist <= explosion_radius:
+		if dist <= explosion_radius and explosion_radius > 0:
 			var damage = explosion_damage * (1.0 - (dist / explosion_radius))
 			if body.has_method("take_damage"):
 				body.take_damage(damage, global_position)
