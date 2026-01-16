@@ -397,10 +397,21 @@ func _input(event):
 				_complete_boot()
 
 func _complete_boot():
-	# Fade everything out
+	# Fade out all visual elements (CanvasLayer doesn't have modulate)
 	var tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(self, "modulate:a", 0.0, 0.5)
+
+	# Fade out each child that has modulate (CanvasItems)
+	if background:
+		tween.tween_property(background, "modulate:a", 0.0, 0.5)
+	if terminal_container:
+		tween.tween_property(terminal_container, "modulate:a", 0.0, 0.5)
+	if logo_label:
+		tween.tween_property(logo_label, "modulate:a", 0.0, 0.5)
+	if status_label:
+		tween.tween_property(status_label, "modulate:a", 0.0, 0.5)
+	if progress_bar:
+		tween.tween_property(progress_bar, "modulate:a", 0.0, 0.5)
 
 	await tween.finished
 
