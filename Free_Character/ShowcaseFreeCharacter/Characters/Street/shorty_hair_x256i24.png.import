@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/Street/shorty_hair_x256i24.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Street/shorty_hair_x256i24.png"
 dest_files=[ "res://.import/shorty_hair_x256i24.png-385c065dcf1ee1d3c6dabb07b9b80d84.stex" ]
 
 [params]

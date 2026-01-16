@@ -6,7 +6,7 @@ path="res://.import/Nanzy.glb-e58e6c4ffd6bb50e766e4412dc2e3755.scn"
 
 [deps]
 
-source_file="res://Characters/Popcorn/Nanzy.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy.glb"
 dest_files=[ "res://.import/Nanzy.glb-e58e6c4ffd6bb50e766e4412dc2e3755.scn" ]
 
 [params]

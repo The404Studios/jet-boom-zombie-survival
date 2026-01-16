@@ -6,7 +6,7 @@ path="res://.import/beggar.dae-59cfeb80dab690734c91ed2c6fb95065.scn"
 
 [deps]
 
-source_file="res://Characters/Street/beggar.dae"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Street/beggar.dae"
 dest_files=[ "res://.import/beggar.dae-59cfeb80dab690734c91ed2c6fb95065.scn" ]
 
 [params]

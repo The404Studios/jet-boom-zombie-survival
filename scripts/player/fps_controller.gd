@@ -1117,9 +1117,9 @@ func _respawn():
 		get_node("/root/ChatSystem").emit_system_message("Respawned!")
 
 @rpc("authority", "call_local", "reliable")
-func _player_respawned(_player_id: int, _spawn_position: Vector3):
-	"""Network replicated player respawn"""
-	pass  # Could add respawn effects here
+func _on_other_player_respawned(_player_id: int, _spawn_position: Vector3):
+	"""Network notification when another player respawns"""
+	pass  # Could add respawn effects for other players here
 
 func _camera_shake(intensity: float, duration: float):
 	if not camera:
@@ -1772,6 +1772,71 @@ func _player_respawned(spawn_position: Vector3):
 
 	if has_node("/root/ChatSystem"):
 		get_node("/root/ChatSystem").emit_system_message("Respawned!")
+
+# ============================================
+# CHARACTER MODEL
+# ============================================
+
+# Character model paths for each character ID
+const CHARACTER_MODELS = {
+	"dizzy": "res://Free_Character/ShowcaseFreeCharacter/Characters/Street/Dizzy.glb",
+	"piggy": "res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/Piggy.glb",
+	"popcorn": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Popcorn.glb",
+	"spawn": "res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.glb",
+	"nanzy": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy.glb"
+}
+
+var character_model_holder: Node3D = null
+var current_character_id: String = ""
+
+func set_character_model(character_id: String):
+	"""Set the player's character model by ID"""
+	if character_id.is_empty():
+		return
+
+	current_character_id = character_id
+
+	var model_path = CHARACTER_MODELS.get(character_id, "")
+	if model_path.is_empty():
+		push_warning("Unknown character ID: %s" % character_id)
+		return
+
+	_load_character_model(model_path)
+
+func _load_character_model(model_path: String):
+	"""Load and apply a character model from path"""
+	if not ResourceLoader.exists(model_path):
+		push_warning("Character model not found: %s" % model_path)
+		return
+
+	var model_scene = load(model_path)
+	if not model_scene:
+		push_warning("Failed to load character model: %s" % model_path)
+		return
+
+	# Find or create model holder
+	if not character_model_holder:
+		character_model_holder = get_node_or_null("CharacterModel")
+		if not character_model_holder:
+			character_model_holder = Node3D.new()
+			character_model_holder.name = "CharacterModel"
+			add_child(character_model_holder)
+
+	# Clear existing model
+	for child in character_model_holder.get_children():
+		child.queue_free()
+
+	# Add new model
+	var model_instance = model_scene.instantiate()
+	character_model_holder.add_child(model_instance)
+
+	# Position the model (centered at player feet)
+	model_instance.position = Vector3(0, -0.9, 0)
+
+	print("Loaded character model: %s" % model_path)
+
+func get_character_id() -> String:
+	return current_character_id
 
 # ============================================
 # STATE SYNC (for multiplayer)

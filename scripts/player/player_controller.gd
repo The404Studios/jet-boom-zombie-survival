@@ -99,10 +99,27 @@ var look_rotation: Vector2 = Vector2.ZERO
 var peer_id: int = 1
 var is_local_player: bool = true
 
+# System references
+var player_conditions: Node = null
+var survival_system: Node = null
+
 func _ready():
 	if multiplayer.has_multiplayer_peer():
 		peer_id = get_multiplayer_authority()
 		is_local_player = peer_id == multiplayer.get_unique_id()
+
+	# Get system references
+	player_conditions = get_node_or_null("PlayerConditions")
+	survival_system = get_node_or_null("/root/SurvivalSystem")
+
+	# Create PlayerConditions if not present
+	if not player_conditions:
+		var conditions_script = load("res://scripts/systems/player_conditions.gd")
+		if conditions_script:
+			player_conditions = Node.new()
+			player_conditions.set_script(conditions_script)
+			player_conditions.name = "PlayerConditions"
+			add_child(player_conditions)
 
 	if is_local_player:
 		camera.current = true
@@ -219,6 +236,10 @@ func _update_movement(delta):
 		speed *= 0.8  # 20% slower when very hungry
 	if current_thirst < 20:
 		speed *= 0.85  # 15% slower when very thirsty
+
+	# Apply condition modifiers (freeze, slow, speed boost, etc.)
+	if player_conditions and player_conditions.has_method("get_movement_speed_modifier"):
+		speed *= player_conditions.get_movement_speed_modifier()
 
 	input_direction = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var direction = (transform.basis * Vector3(input_direction.x, 0, input_direction.y)).normalized()
@@ -432,6 +453,15 @@ func take_damage(amount: float, attacker_name: String = ""):
 	if is_dead:
 		return
 
+	# Check for invulnerability condition
+	if player_conditions and player_conditions.has_method("has_condition"):
+		if player_conditions.has_condition("invulnerable"):
+			return
+
+	# Apply condition damage modifier (vulnerable/fortified)
+	if player_conditions and player_conditions.has_method("get_damage_taken_modifier"):
+		amount *= player_conditions.get_damage_taken_modifier()
+
 	var skill_system = get_node_or_null("/root/SkillSystem")
 	if skill_system:
 		amount *= (1.0 - skill_system.get_attribute("damage_reduction"))
@@ -521,6 +551,71 @@ func consume_item(item_type: String, value: float):
 			stamina_changed.emit(old, current_stamina)
 
 # ============================================
+# CHARACTER MODEL
+# ============================================
+
+# Character model paths for each character ID
+const CHARACTER_MODELS = {
+	"dizzy": "res://Free_Character/ShowcaseFreeCharacter/Characters/Street/Dizzy.glb",
+	"piggy": "res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/Piggy.glb",
+	"popcorn": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Popcorn.glb",
+	"spawn": "res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.glb",
+	"nanzy": "res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy.glb"
+}
+
+var character_model_holder: Node3D = null
+var current_character_id: String = ""
+
+func set_character_model(character_id: String):
+	"""Set the player's character model by ID"""
+	if character_id.is_empty():
+		return
+
+	current_character_id = character_id
+
+	var model_path = CHARACTER_MODELS.get(character_id, "")
+	if model_path.is_empty():
+		push_warning("Unknown character ID: %s" % character_id)
+		return
+
+	load_character_model(model_path)
+
+func load_character_model(model_path: String):
+	"""Load and apply a character model from path"""
+	if not ResourceLoader.exists(model_path):
+		push_warning("Character model not found: %s" % model_path)
+		return
+
+	var model_scene = load(model_path)
+	if not model_scene:
+		push_warning("Failed to load character model: %s" % model_path)
+		return
+
+	# Find or create model holder
+	if not character_model_holder:
+		character_model_holder = get_node_or_null("CharacterModel")
+		if not character_model_holder:
+			character_model_holder = Node3D.new()
+			character_model_holder.name = "CharacterModel"
+			add_child(character_model_holder)
+
+	# Clear existing model
+	for child in character_model_holder.get_children():
+		child.queue_free()
+
+	# Add new model
+	var model_instance = model_scene.instantiate()
+	character_model_holder.add_child(model_instance)
+
+	# Position the model (centered at player feet)
+	model_instance.position = Vector3(0, -0.9, 0)
+
+	print("Loaded character model: %s" % model_path)
+
+func get_character_id() -> String:
+	return current_character_id
+
+# ============================================
 # INTERACTION
 # ============================================
 
@@ -558,7 +653,7 @@ func _try_consume(target: Node):
 # ============================================
 
 func get_state() -> Dictionary:
-	return {
+	var state = {
 		"position": global_position,
 		"rotation": rotation,
 		"camera_rotation": camera.rotation,
@@ -572,6 +667,19 @@ func get_state() -> Dictionary:
 		"lean_direction": lean_direction,
 		"weapon_index": current_weapon_index
 	}
+
+	# Include active conditions
+	if player_conditions and player_conditions.has_method("get_active_conditions_display"):
+		var conditions_data = []
+		for cond in player_conditions.get_active_conditions_display():
+			conditions_data.append({
+				"id": cond.id,
+				"stacks": cond.stacks,
+				"time_remaining": cond.time_remaining
+			})
+		state["conditions"] = conditions_data
+
+	return state
 
 func apply_state(state: Dictionary):
 	if state.has("position"):
@@ -596,3 +704,71 @@ func apply_state(state: Dictionary):
 		lean_direction = state.lean_direction
 	if state.has("weapon_index") and state.weapon_index != current_weapon_index:
 		_equip_weapon(state.weapon_index)
+
+# ============================================
+# SURVIVAL SYSTEM INTEGRATION
+# ============================================
+
+func set_survival_state(data: Dictionary):
+	"""Called by SurvivalSystem to update survival stats"""
+	if data.has("hunger"):
+		var old_hunger = current_hunger
+		current_hunger = data.hunger
+		if current_hunger != old_hunger:
+			hunger_changed.emit(old_hunger, current_hunger)
+
+	if data.has("thirst"):
+		var old_thirst = current_thirst
+		current_thirst = data.thirst
+		if current_thirst != old_thirst:
+			thirst_changed.emit(old_thirst, current_thirst)
+
+func apply_status_effect(effect_id: String, duration: float = -1.0, stacks: int = 1) -> bool:
+	"""Apply a status effect/condition to the player"""
+	if not player_conditions:
+		return false
+
+	if player_conditions.has_method("apply_condition"):
+		return player_conditions.apply_condition(effect_id, duration, stacks)
+
+	return false
+
+func remove_status_effect(effect_id: String):
+	"""Remove a status effect from the player"""
+	if player_conditions and player_conditions.has_method("remove_condition"):
+		player_conditions.remove_condition(effect_id)
+
+func has_status_effect(effect_id: String) -> bool:
+	"""Check if player has a status effect"""
+	if player_conditions and player_conditions.has_method("has_condition"):
+		return player_conditions.has_condition(effect_id)
+	return false
+
+func clear_debuffs():
+	"""Clear all negative status effects"""
+	if player_conditions and player_conditions.has_method("clear_debuffs"):
+		player_conditions.clear_debuffs()
+
+func get_active_conditions() -> Array:
+	"""Get list of active conditions for UI/display"""
+	if player_conditions and player_conditions.has_method("get_active_conditions_display"):
+		return player_conditions.get_active_conditions_display()
+	return []
+
+func restore_stamina(amount: float):
+	"""Restore stamina (used by consumables)"""
+	var old_stamina = current_stamina
+	current_stamina = min(max_stamina, current_stamina + amount)
+	stamina_changed.emit(old_stamina, current_stamina)
+
+func is_indoors() -> bool:
+	"""Check if player is indoors (for temperature calculation)"""
+	# Simple check - can be expanded with proper indoor detection
+	var space_state = get_world_3d().direct_space_state
+	var query = PhysicsRayQueryParameters3D.create(
+		global_position + Vector3.UP * 0.5,
+		global_position + Vector3.UP * 10.0
+	)
+	query.collision_mask = 1  # Check against environment layer
+	var result = space_state.intersect_ray(query)
+	return not result.is_empty()  # Has ceiling = indoors

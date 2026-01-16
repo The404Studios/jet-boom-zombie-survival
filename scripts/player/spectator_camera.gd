@@ -271,7 +271,7 @@ func _refresh_targets():
 		available_targets = player_manager.get_alive_players()
 	else:
 		# Fallback to group
-		for player in get_tree().get_nodes_in_group("players"):
+		for player in get_tree().get_nodes_in_group("player"):
 			if player is Node3D:
 				# Check if alive
 				var is_alive = true

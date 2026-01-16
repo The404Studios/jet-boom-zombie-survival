@@ -1,6 +1,6 @@
 [gd_scene load_steps=11 format=2]
 
-[ext_resource path="res://Characters/NWorld/mr_tail_x256.png" type="Texture" id=1]
+[ext_resource path="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/mr_tail_x256.png" type="Texture" id=1]
 
 [sub_resource type="ArrayMesh" id=1]
 resource_name = "tail_Cube002"

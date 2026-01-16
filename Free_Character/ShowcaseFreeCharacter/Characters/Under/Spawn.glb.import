@@ -6,7 +6,7 @@ path="res://.import/Spawn.glb-9af26fba982abfeb2855576778cf4ea5.scn"
 
 [deps]
 
-source_file="res://Characters/Under/Spawn.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Under/Spawn.glb"
 dest_files=[ "res://.import/Spawn.glb-9af26fba982abfeb2855576778cf4ea5.scn" ]
 
 [params]

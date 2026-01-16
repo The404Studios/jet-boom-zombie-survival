@@ -407,7 +407,7 @@ func _get_player_count() -> int:
 	if player_manager and player_manager.has_method("get_player_count"):
 		return player_manager.get_player_count()
 
-	return get_tree().get_nodes_in_group("players").size()
+	return get_tree().get_nodes_in_group("player").size()
 
 func _get_alive_player_count() -> int:
 	"""Get number of alive players"""
@@ -415,7 +415,7 @@ func _get_alive_player_count() -> int:
 		return player_manager.get_alive_count()
 
 	var count = 0
-	for player in get_tree().get_nodes_in_group("players"):
+	for player in get_tree().get_nodes_in_group("player"):
 		if player.has_method("is_alive") and player.is_alive():
 			count += 1
 		elif "is_dead" in player and not player.is_dead:

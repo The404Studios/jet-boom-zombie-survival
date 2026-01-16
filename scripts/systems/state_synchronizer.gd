@@ -389,7 +389,7 @@ func _get_local_player() -> Node3D:
 	if player_manager and player_manager.has_method("get_local_player"):
 		return player_manager.get_local_player()
 
-	var players = get_tree().get_nodes_in_group("players")
+	var players = get_tree().get_nodes_in_group("player")
 	for player in players:
 		if player is Node3D:
 			var authority = player.get_multiplayer_authority() if player.has_method("get_multiplayer_authority") else 1

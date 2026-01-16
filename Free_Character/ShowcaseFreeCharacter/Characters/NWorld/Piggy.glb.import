@@ -6,7 +6,7 @@ path="res://.import/Piggy.glb-42af28d3800a1b9834bc3cb71123f2ed.scn"
 
 [deps]
 
-source_file="res://Characters/NWorld/Piggy.glb"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/Piggy.glb"
 dest_files=[ "res://.import/Piggy.glb-42af28d3800a1b9834bc3cb71123f2ed.scn" ]
 
 [params]

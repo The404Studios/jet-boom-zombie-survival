@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_MachineGun.fbx-54448eac116c53abe9e1f156f51291d9.
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_MachineGun.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_MachineGun.fbx"
 dest_files=["res://.godot/imported/Wep_MachineGun.fbx-54448eac116c53abe9e1f156f51291d9.scn"]
 
 [params]

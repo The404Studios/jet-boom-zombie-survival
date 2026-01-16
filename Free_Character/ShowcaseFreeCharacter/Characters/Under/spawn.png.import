@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/Under/spawn.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Under/spawn.png"
 dest_files=[ "res://.import/spawn.png-70735fa552b74ecd82e65a358b3fee18.stex" ]
 
 [params]

@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_Turret.fbx-77fa56054af574a0680c1294a177826c.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_Turret.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_Turret.fbx"
 dest_files=["res://.godot/imported/Wep_Turret.fbx-77fa56054af574a0680c1294a177826c.scn"]
 
 [params]

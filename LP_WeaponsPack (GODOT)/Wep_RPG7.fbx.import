@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_RPG7.fbx-e063789b2add2537bdb6976ceef0cb1c.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_RPG7.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_RPG7.fbx"
 dest_files=["res://.godot/imported/Wep_RPG7.fbx-e063789b2add2537bdb6976ceef0cb1c.scn"]
 
 [params]

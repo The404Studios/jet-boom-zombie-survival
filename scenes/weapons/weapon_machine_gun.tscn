@@ -1,8 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_machinegun001"]
+[gd_scene load_steps=3 format=3 uid="uid://weapon_machinegun001"]
 
 [ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_MachineGun.fbx" id="1"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="2"]
 
 [node name="WeaponMachineGun" instance=ExtResource("1")]
+script = ExtResource("2")
+weapon_name = "Machine Gun"
+weapon_id = "machinegun"
+damage = 28.0
+fire_rate = 900.0
+range_distance = 70.0
+accuracy = 0.82
+recoil_amount = 0.018
+magazine_size = 100
+current_ammo = 100
+reserve_ammo = 200
+ammo_type = "7.62x51"
+reload_time = 4.5
 
 [node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -0.6)

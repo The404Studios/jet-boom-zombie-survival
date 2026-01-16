@@ -11,7 +11,7 @@ metadata={
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Assets_Texture.png"
+source_file="res://LP_WeaponsPack (GODOT)/Assets_Texture.png"
 dest_files=["res://.godot/imported/Assets_Texture.png-1eeb576beaa8022aef27849667e6f6b1.s3tc.ctex"]
 
 [params]

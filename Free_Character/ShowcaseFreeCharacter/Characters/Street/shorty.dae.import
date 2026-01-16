@@ -6,7 +6,7 @@ path="res://.import/shorty.dae-e1d58adf414d215f72d69d3a27be7390.scn"
 
 [deps]
 
-source_file="res://Characters/Street/shorty.dae"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Street/shorty.dae"
 dest_files=[ "res://.import/shorty.dae-e1d58adf414d215f72d69d3a27be7390.scn" ]
 
 [params]

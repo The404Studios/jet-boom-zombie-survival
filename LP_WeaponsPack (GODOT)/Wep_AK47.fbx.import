@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_AK47.fbx-18084dc2a68ee5a26938ce043f092ce1.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_AK47.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_AK47.fbx"
 dest_files=["res://.godot/imported/Wep_AK47.fbx-18084dc2a68ee5a26938ce043f092ce1.scn"]
 
 [params]

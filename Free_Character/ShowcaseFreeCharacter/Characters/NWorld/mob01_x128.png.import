@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/NWorld/mob01_x128.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/NWorld/mob01_x128.png"
 dest_files=[ "res://.import/mob01_x128.png-98784135f2c86803df67cbf7b6c857c2.stex" ]
 
 [params]

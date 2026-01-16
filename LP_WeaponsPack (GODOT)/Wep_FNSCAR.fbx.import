@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_FNSCAR.fbx-69a4a1c494de854f5e8a9a82d3e6d6eb.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_FNSCAR.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_FNSCAR.fbx"
 dest_files=["res://.godot/imported/Wep_FNSCAR.fbx-69a4a1c494de854f5e8a9a82d3e6d6eb.scn"]
 
 [params]

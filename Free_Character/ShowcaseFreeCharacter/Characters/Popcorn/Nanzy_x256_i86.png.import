@@ -9,7 +9,7 @@ metadata={
 
 [deps]
 
-source_file="res://Characters/Popcorn/Nanzy_x256_i86.png"
+source_file="res://Free_Character/ShowcaseFreeCharacter/Characters/Popcorn/Nanzy_x256_i86.png"
 dest_files=[ "res://.import/Nanzy_x256_i86.png-5dc89a94513ab3dc9a6acad0afe83d6f.stex" ]
 
 [params]

@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_UZI.fbx-6a5c9200a0b351d0d3d69b7a08322c7f.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_UZI.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_UZI.fbx"
 dest_files=["res://.godot/imported/Wep_UZI.fbx-6a5c9200a0b351d0d3d69b7a08322c7f.scn"]
 
 [params]

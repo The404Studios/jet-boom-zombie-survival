@@ -8,7 +8,7 @@ path="res://.godot/imported/Wep_Rifle.fbx-5b25074c24c3ccf24dcfc3244624cd12.scn"
 
 [deps]
 
-source_file="res://LP_WeaponsPack/Wep_Rifle.fbx"
+source_file="res://LP_WeaponsPack (GODOT)/Wep_Rifle.fbx"
 dest_files=["res://.godot/imported/Wep_Rifle.fbx-5b25074c24c3ccf24dcfc3244624cd12.scn"]
 
 [params]
