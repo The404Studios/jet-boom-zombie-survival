@@ -454,10 +454,7 @@ func pickup(player: Node):
 		# Try to add to inventory system first
 		if inventory_system and inventory_system.has_method("add_item_by_id"):
 			var item_id := ""
-			if item_data is Dictionary:
-				var data_dict: Dictionary = item_data as Dictionary
-				item_id = data_dict.get("item_id", "")
-			elif "item_id" in item_data:
+			if "item_id" in item_data:
 				item_id = item_data.item_id
 			if item_id != "":
 				var item = inventory_system.add_item_by_id(item_id, "backpack", loot_quantity)
