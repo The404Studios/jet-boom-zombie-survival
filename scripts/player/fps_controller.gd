@@ -99,8 +99,10 @@ func _ready():
 
 	# Connect to attribute changes
 	if character_attributes:
-		character_attributes.attribute_changed.connect(_on_attribute_changed)
-		character_attributes.level_up.connect(_on_level_up)
+		if not character_attributes.attribute_changed.is_connected(_on_attribute_changed):
+			character_attributes.attribute_changed.connect(_on_attribute_changed)
+		if not character_attributes.level_up.is_connected(_on_level_up):
+			character_attributes.level_up.connect(_on_level_up)
 
 	# Initialize body part health system
 	_setup_body_part_health()
@@ -162,9 +164,9 @@ func _setup_network():
 
 	# Connect to hit validator signals
 	if hit_validator:
-		if hit_validator.has_signal("hit_confirmed"):
+		if hit_validator.has_signal("hit_confirmed") and not hit_validator.hit_confirmed.is_connected(_on_hit_confirmed):
 			hit_validator.hit_confirmed.connect(_on_hit_confirmed)
-		if hit_validator.has_signal("hit_rejected"):
+		if hit_validator.has_signal("hit_rejected") and not hit_validator.hit_rejected.is_connected(_on_hit_rejected):
 			hit_validator.hit_rejected.connect(_on_hit_rejected)
 
 	# Disable camera and input for non-local players

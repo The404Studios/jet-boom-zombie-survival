@@ -207,8 +207,10 @@ func extract(player: Node):
 	"""Handle player extraction"""
 	# Transfer player inventory to stash
 	if "inventory" in player and player.inventory:
-		for item_data in player.inventory.inventory:
-			player.inventory.transfer_to_stash(item_data.item, item_data.quantity)
+		if "inventory" in player.inventory:
+			for item_data in player.inventory.inventory:
+				if player.inventory.has_method("transfer_to_stash"):
+					player.inventory.transfer_to_stash(item_data.item, item_data.quantity)
 
 	# Save player data
 	if has_node("/root/PlayerPersistence"):

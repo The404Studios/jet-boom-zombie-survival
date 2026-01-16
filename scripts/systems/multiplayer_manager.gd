@@ -394,13 +394,13 @@ func _receive_event(event_name: String, data: Dictionary):
 	match event_name:
 		"player_died":
 			var peer_id = data.get("peer_id", 0)
-			if observed_players.has(peer_id):
+			if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
 				var obs = observed_players[peer_id]
 				if obs.has_method("die"):
 					obs.die()
 		"player_respawned":
 			var peer_id = data.get("peer_id", 0)
-			if observed_players.has(peer_id):
+			if observed_players.has(peer_id) and is_instance_valid(observed_players[peer_id]):
 				var obs = observed_players[peer_id]
 				if obs.has_method("respawn"):
 					obs.respawn()
@@ -599,7 +599,7 @@ func _on_player_spawned(position: Vector3):
 
 	# Update local player if exists
 	if network_manager:
-		var local_player = network_manager._get_local_player()
+		var local_player = network_manager.get_local_player()
 		if local_player:
 			local_player.global_position = position
 
@@ -624,7 +624,7 @@ func _on_player_respawned(peer_id: int, position: Vector3):
 	if peer_id == local_player_id:
 		# Local player respawned
 		if network_manager:
-			var local_player = network_manager._get_local_player()
+			var local_player = network_manager.get_local_player()
 			if local_player:
 				local_player.global_position = position
 	else:
