@@ -455,7 +455,8 @@ func pickup(player: Node):
 		if inventory_system and inventory_system.has_method("add_item_by_id"):
 			var item_id := ""
 			if item_data is Dictionary:
-				item_id = item_data.get("item_id", "")
+				var data_dict: Dictionary = item_data as Dictionary
+				item_id = data_dict.get("item_id", "")
 			elif "item_id" in item_data:
 				item_id = item_data.item_id
 			if item_id != "":

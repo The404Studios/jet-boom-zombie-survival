@@ -320,7 +320,11 @@ func interact():
 func pickup_item(item_node: Node3D):
 	if item_node.has_method("get_item_data"):
 		var item_data = item_node.get_item_data()
-		var item_id = item_data.get("id", "") if item_data is Dictionary else str(item_data)
+		var item_id := ""
+		if item_data is Dictionary:
+			item_id = (item_data as Dictionary).get("id", "")
+		else:
+			item_id = str(item_data)
 		if inventory.add_item_by_id(item_id, "backpack", 1):
 			item_node.queue_free()
 

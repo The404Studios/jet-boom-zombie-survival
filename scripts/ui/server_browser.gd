@@ -534,7 +534,10 @@ func _convert_backend_servers(backend_servers) -> Array:
 			if server.players[0] is Dictionary:
 				var names = []
 				for p in server.players:
-					names.append(p.get("username", "Player"))
+					if p is Dictionary:
+						names.append((p as Dictionary).get("username", "Player"))
+					else:
+						names.append("Player")
 				server.players = names
 
 		result.append(server)

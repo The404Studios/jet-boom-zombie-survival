@@ -462,8 +462,11 @@ func _serialize_items(items: Array) -> Array:
 	var serialized = []
 	for item in items:
 		if item:
+			var item_id := 0
+			if item is Dictionary:
+				item_id = (item as Dictionary).get("id", 0)
 			serialized.append({
-				"itemId": item.get("id", 0) if item is Dictionary else 0,
+				"itemId": item_id,
 				"name": item.item_name if "item_name" in item else "Unknown"
 			})
 	return serialized

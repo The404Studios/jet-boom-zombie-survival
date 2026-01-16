@@ -388,7 +388,7 @@ func _refresh_stash_display():
 
 		if i < player_stash.size() and player_stash[i]:
 			var stash_item = player_stash[i]
-			var item = stash_item.get("item") if stash_item is Dictionary else stash_item
+			var item = (stash_item as Dictionary).get("item") if stash_item is Dictionary else stash_item
 			if icon and item and "icon" in item:
 				icon.texture = item.icon
 			if name_label:
@@ -493,7 +493,7 @@ func _on_sell_pressed():
 		return
 
 	var stash_item = player_stash[selected_stash_index]
-	var item = stash_item.get("item") if stash_item is Dictionary else stash_item
+	var item = (stash_item as Dictionary).get("item") if stash_item is Dictionary else stash_item
 	var base_price = item.value if item and "value" in item else 100
 	var sell_price = _get_sell_price(base_price)
 	var item_name = item.item_name if item and "item_name" in item else "Item"
@@ -507,7 +507,7 @@ func _on_sell_pressed():
 
 func _confirm_sale(index: int, sell_price: int):
 	var stash_item = player_stash[index]
-	var item = stash_item.get("item") if stash_item is Dictionary else stash_item
+	var item = (stash_item as Dictionary).get("item") if stash_item is Dictionary else stash_item
 
 	# Add currency
 	player_currency += sell_price
