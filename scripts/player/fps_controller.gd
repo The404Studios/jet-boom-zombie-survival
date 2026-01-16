@@ -842,6 +842,19 @@ func _get_weapon_scene_path(weapon_name: String) -> String:
 
 	return "res://scenes/weapons/weapon_pistol.tscn"  # Default
 
+func _set_visible_weapon(weapon_name: String):
+	"""Set the visible weapon model (for third-person view or observed players)"""
+	# This is called on remote clients to update visible weapon
+	var scene_path = _get_weapon_scene_path(weapon_name)
+	if not ResourceLoader.exists(scene_path):
+		return
+
+	# Update viewmodel if available
+	if viewmodel and viewmodel.has_method("equip_weapon"):
+		var scene = load(scene_path)
+		if scene:
+			viewmodel.equip_weapon(scene, current_weapon_data)
+
 func _check_headshot(target: Node, hit_position: Vector3) -> bool:
 	if not "global_position" in target:
 		return false
@@ -1718,8 +1731,7 @@ func _remote_reload(weapon_type: String):
 func _remote_weapon_switch(weapon_name: String):
 	"""Receive weapon switch from remote player"""
 	# Update observed player's visible weapon
-	if has_method("set_visible_weapon"):
-		set_visible_weapon(weapon_name)
+	_set_visible_weapon(weapon_name)
 
 	# Play equip sound
 	var audio_manager = get_node_or_null("/root/AudioManager")
@@ -1756,7 +1768,7 @@ func _sync_ammo(ammo: int, reserve: int):
 @rpc("authority", "call_local", "reliable")
 func _player_killed_by(killer_id: int):
 	"""Called when player is killed by another player (networked)"""
-	die()
+	_die()
 	if has_node("/root/ChatSystem"):
 		var killer_name = "Enemy"
 		if network_manager and network_manager.players.has(killer_id):

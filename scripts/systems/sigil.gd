@@ -1,5 +1,5 @@
 extends Node3D
-class_name Sigil
+class_name DefenseSigil
 
 ## Simple Sigil for arena defense mode
 ## Players must protect this sigil from zombie attacks
