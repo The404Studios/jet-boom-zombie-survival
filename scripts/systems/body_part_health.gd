@@ -103,8 +103,12 @@ var active_effects: Dictionary = {}  # effect_name -> { duration: float, max_dur
 # Reference to parent player
 var player: Node = null
 
+# Grace period to prevent damage at spawn
+var spawn_grace_period: float = 2.0
+var spawn_timer: float = 0.0
+
 func _ready():
-	# Initialize all body parts
+	# Initialize all body parts to full health
 	for part in BodyPart.values():
 		_initialize_body_part(part)
 
@@ -116,6 +120,9 @@ func _ready():
 		var attrs = player.get_node("CharacterAttributes")
 		if attrs.has_signal("level_up"):
 			attrs.level_up.connect(_on_level_up)
+
+	# Start spawn grace period
+	spawn_timer = spawn_grace_period
 
 func _initialize_body_part(part: int):
 	"""Initialize a body part with base HP"""
@@ -131,6 +138,10 @@ func _calculate_max_health(part: int) -> float:
 	return base + (bonus * (player_level - 1))
 
 func _process(delta):
+	# Update spawn grace period
+	if spawn_timer > 0:
+		spawn_timer -= delta
+
 	# Process healing
 	if is_healing and healing_part >= 0:
 		healing_timer += delta
@@ -140,22 +151,52 @@ func _process(delta):
 		if healing_timer >= healing_duration:
 			_complete_healing()
 
-	# Process bleeding damage
-	bleeding_tick_timer += delta
-	if bleeding_tick_timer >= 1.0:
-		bleeding_tick_timer = 0.0
-		_apply_bleeding_damage()
+	# Process bleeding damage (skip during grace period)
+	if spawn_timer <= 0:
+		bleeding_tick_timer += delta
+		if bleeding_tick_timer >= 1.0:
+			bleeding_tick_timer = 0.0
+			_apply_bleeding_damage()
 
 	# Update effect durations
 	_update_effects(delta)
 
 func _apply_bleeding_damage():
 	"""Apply bleeding damage from blacked out limbs"""
+	var total_bleed_count = 0
+
 	for part in BodyPart.values():
-		if is_bleeding[part]:
-			# Bleeding damages the player's overall health
-			if player and player.has_method("take_damage"):
-				player.take_damage(bleeding_damage_per_second, Vector3.ZERO)
+		if is_bleeding.get(part, false):
+			total_bleed_count += 1
+
+	# Only apply damage if actually bleeding
+	if total_bleed_count > 0 and player and player.has_method("take_damage"):
+		# Bleeding damages the player's overall health (scale with number of bleeding parts)
+		var damage = bleeding_damage_per_second * min(total_bleed_count, 3)  # Cap at 3x damage
+		player.take_damage(damage, Vector3.ZERO)
+
+func reset_to_full_health():
+	"""Reset all body parts to full health - call on spawn/respawn"""
+	spawn_timer = spawn_grace_period
+
+	for part in BodyPart.values():
+		max_health[part] = _calculate_max_health(part)
+		current_health[part] = max_health[part]
+		is_blacked_out[part] = false
+		is_bleeding[part] = false
+
+	# Clear active bleeding effects
+	for effect_name in active_effects.keys():
+		if effect_name.begins_with("Bleeding"):
+			remove_effect(effect_name)
+
+	# Remove all blackout penalties
+	if player and player.has_node("PlayerConditions"):
+		var conditions = player.get_node("PlayerConditions")
+		conditions.remove_condition("blurred_vision")
+		conditions.remove_condition("exhaustion")
+		conditions.remove_condition("limping")
+		conditions.remove_condition("weakened")
 
 func _update_effects(delta: float):
 	"""Update status effect durations"""
@@ -194,21 +235,29 @@ func take_damage_to_part(part: int, amount: float) -> float:
 	Apply damage to a specific body part.
 	Returns actual damage dealt.
 	"""
+	# Ignore damage during spawn grace period
+	if spawn_timer > 0:
+		return 0.0
+
 	if part < 0 or part >= BodyPart.size():
 		return 0.0
 
-	if is_blacked_out[part]:
+	# Ensure dictionaries are initialized for this part
+	if not current_health.has(part):
+		_initialize_body_part(part)
+
+	if is_blacked_out.get(part, false):
 		# Blacked out parts spread damage to adjacent parts
 		return _spread_damage(part, amount)
 
-	var old_health = current_health[part]
-	current_health[part] = max(0.0, current_health[part] - amount)
+	var old_health = current_health.get(part, 0.0)
+	current_health[part] = max(0.0, old_health - amount)
 	var damage_dealt = old_health - current_health[part]
 
-	body_part_damaged.emit(PART_NAMES[part], current_health[part], max_health[part])
+	body_part_damaged.emit(PART_NAMES[part], current_health[part], max_health.get(part, 1.0))
 
 	# Check for blackout
-	if current_health[part] <= 0 and not is_blacked_out[part]:
+	if current_health[part] <= 0 and not is_blacked_out.get(part, false):
 		_blackout_part(part)
 
 	return damage_dealt

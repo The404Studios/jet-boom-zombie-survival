@@ -200,47 +200,127 @@ func _initialize_containers():
 	create_container("pockets", "Pockets", 4, 1)
 
 func _load_item_database():
+	# === WEAPONS ===
 	_define_item("rifle_m4", {"name": "M4A1 Rifle", "type": ItemType.WEAPON, "rarity": ItemRarity.RARE,
 		"size": Vector2i(2, 5), "equip_slot": "weapon_primary", "damage": 35.0, "fire_rate": 700.0,
-		"ammo_type": "5.56x45", "magazine_size": 30, "buy_price": 50000, "weight": 3.5})
+		"ammo_type": "5.56x45", "magazine_size": 30, "buy_price": 50000, "weight": 3.5,
+		"icon": "res://textures/icons/weapons/m4a1.png"})
 	_define_item("smg_vector", {"name": "Kriss Vector", "type": ItemType.WEAPON, "rarity": ItemRarity.EPIC,
 		"size": Vector2i(2, 4), "equip_slot": "weapon_primary", "damage": 28.0, "fire_rate": 1200.0,
-		"ammo_type": ".45 ACP", "magazine_size": 25, "buy_price": 75000, "weight": 2.7})
+		"ammo_type": ".45 ACP", "magazine_size": 25, "buy_price": 75000, "weight": 2.7,
+		"icon": "res://textures/icons/weapons/vector.png"})
 	_define_item("pistol_glock", {"name": "Glock 17", "type": ItemType.WEAPON, "rarity": ItemRarity.COMMON,
 		"size": Vector2i(1, 2), "equip_slot": "weapon_secondary", "damage": 20.0, "fire_rate": 400.0,
-		"ammo_type": "9x19", "magazine_size": 17, "buy_price": 15000, "weight": 0.7})
+		"ammo_type": "9x19", "magazine_size": 17, "buy_price": 15000, "weight": 0.7,
+		"icon": "res://textures/icons/weapons/glock.png"})
 	_define_item("knife_combat", {"name": "Combat Knife", "type": ItemType.WEAPON, "rarity": ItemRarity.UNCOMMON,
-		"size": Vector2i(1, 2), "equip_slot": "weapon_melee", "damage": 50.0, "buy_price": 5000, "weight": 0.3})
+		"size": Vector2i(1, 2), "equip_slot": "weapon_melee", "damage": 50.0, "buy_price": 5000, "weight": 0.3,
+		"icon": "res://textures/icons/weapons/knife.png"})
+	_define_item("shotgun", {"name": "Pump Shotgun", "type": ItemType.WEAPON, "rarity": ItemRarity.UNCOMMON,
+		"size": Vector2i(2, 4), "equip_slot": "weapon_primary", "damage": 80.0, "fire_rate": 60.0,
+		"ammo_type": "12gauge", "magazine_size": 8, "buy_price": 25000, "weight": 3.2,
+		"icon": "res://textures/icons/weapons/shotgun.png"})
+	_define_item("ak47", {"name": "AK-47", "type": ItemType.WEAPON, "rarity": ItemRarity.RARE,
+		"size": Vector2i(2, 5), "equip_slot": "weapon_primary", "damage": 40.0, "fire_rate": 600.0,
+		"ammo_type": "7.62x39", "magazine_size": 30, "buy_price": 45000, "weight": 3.8,
+		"icon": "res://textures/icons/weapons/ak47.png"})
+
+	# === ARMOR ===
 	_define_item("helmet_tactical", {"name": "Tactical Helmet", "type": ItemType.ARMOR, "rarity": ItemRarity.UNCOMMON,
 		"size": Vector2i(2, 2), "equip_slot": "head", "armor_value": 25.0, "armor_class": 3,
-		"stats": {"damage_reduction": 0.15}, "buy_price": 25000, "weight": 1.5})
+		"stats": {"damage_reduction": 0.15}, "buy_price": 25000, "weight": 1.5,
+		"icon": "res://textures/icons/armor/helmet.png"})
 	_define_item("vest_plate", {"name": "Plate Carrier", "type": ItemType.ARMOR, "rarity": ItemRarity.RARE,
 		"size": Vector2i(2, 3), "equip_slot": "chest", "armor_value": 50.0, "armor_class": 4,
-		"stats": {"damage_reduction": 0.25, "max_health": 20.0}, "buy_price": 75000, "weight": 8.0})
-	_define_item("medkit", {"name": "First Aid Kit", "type": ItemType.CONSUMABLE, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(2, 1), "is_stackable": true, "max_stack": 3, "use_time": 5.0,
-		"effects": [{"type": "heal", "amount": 50.0}], "buy_price": 5000, "weight": 0.5})
-	_define_item("bandage", {"name": "Bandage", "type": ItemType.CONSUMABLE, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 5, "use_time": 2.0,
-		"effects": [{"type": "heal", "amount": 20.0}], "buy_price": 1000, "weight": 0.1})
-	_define_item("ammo_556", {"name": "5.56x45mm", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 120, "ammo_type": "5.56x45", "buy_price": 300, "weight": 0.4})
-	_define_item("ammo_45acp", {"name": ".45 ACP", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 100, "ammo_type": ".45 ACP", "buy_price": 250, "weight": 0.3})
-	_define_item("ammo_9mm", {"name": "9x19mm", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 150, "ammo_type": "9x19", "buy_price": 200, "weight": 0.25})
+		"stats": {"damage_reduction": 0.25, "max_health": 20.0}, "buy_price": 75000, "weight": 8.0,
+		"icon": "res://textures/icons/armor/vest.png"})
 	_define_item("pendant_lucky", {"name": "Lucky Pendant", "type": ItemType.ARMOR, "rarity": ItemRarity.RARE,
-		"size": Vector2i(1, 1), "equip_slot": "pendant", "stats": {"crit_chance": 0.05}, "buy_price": 50000, "weight": 0.1})
+		"size": Vector2i(1, 1), "equip_slot": "pendant", "stats": {"crit_chance": 0.05}, "buy_price": 50000, "weight": 0.1,
+		"icon": "res://textures/icons/armor/pendant.png"})
 	_define_item("ring_vitality", {"name": "Ring of Vitality", "type": ItemType.ARMOR, "rarity": ItemRarity.UNCOMMON,
-		"size": Vector2i(1, 1), "equip_slot": "ring_left", "stats": {"max_health": 15.0}, "buy_price": 30000, "weight": 0.05})
+		"size": Vector2i(1, 1), "equip_slot": "ring_left", "stats": {"max_health": 15.0}, "buy_price": 30000, "weight": 0.05,
+		"icon": "res://textures/icons/armor/ring.png"})
 	_define_item("cape_warrior", {"name": "Warrior Cape", "type": ItemType.ARMOR, "rarity": ItemRarity.EPIC,
-		"size": Vector2i(2, 2), "equip_slot": "cape", "stats": {"damage_mult": 0.1}, "buy_price": 100000, "weight": 0.5})
+		"size": Vector2i(2, 2), "equip_slot": "cape", "stats": {"damage_mult": 0.1}, "buy_price": 100000, "weight": 0.5,
+		"icon": "res://textures/icons/armor/cape.png"})
 	_define_item("gloves_tactical", {"name": "Tactical Gloves", "type": ItemType.ARMOR, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(2, 2), "equip_slot": "hands", "stats": {"reload_speed": 0.05}, "buy_price": 8000, "weight": 0.3})
+		"size": Vector2i(2, 2), "equip_slot": "hands", "stats": {"reload_speed": 0.05}, "buy_price": 8000, "weight": 0.3,
+		"icon": "res://textures/icons/armor/gloves.png"})
 	_define_item("boots_combat", {"name": "Combat Boots", "type": ItemType.ARMOR, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(2, 2), "equip_slot": "feet", "stats": {"sprint_speed": 0.05}, "buy_price": 10000, "weight": 1.2})
+		"size": Vector2i(2, 2), "equip_slot": "feet", "stats": {"sprint_speed": 0.05}, "buy_price": 10000, "weight": 1.2,
+		"icon": "res://textures/icons/armor/boots.png"})
 	_define_item("pants_cargo", {"name": "Cargo Pants", "type": ItemType.ARMOR, "rarity": ItemRarity.COMMON,
-		"size": Vector2i(2, 2), "equip_slot": "pants", "stats": {"carry_weight": 5.0}, "buy_price": 6000, "weight": 0.8})
+		"size": Vector2i(2, 2), "equip_slot": "pants", "stats": {"carry_weight": 5.0}, "buy_price": 6000, "weight": 0.8,
+		"icon": "res://textures/icons/armor/pants.png"})
+
+	# === CONSUMABLES ===
+	_define_item("medkit", {"name": "First Aid Kit", "type": ItemType.CONSUMABLE, "rarity": ItemRarity.UNCOMMON,
+		"size": Vector2i(2, 1), "is_stackable": true, "max_stack": 3, "use_time": 5.0,
+		"effects": [{"type": "heal", "amount": 50.0}], "buy_price": 5000, "weight": 0.5,
+		"icon": "res://textures/icons/consumables/medkit.png"})
+	_define_item("bandage", {"name": "Bandage", "type": ItemType.CONSUMABLE, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 10, "use_time": 2.0,
+		"effects": [{"type": "heal", "amount": 20.0}], "buy_price": 1000, "weight": 0.1,
+		"icon": "res://textures/icons/consumables/bandage.png"})
+	_define_item("health_large", {"name": "Medical Kit", "type": ItemType.CONSUMABLE, "rarity": ItemRarity.RARE,
+		"size": Vector2i(2, 2), "is_stackable": true, "max_stack": 2, "use_time": 8.0,
+		"effects": [{"type": "heal", "amount": 100.0}], "buy_price": 15000, "weight": 1.0,
+		"icon": "res://textures/icons/consumables/medical_kit.png"})
+	_define_item("stimpack", {"name": "Stimpack", "type": ItemType.CONSUMABLE, "rarity": ItemRarity.UNCOMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 5, "use_time": 1.0,
+		"effects": [{"type": "heal", "amount": 15.0}, {"type": "restore_stamina", "amount": 50.0}], "buy_price": 3000, "weight": 0.1,
+		"icon": "res://textures/icons/consumables/stimpack.png"})
+
+	# === AMMO ===
+	_define_item("ammo_556", {"name": "5.56x45mm", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 120, "ammo_type": "5.56x45", "buy_price": 300, "weight": 0.4,
+		"icon": "res://textures/icons/ammo/556.png"})
+	_define_item("ammo_45acp", {"name": ".45 ACP", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 100, "ammo_type": ".45 ACP", "buy_price": 250, "weight": 0.3,
+		"icon": "res://textures/icons/ammo/45acp.png"})
+	_define_item("ammo_9mm", {"name": "9x19mm", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 150, "ammo_type": "9x19", "buy_price": 200, "weight": 0.25,
+		"icon": "res://textures/icons/ammo/9mm.png"})
+	_define_item("ammo_762", {"name": "7.62x39mm", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 90, "ammo_type": "7.62x39", "buy_price": 350, "weight": 0.5,
+		"icon": "res://textures/icons/ammo/762.png"})
+	_define_item("ammo_12gauge", {"name": "12 Gauge Shells", "type": ItemType.AMMO, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 40, "ammo_type": "12gauge", "buy_price": 400, "weight": 0.5,
+		"icon": "res://textures/icons/ammo/12gauge.png"})
+	_define_item("ammo_special", {"name": "Special Ammo", "type": ItemType.AMMO, "rarity": ItemRarity.UNCOMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 60, "ammo_type": "special", "buy_price": 500, "weight": 0.4,
+		"icon": "res://textures/icons/ammo/special.png"})
+
+	# === MATERIALS ===
+	_define_item("scrap_small", {"name": "Scrap Metal", "type": ItemType.MATERIAL, "rarity": ItemRarity.COMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 99, "buy_price": 50, "weight": 0.2,
+		"icon": "res://textures/icons/materials/scrap.png"})
+	_define_item("scrap_medium", {"name": "Metal Parts", "type": ItemType.MATERIAL, "rarity": ItemRarity.UNCOMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 50, "buy_price": 150, "weight": 0.3,
+		"icon": "res://textures/icons/materials/metal_parts.png"})
+	_define_item("scrap_large", {"name": "Refined Metal", "type": ItemType.MATERIAL, "rarity": ItemRarity.RARE,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 30, "buy_price": 400, "weight": 0.5,
+		"icon": "res://textures/icons/materials/refined_metal.png"})
+	_define_item("weapon_parts", {"name": "Weapon Parts", "type": ItemType.MATERIAL, "rarity": ItemRarity.UNCOMMON,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 25, "buy_price": 300, "weight": 0.3,
+		"icon": "res://textures/icons/materials/weapon_parts.png"})
+	_define_item("rare_alloy", {"name": "Rare Alloy", "type": ItemType.MATERIAL, "rarity": ItemRarity.EPIC,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 15, "buy_price": 1000, "weight": 0.4,
+		"icon": "res://textures/icons/materials/rare_alloy.png"})
+	_define_item("mythic_core", {"name": "Mythic Core", "type": ItemType.MATERIAL, "rarity": ItemRarity.LEGENDARY,
+		"size": Vector2i(1, 1), "is_stackable": true, "max_stack": 5, "buy_price": 5000, "weight": 0.2,
+		"icon": "res://textures/icons/materials/mythic_core.png"})
+
+	# === AUGMENTS ===
+	_define_item("augment_damage", {"name": "Damage Augment", "type": ItemType.ATTACHMENT, "rarity": ItemRarity.EPIC,
+		"size": Vector2i(1, 1), "stats": {"damage_mult": 0.1}, "buy_price": 8000, "weight": 0.1,
+		"icon": "res://textures/icons/augments/damage.png"})
+	_define_item("augment_speed", {"name": "Speed Augment", "type": ItemType.ATTACHMENT, "rarity": ItemRarity.RARE,
+		"size": Vector2i(1, 1), "stats": {"attack_speed": 0.15}, "buy_price": 6000, "weight": 0.1,
+		"icon": "res://textures/icons/augments/speed.png"})
+	_define_item("augment_legendary", {"name": "Legendary Augment", "type": ItemType.ATTACHMENT, "rarity": ItemRarity.LEGENDARY,
+		"size": Vector2i(1, 1), "stats": {"damage_mult": 0.2, "crit_chance": 0.1}, "buy_price": 25000, "weight": 0.1,
+		"icon": "res://textures/icons/augments/legendary.png"})
 
 func _define_item(id: String, data: Dictionary):
 	item_database[id] = {"id": id, "name": data.get("name", "Unknown"), "type": data.get("type", ItemType.MATERIAL),
@@ -250,7 +330,8 @@ func _define_item(id: String, data: Dictionary):
 		"ammo_type": data.get("ammo_type", ""), "magazine_size": data.get("magazine_size", 0),
 		"armor_value": data.get("armor_value", 0.0), "armor_class": data.get("armor_class", 0),
 		"stats": data.get("stats", {}), "use_time": data.get("use_time", 1.0), "effects": data.get("effects", []),
-		"buy_price": data.get("buy_price", 0), "sell_price": data.get("sell_price", 0), "weight": data.get("weight", 0.1)}
+		"buy_price": data.get("buy_price", 0), "sell_price": data.get("sell_price", 0), "weight": data.get("weight", 0.1),
+		"icon": data.get("icon", "")}
 
 func create_container(id: String, cname: String, width: int, height: int) -> InventoryContainer:
 	var container = InventoryContainer.new(id, width, height)
@@ -267,6 +348,8 @@ func create_item(item_id: String, stack: int = 1) -> InventoryItem:
 	var item = InventoryItem.new()
 	item.item_id = item_id
 	item.display_name = def.name
+	item.description = def.get("description", "")
+	item.icon_path = def.get("icon", "")
 	item.item_type = def.type
 	item.rarity = def.rarity
 	item.grid_size = def.size

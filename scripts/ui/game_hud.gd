@@ -35,6 +35,9 @@ var hotbar_slots: Array = []
 var selected_hotbar_slot: int = 0
 
 func _ready():
+	# Add to hud group so ArenaManager can find us
+	add_to_group("hud")
+
 	skill_system = get_node_or_null("/root/SkillSystem")
 	sigil_system = get_node_or_null("/root/SigilDefenseSystem")
 	inventory_system = get_node_or_null("/root/InventorySystem")
@@ -461,6 +464,49 @@ func _on_sigil_damaged(_damage: float, health: float):
 func _on_round_started(round_num: int):
 	if wave_label:
 		wave_label.text = "Wave %d" % round_num
+
+func update_wave_info(wave_number: int, zombies_alive: int, total_zombies: int):
+	"""Update wave information display - called by ArenaManager"""
+	if wave_label:
+		if total_zombies > 0:
+			wave_label.text = "WAVE %d - %d/%d ZOMBIES" % [wave_number, zombies_alive, total_zombies]
+		else:
+			wave_label.text = "Wave %d" % wave_number
+
+func update_points(points: int):
+	"""Update points display - called by ArenaManager"""
+	# Could add a points label if needed
+	pass
+
+# ============================================
+# INTERACT PROMPT
+# ============================================
+
+var interact_prompt_label: Label = null
+
+func show_interact_prompt(text: String):
+	"""Show an interaction prompt at the center bottom of the screen"""
+	if not interact_prompt_label:
+		interact_prompt_label = Label.new()
+		interact_prompt_label.name = "InteractPrompt"
+		interact_prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		interact_prompt_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		interact_prompt_label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+		interact_prompt_label.offset_top = -80
+		interact_prompt_label.offset_bottom = -40
+		interact_prompt_label.add_theme_font_size_override("font_size", 18)
+		interact_prompt_label.add_theme_color_override("font_color", Color(1, 1, 1))
+		interact_prompt_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+		interact_prompt_label.add_theme_constant_override("outline_size", 2)
+		add_child(interact_prompt_label)
+
+	interact_prompt_label.text = text
+	interact_prompt_label.visible = true
+
+func hide_interact_prompt():
+	"""Hide the interaction prompt"""
+	if interact_prompt_label:
+		interact_prompt_label.visible = false
 
 # ============================================
 # EXTRACTION

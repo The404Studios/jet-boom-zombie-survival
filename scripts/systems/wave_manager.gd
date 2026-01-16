@@ -45,6 +45,8 @@ var backend: Node = null
 var websocket_hub: Node = null
 
 func _ready():
+	add_to_group("wave_manager")
+
 	# Check if we're the network authority
 	is_network_authority = not multiplayer.has_multiplayer_peer() or multiplayer.is_server()
 
@@ -55,16 +57,70 @@ func _ready():
 	if zombie_classes.is_empty():
 		load_default_zombie_classes()
 
-	# Only server starts waves
-	if is_network_authority:
-		# Start first wave after delay
-		await get_tree().create_timer(5.0).timeout
-		if not is_instance_valid(self) or not is_inside_tree():
-			return
-		start_next_wave()
-	else:
+	# Collect spawn points from scene if not set
+	if spawn_points.is_empty():
+		_collect_spawn_points()
+
+	# Only server starts waves - but don't auto-start, let game_coordinator control
+	# If no game_coordinator, then auto-start
+	await get_tree().create_timer(2.0).timeout
+	if not is_instance_valid(self) or not is_inside_tree():
+		return
+
+	var coordinator = get_tree().get_first_node_in_group("game_coordinator")
+	if not coordinator and is_network_authority:
+		# No coordinator - auto-start waves after delay
+		await get_tree().create_timer(3.0).timeout
+		if is_instance_valid(self) and is_inside_tree():
+			start_next_wave()
+	elif not is_network_authority:
 		# Clients request initial state
 		_request_wave_state.rpc_id(1)
+
+func _collect_spawn_points():
+	"""Automatically collect zombie spawn points from scene"""
+	spawn_points.clear()
+
+	# Find spawn points from zombie_spawn group
+	var spawns = get_tree().get_nodes_in_group("zombie_spawn")
+	for spawn in spawns:
+		if spawn is Node3D:
+			spawn_points.append(spawn)
+
+	# Also try to find SpawnPoints node in arena
+	var arena = get_tree().get_first_node_in_group("arena")
+	if arena:
+		var spawn_container = arena.get_node_or_null("SpawnPoints")
+		if spawn_container:
+			for child in spawn_container.get_children():
+				if child is Marker3D and child not in spawn_points:
+					spawn_points.append(child)
+
+	# Create default spawn points if none found
+	if spawn_points.is_empty():
+		_create_default_spawn_points()
+
+	print("WaveManager: Found %d spawn points" % spawn_points.size())
+
+func _create_default_spawn_points():
+	"""Create default spawn points around the sigil"""
+	var center = Vector3.ZERO
+	var sigil = get_tree().get_first_node_in_group("sigil")
+	if sigil:
+		center = sigil.global_position
+
+	var spawn_distance = 60.0
+	var spawn_count = 8
+
+	for i in range(spawn_count):
+		var angle = (float(i) / spawn_count) * TAU
+		var marker = Marker3D.new()
+		marker.position = center + Vector3(cos(angle) * spawn_distance, 0.5, sin(angle) * spawn_distance)
+		marker.add_to_group("zombie_spawn")
+		add_child(marker)
+		spawn_points.append(marker)
+
+	print("WaveManager: Created %d default spawn points" % spawn_count)
 
 func _init_backend():
 	backend = get_node_or_null("/root/Backend")

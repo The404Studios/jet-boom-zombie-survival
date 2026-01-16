@@ -393,22 +393,35 @@ func _handle_weapons(delta):
 # ============================================
 
 func _equip_starting_weapon():
-	# Load starting weapons
-	var pistol = ResourceCache.get_cached_resource("res://resources/weapons/pistol.tres")
+	# Load starting weapons - try multiple methods
+	var pistol: Resource = null
+
+	# Method 1: Try ResourceCache autoload
+	var cache = get_node_or_null("/root/ResourceCache")
+	if cache and cache.has_method("get_cached_resource"):
+		pistol = cache.get_cached_resource("res://resources/weapons/pistol.tres")
+
+	# Method 2: Try direct load
+	if not pistol:
+		pistol = load("res://resources/weapons/pistol.tres")
+
+	# Method 3: Try ResourceLoader
+	if not pistol and ResourceLoader.exists("res://resources/weapons/pistol.tres"):
+		pistol = ResourceLoader.load("res://resources/weapons/pistol.tres")
+
 	if pistol:
 		equipped_weapons.append(pistol)
-		_switch_weapon(0)
+		current_weapon_data = pistol
+		current_ammo = pistol.magazine_size if "magazine_size" in pistol else 15
+		reserve_ammo = current_ammo * 3
+		_update_hud()
+		print("Starting weapon equipped: pistol")
 	else:
-		# Try loading directly
-		pistol = load("res://resources/weapons/pistol.tres")
-		if pistol:
-			equipped_weapons.append(pistol)
-			_switch_weapon(0)
-		else:
-			# Create default weapon data
-			current_weapon_data = null
-			current_ammo = 15
-			reserve_ammo = 45
+		# Fallback - player starts unarmed but with ammo for when they find a weapon
+		push_warning("Could not load starting weapon - pistol.tres not found")
+		current_weapon_data = null
+		current_ammo = 15
+		reserve_ammo = 45
 
 func pickup_weapon(weapon_data: Resource) -> bool:
 	"""Pick up a new weapon - returns true if successful"""

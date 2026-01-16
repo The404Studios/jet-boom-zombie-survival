@@ -448,18 +448,25 @@ func interact(player: Node):
 func pickup(player: Node):
 	# Try to give item to player
 	var success = false
+	var inventory_system = get_node_or_null("/root/InventorySystem")
 
 	if item_data:
-		# Try to add to inventory
-		if "inventory" in player and player.inventory:
+		# Try to add to inventory system first
+		if inventory_system and inventory_system.has_method("add_item_by_id"):
+			var item_id = item_data.get("item_id", "") if item_data is Dictionary else (item_data.item_id if "item_id" in item_data else "")
+			if item_id != "":
+				var item = inventory_system.add_item_by_id(item_id, "backpack", loot_quantity)
+				success = item != null
+		# Fallback to player inventory
+		if not success and "inventory" in player and player.inventory:
 			if player.inventory.has_method("add_item"):
 				success = player.inventory.add_item(item_data, 1)
 		# Try direct pickup method
-		elif player.has_method("pickup_item"):
+		if not success and player.has_method("pickup_item"):
 			success = player.pickup_item(self)
 	else:
-		# Handle loot type pickups
-		success = _handle_loot_pickup(player)
+		# Handle loot type pickups - add to inventory instead of direct consumption
+		success = _handle_loot_pickup_to_inventory(player, inventory_system)
 
 	if success:
 		picked_up.emit(player)
@@ -472,9 +479,136 @@ func pickup(player: Node):
 		if player.has_method("show_pickup_message"):
 			player.show_pickup_message(_get_display_name())
 
+		# Show notification via chat system
+		if has_node("/root/ChatSystem"):
+			get_node("/root/ChatSystem").emit_system_message("Picked up: %s" % _get_display_name())
+
 		queue_free()
 
+func _handle_loot_pickup_to_inventory(player: Node, inventory_system: Node) -> bool:
+	"""Add loot to inventory system instead of directly consuming it"""
+	if not inventory_system:
+		# Fallback to direct consumption if no inventory system
+		return _handle_loot_pickup(player)
+
+	# Map loot types to inventory item IDs
+	var item_id = _get_inventory_item_id()
+
+	if item_id != "":
+		var item = inventory_system.add_item_by_id(item_id, "backpack", loot_quantity)
+		if item:
+			return true
+
+	# If no matching item in inventory database, create a dynamic item
+	var item = _create_dynamic_inventory_item(inventory_system)
+	if item:
+		if inventory_system.add_item(item, "backpack"):
+			return true
+
+	# Fallback to direct consumption for ammo/health (immediate use items)
+	if loot_type in ["ammo", "health"]:
+		return _handle_loot_pickup(player)
+
+	return false
+
+func _get_inventory_item_id() -> String:
+	"""Map loot type/subtype to inventory item database ID"""
+	match loot_type:
+		"ammo":
+			match loot_subtype:
+				"pistol", "9mm": return "ammo_9mm"
+				"rifle", "5.56": return "ammo_556"
+				"heavy", ".45": return "ammo_45acp"
+				"shotgun": return "ammo_12gauge"
+				"special": return "ammo_special"
+				_: return "ammo_9mm"
+		"health":
+			match loot_subtype:
+				"small": return "bandage"
+				"medium": return "medkit"
+				"large": return "health_large"
+				_: return "bandage"
+		"weapon":
+			match loot_subtype:
+				"pistol": return "pistol_glock"
+				"revolver": return "pistol_glock"
+				"shotgun": return "shotgun"
+				"ak47": return "ak47"
+				"sniper": return "rifle_m4"
+				"legendary_deagle": return "pistol_glock"
+				"minigun": return "rifle_m4"
+				_: return ""
+		"gear":
+			match loot_subtype:
+				"helmet": return "helmet_tactical"
+				"chest": return "vest_plate"
+				"gloves": return "gloves_tactical"
+				"boots": return "boots_combat"
+				"pants": return "pants_cargo"
+				_: return ""
+		"material":
+			match loot_subtype:
+				"scrap_small": return "scrap_small"
+				"scrap_medium": return "scrap_medium"
+				"scrap_large": return "scrap_large"
+				"weapon_parts": return "weapon_parts"
+				"rare_alloy": return "rare_alloy"
+				"mythic_core": return "mythic_core"
+				_: return "scrap_small"
+		"augment":
+			match loot_subtype:
+				"damage": return "augment_damage"
+				"speed": return "augment_speed"
+				"legendary": return "augment_legendary"
+				_: return "augment_damage"
+	return ""
+
+func _create_dynamic_inventory_item(inventory_system: Node):
+	"""Create a dynamic inventory item for types not in database"""
+	if not inventory_system.has_method("create_item"):
+		return null
+
+	# Create item based on loot type
+	var item = inventory_system.InventoryItem.new() if "InventoryItem" in inventory_system else null
+	if not item:
+		return null
+
+	item.item_id = "%s_%s" % [loot_type, loot_subtype]
+	item.display_name = _get_display_name()
+	item.current_stack = loot_quantity
+
+	match loot_type:
+		"ammo":
+			item.item_type = 3  # AMMO
+			item.is_stackable = true
+			item.max_stack = 150
+			item.grid_size = Vector2i(1, 1)
+		"health":
+			item.item_type = 2  # CONSUMABLE
+			item.is_stackable = true
+			item.max_stack = 5
+			item.grid_size = Vector2i(1, 1)
+			item.effects = [{"type": "heal", "amount": get_meta("heal_amount", 25)}]
+		"material":
+			item.item_type = 5  # MATERIAL
+			item.is_stackable = true
+			item.max_stack = 99
+			item.grid_size = Vector2i(1, 1)
+		"gear":
+			item.item_type = 1  # ARMOR
+			item.grid_size = Vector2i(2, 2)
+		"augment":
+			item.item_type = 5  # MATERIAL (or custom type)
+			item.grid_size = Vector2i(1, 1)
+			item.rarity = 3  # Epic
+		"weapon":
+			item.item_type = 0  # WEAPON
+			item.grid_size = Vector2i(2, 4)
+
+	return item
+
 func _handle_loot_pickup(player: Node) -> bool:
+	"""Fallback direct consumption (for immediate-use items like ammo/health)"""
 	match loot_type:
 		"ammo":
 			return _give_ammo(player)
