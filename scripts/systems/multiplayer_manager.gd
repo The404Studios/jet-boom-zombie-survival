@@ -329,10 +329,6 @@ func spawn_observed_player(peer_id: int, player_info: Dictionary) -> Node:
 
 	var observed_player_scene = load("res://scenes/player/observed_player.tscn")
 	if not observed_player_scene:
-		# Try alternate path
-		observed_player_scene = load("res://scenes/player/player_observed.tscn")
-
-	if not observed_player_scene:
 		push_warning("Could not load observed player scene")
 		return null
 

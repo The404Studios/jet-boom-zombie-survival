@@ -31,8 +31,10 @@ func _ready():
 
 	# Connect to network signals
 	if _network_manager:
-		_network_manager.player_connected.connect(_on_player_connected)
-		_network_manager.player_disconnected.connect(_on_player_disconnected)
+		if _network_manager.has_signal("player_connected"):
+			_network_manager.player_connected.connect(_on_player_connected)
+		if _network_manager.has_signal("player_disconnected"):
+			_network_manager.player_disconnected.connect(_on_player_disconnected)
 
 func _init_backend():
 	backend = get_node_or_null("/root/Backend")

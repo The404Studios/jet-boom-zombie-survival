@@ -67,20 +67,22 @@ func _initialize_systems():
 
 	# Create Shop UI
 	shop_panel = SigilShopPanel.create_shop_scene()
-	shop_panel.visible = false
-	add_child(shop_panel)
-	if shop_panel.has_method("_find_sigil_shop"):
-		shop_panel._find_sigil_shop()
+	if shop_panel:
+		shop_panel.visible = false
+		add_child(shop_panel)
+		if shop_panel.has_method("_find_sigil_shop"):
+			shop_panel._find_sigil_shop()
 
 	# Create Remantler UI
 	remantler_panel = RemantlerPanel.create_panel_scene()
-	remantler_panel.visible = false
-	add_child(remantler_panel)
+	if remantler_panel:
+		remantler_panel.visible = false
+		add_child(remantler_panel)
 
 	# Connect shop signals
-	if shop_panel.has_signal("shop_closed"):
+	if shop_panel and shop_panel.has_signal("shop_closed"):
 		shop_panel.shop_closed.connect(_on_shop_closed)
-	if remantler_panel.has_signal("panel_closed"):
+	if remantler_panel and remantler_panel.has_signal("panel_closed"):
 		remantler_panel.panel_closed.connect(_on_remantler_closed)
 
 func _on_body_entered(body):
