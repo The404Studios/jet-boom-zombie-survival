@@ -193,20 +193,20 @@ func _type_next_line():
 		_type_next_line()
 
 func _type_line_animated(line: String):
-	# Strip BBCode for typing, then apply at end
-	var clean_line = line
-	var chars_typed = 0
-
-	for c in clean_line:
+	# Type character by character, handling BBCode tags as single units
+	var i = 0
+	while i < line.length():
+		var c = line[i]
 		if c == '[':
-			# Skip BBCode tags
-			var end = clean_line.find(']', chars_typed)
+			# Find the end of the BBCode tag and output it all at once
+			var end = line.find(']', i)
 			if end != -1:
-				terminal_output.append_text(clean_line.substr(chars_typed, end - chars_typed + 1))
-				chars_typed = end + 1
+				terminal_output.append_text(line.substr(i, end - i + 1))
+				i = end + 1
 				continue
+		# Regular character - type it with delay
 		terminal_output.append_text(c)
-		chars_typed += 1
+		i += 1
 
 		# Random typing speed variation
 		var delay = typing_speed * randf_range(0.5, 1.5)
