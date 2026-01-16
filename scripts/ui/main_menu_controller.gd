@@ -1107,14 +1107,19 @@ func show_login_panel():
 	if not login_panel:
 		# Create login panel dynamically
 		var LoginPanelClass = load("res://scripts/ui/login_panel.gd")
+		if not LoginPanelClass:
+			push_error("Failed to load login_panel.gd")
+			return
 		login_panel = Control.new()
 		login_panel.set_script(LoginPanelClass)
 		login_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(login_panel)
 
 		# Connect signals
-		login_panel.login_successful.connect(_on_login_panel_success)
-		login_panel.panel_closed.connect(_on_login_panel_closed)
+		if login_panel.has_signal("login_successful"):
+			login_panel.login_successful.connect(_on_login_panel_success)
+		if login_panel.has_signal("panel_closed"):
+			login_panel.panel_closed.connect(_on_login_panel_closed)
 
 	_show_panel(login_panel)
 
@@ -1127,15 +1132,21 @@ func _on_login_panel_closed():
 func show_server_browser():
 	if not server_browser_panel:
 		var ServerBrowserClass = load("res://scripts/ui/server_browser.gd")
+		if not ServerBrowserClass:
+			push_error("Failed to load server_browser.gd")
+			return
 		server_browser_panel = Control.new()
 		server_browser_panel.set_script(ServerBrowserClass)
 		server_browser_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(server_browser_panel)
 
 		# Connect signals
-		server_browser_panel.back_pressed.connect(func(): _close_panel(server_browser_panel))
-		server_browser_panel.join_requested.connect(_on_server_join_requested)
-		server_browser_panel.create_server_requested.connect(_on_create_server_requested)
+		if server_browser_panel.has_signal("back_pressed"):
+			server_browser_panel.back_pressed.connect(func(): _close_panel(server_browser_panel))
+		if server_browser_panel.has_signal("join_requested"):
+			server_browser_panel.join_requested.connect(_on_server_join_requested)
+		if server_browser_panel.has_signal("create_server_requested"):
+			server_browser_panel.create_server_requested.connect(_on_create_server_requested)
 
 	_show_panel(server_browser_panel)
 
@@ -1172,13 +1183,18 @@ func _on_create_server_requested():
 func show_friends_panel():
 	if not friends_panel:
 		var FriendsPanelClass = load("res://scripts/ui/friends_panel.gd")
+		if not FriendsPanelClass:
+			push_error("Failed to load friends_panel.gd")
+			return
 		friends_panel = Control.new()
 		friends_panel.set_script(FriendsPanelClass)
 		friends_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 		add_child(friends_panel)
 
-		friends_panel.panel_closed.connect(func(): _close_panel(friends_panel))
-		friends_panel.friend_invited.connect(_on_friend_invited)
+		if friends_panel.has_signal("panel_closed"):
+			friends_panel.panel_closed.connect(func(): _close_panel(friends_panel))
+		if friends_panel.has_signal("friend_invited"):
+			friends_panel.friend_invited.connect(_on_friend_invited)
 
 	_show_panel(friends_panel)
 
@@ -1188,13 +1204,17 @@ func _on_friend_invited(friend_id: int):
 func show_global_chat():
 	if not global_chat:
 		var ChatPanelClass = load("res://scripts/ui/global_chat_panel.gd")
+		if not ChatPanelClass:
+			push_error("Failed to load global_chat_panel.gd")
+			return
 		global_chat = Control.new()
 		global_chat.set_script(ChatPanelClass)
 		global_chat.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
 		global_chat.position = Vector2(-360, -260)
 		add_child(global_chat)
 
-	global_chat.visible = true
+	if global_chat:
+		global_chat.visible = true
 
 func hide_global_chat():
 	if global_chat:

@@ -100,9 +100,11 @@ func _initialize_systems():
 func _setup_game_events():
 	game_events = get_node_or_null("/root/GameEvents")
 	if not game_events:
-		game_events = load("res://scripts/systems/game_event_manager.gd").new()
-		game_events.name = "GameEvents"
-		get_tree().root.add_child(game_events)
+		var ge_script = load("res://scripts/systems/game_event_manager.gd")
+		if ge_script:
+			game_events = ge_script.new()
+			game_events.name = "GameEvents"
+			get_tree().root.add_child(game_events)
 
 	# Connect to game events
 	if game_events:
