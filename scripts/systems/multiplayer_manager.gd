@@ -395,11 +395,15 @@ func _receive_event(event_name: String, data: Dictionary):
 		"player_died":
 			var peer_id = data.get("peer_id", 0)
 			if observed_players.has(peer_id):
-				observed_players[peer_id].die()
+				var obs = observed_players[peer_id]
+				if obs.has_method("die"):
+					obs.die()
 		"player_respawned":
 			var peer_id = data.get("peer_id", 0)
 			if observed_players.has(peer_id):
-				observed_players[peer_id].respawn()
+				var obs = observed_players[peer_id]
+				if obs.has_method("respawn"):
+					obs.respawn()
 
 # ============================================
 # CALLBACKS
