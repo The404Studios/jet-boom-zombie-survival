@@ -72,7 +72,10 @@ func _ready():
 
 	# Add to observed players group
 	add_to_group("observed_players")
-	add_to_group("players")
+	add_to_group("player")
+
+	# Create default animations if none exist
+	call_deferred("_create_default_animations")
 
 func _process(delta):
 	if is_dead:
@@ -177,6 +180,133 @@ func _update_nameplate():
 	if camera:
 		nameplate.look_at(camera.global_position, Vector3.UP)
 		nameplate.rotation.x = 0  # Keep upright
+
+func _create_default_animations():
+	"""Create procedural animations if model doesn't have embedded animations"""
+	if not animation_player:
+		animation_player = get_node_or_null("AnimationPlayer")
+		if not animation_player:
+			animation_player = AnimationPlayer.new()
+			animation_player.name = "AnimationPlayer"
+			add_child(animation_player)
+
+	# Check if already has animations
+	var existing_anims = animation_player.get_animation_list()
+	if existing_anims.size() > 2:  # Has more than just RESET
+		return
+
+	var library = AnimationLibrary.new()
+	var model_path = "Model" if model else "."
+
+	# Idle animation - subtle breathing motion
+	var idle_anim = Animation.new()
+	idle_anim.length = 3.0
+	idle_anim.loop_mode = Animation.LOOP_LINEAR
+	var idle_track = idle_anim.add_track(Animation.TYPE_VALUE)
+	idle_anim.track_set_path(idle_track, "%s:position" % model_path)
+	idle_anim.track_insert_key(idle_track, 0.0, Vector3(0, 0, 0))
+	idle_anim.track_insert_key(idle_track, 1.5, Vector3(0, 0.02, 0))
+	idle_anim.track_insert_key(idle_track, 3.0, Vector3(0, 0, 0))
+	library.add_animation("idle", idle_anim)
+
+	# Walk animation - bobbing motion
+	var walk_anim = Animation.new()
+	walk_anim.length = 0.8
+	walk_anim.loop_mode = Animation.LOOP_LINEAR
+	var walk_track = walk_anim.add_track(Animation.TYPE_VALUE)
+	walk_anim.track_set_path(walk_track, "%s:position" % model_path)
+	walk_anim.track_insert_key(walk_track, 0.0, Vector3(0, 0, 0))
+	walk_anim.track_insert_key(walk_track, 0.2, Vector3(0.02, 0.04, 0))
+	walk_anim.track_insert_key(walk_track, 0.4, Vector3(0, 0, 0))
+	walk_anim.track_insert_key(walk_track, 0.6, Vector3(-0.02, 0.04, 0))
+	walk_anim.track_insert_key(walk_track, 0.8, Vector3(0, 0, 0))
+	library.add_animation("walk", walk_anim)
+
+	# Run animation - faster bobbing
+	var run_anim = Animation.new()
+	run_anim.length = 0.5
+	run_anim.loop_mode = Animation.LOOP_LINEAR
+	var run_track = run_anim.add_track(Animation.TYPE_VALUE)
+	run_anim.track_set_path(run_track, "%s:position" % model_path)
+	run_anim.track_insert_key(run_track, 0.0, Vector3(0, 0, 0))
+	run_anim.track_insert_key(run_track, 0.125, Vector3(0.03, 0.06, 0))
+	run_anim.track_insert_key(run_track, 0.25, Vector3(0, 0, 0))
+	run_anim.track_insert_key(run_track, 0.375, Vector3(-0.03, 0.06, 0))
+	run_anim.track_insert_key(run_track, 0.5, Vector3(0, 0, 0))
+	library.add_animation("run", run_anim)
+
+	# Sprint animation - aggressive bobbing
+	var sprint_anim = Animation.new()
+	sprint_anim.length = 0.35
+	sprint_anim.loop_mode = Animation.LOOP_LINEAR
+	var sprint_track = sprint_anim.add_track(Animation.TYPE_VALUE)
+	sprint_anim.track_set_path(sprint_track, "%s:position" % model_path)
+	sprint_anim.track_insert_key(sprint_track, 0.0, Vector3(0, 0, 0))
+	sprint_anim.track_insert_key(sprint_track, 0.0875, Vector3(0.04, 0.08, 0))
+	sprint_anim.track_insert_key(sprint_track, 0.175, Vector3(0, 0, 0))
+	sprint_anim.track_insert_key(sprint_track, 0.2625, Vector3(-0.04, 0.08, 0))
+	sprint_anim.track_insert_key(sprint_track, 0.35, Vector3(0, 0, 0))
+	library.add_animation("sprint", sprint_anim)
+
+	# Crouch idle animation - lower subtle motion
+	var crouch_anim = Animation.new()
+	crouch_anim.length = 2.5
+	crouch_anim.loop_mode = Animation.LOOP_LINEAR
+	var crouch_track = crouch_anim.add_track(Animation.TYPE_VALUE)
+	crouch_anim.track_set_path(crouch_track, "%s:position" % model_path)
+	crouch_anim.track_insert_key(crouch_track, 0.0, Vector3(0, -0.3, 0))
+	crouch_anim.track_insert_key(crouch_track, 1.25, Vector3(0, -0.28, 0))
+	crouch_anim.track_insert_key(crouch_track, 2.5, Vector3(0, -0.3, 0))
+	library.add_animation("crouch_idle", crouch_anim)
+
+	# Aim idle animation - steady stance
+	var aim_anim = Animation.new()
+	aim_anim.length = 2.0
+	aim_anim.loop_mode = Animation.LOOP_LINEAR
+	var aim_track = aim_anim.add_track(Animation.TYPE_VALUE)
+	aim_anim.track_set_path(aim_track, "%s:position" % model_path)
+	aim_anim.track_insert_key(aim_track, 0.0, Vector3(0, 0, 0))
+	aim_anim.track_insert_key(aim_track, 1.0, Vector3(0, 0.01, 0))
+	aim_anim.track_insert_key(aim_track, 2.0, Vector3(0, 0, 0))
+	library.add_animation("aim_idle", aim_anim)
+
+	# Reload animation - hands motion simulation
+	var reload_anim = Animation.new()
+	reload_anim.length = 2.0
+	reload_anim.loop_mode = Animation.LOOP_NONE
+	var reload_track = reload_anim.add_track(Animation.TYPE_VALUE)
+	reload_anim.track_set_path(reload_track, "%s:position" % model_path)
+	reload_anim.track_insert_key(reload_track, 0.0, Vector3(0, 0, 0))
+	reload_anim.track_insert_key(reload_track, 0.3, Vector3(0, -0.05, 0.05))
+	reload_anim.track_insert_key(reload_track, 1.0, Vector3(0, -0.05, 0.05))
+	reload_anim.track_insert_key(reload_track, 1.5, Vector3(0, 0.02, -0.02))
+	reload_anim.track_insert_key(reload_track, 2.0, Vector3(0, 0, 0))
+	library.add_animation("reload", reload_anim)
+
+	# Death animation - fall over
+	var death_anim = Animation.new()
+	death_anim.length = 1.5
+	death_anim.loop_mode = Animation.LOOP_NONE
+
+	var death_pos_track = death_anim.add_track(Animation.TYPE_VALUE)
+	death_anim.track_set_path(death_pos_track, "%s:position" % model_path)
+	death_anim.track_insert_key(death_pos_track, 0.0, Vector3(0, 0, 0))
+	death_anim.track_insert_key(death_pos_track, 0.3, Vector3(0, -0.1, 0))
+	death_anim.track_insert_key(death_pos_track, 0.8, Vector3(0, -0.5, 0.3))
+	death_anim.track_insert_key(death_pos_track, 1.5, Vector3(0, -0.8, 0.5))
+
+	var death_rot_track = death_anim.add_track(Animation.TYPE_VALUE)
+	death_anim.track_set_path(death_rot_track, "%s:rotation" % model_path)
+	death_anim.track_insert_key(death_rot_track, 0.0, Vector3(0, 0, 0))
+	death_anim.track_insert_key(death_rot_track, 0.5, Vector3(-0.3, 0, 0.1))
+	death_anim.track_insert_key(death_rot_track, 1.5, Vector3(-1.57, 0, 0))
+	library.add_animation("death", death_anim)
+
+	# Add the library
+	if library.get_animation_list().size() > 0:
+		if animation_player.has_animation_library(""):
+			animation_player.remove_animation_library("")
+		animation_player.add_animation_library("", library)
 
 func _update_health_bar():
 	if not health_bar_3d:

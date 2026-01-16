@@ -1,8 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_shotgun001"]
+[gd_scene load_steps=3 format=3 uid="uid://weapon_shotgun001"]
 
 [ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_Shotgun.fbx" id="1"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="2"]
 
 [node name="WeaponShotgun" instance=ExtResource("1")]
+script = ExtResource("2")
+weapon_name = "Shotgun"
+weapon_id = "shotgun"
+damage = 80.0
+fire_rate = 60.0
+range_distance = 25.0
+accuracy = 0.7
+recoil_amount = 0.06
+magazine_size = 8
+current_ammo = 8
+reserve_ammo = 32
+ammo_type = "12gauge"
+reload_time = 0.5
 
 [node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.12, -0.65)

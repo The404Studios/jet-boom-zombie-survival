@@ -1,8 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_ak47001"]
+[gd_scene load_steps=3 format=3 uid="uid://weapon_ak47001"]
 
 [ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_AK47.fbx" id="1"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="2"]
 
 [node name="WeaponAK47" instance=ExtResource("1")]
+script = ExtResource("2")
+weapon_name = "AK-47"
+weapon_id = "ak47"
+damage = 35.0
+fire_rate = 600.0
+range_distance = 80.0
+accuracy = 0.88
+recoil_amount = 0.025
+magazine_size = 30
+current_ammo = 30
+reserve_ammo = 90
+ammo_type = "7.62x39"
+reload_time = 2.2
 
 [node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.55)

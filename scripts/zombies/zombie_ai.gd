@@ -71,14 +71,18 @@ func _find_animation_player():
 	# Check direct child first
 	if has_node("AnimationPlayer"):
 		animation_player = $AnimationPlayer
-		return
-
-	# Search in model
-	if model:
+	elif model:
+		# Search in model
 		animation_player = _search_for_animation_player(model)
 
-	if animation_player:
-		print("[Zombie] Found AnimationPlayer: ", animation_player.name)
+	# Create animation player if not found
+	if not animation_player:
+		animation_player = AnimationPlayer.new()
+		animation_player.name = "AnimationPlayer"
+		add_child(animation_player)
+
+	# Ensure default animations exist
+	_create_default_animations()
 
 func _search_for_animation_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
@@ -544,6 +548,98 @@ func update_animation():
 		if animation_player.has_animation("idle"):
 			if animation_player.current_animation != "idle":
 				animation_player.play("idle")
+
+func _create_default_animations():
+	"""Create procedural zombie animations if not present in model"""
+	if not animation_player:
+		return
+
+	var library = AnimationLibrary.new()
+	var model_path = "Model" if model else "."
+
+	# Only create animations that don't already exist
+	if not animation_player.has_animation("idle"):
+		var idle_anim = Animation.new()
+		idle_anim.length = 2.0
+		idle_anim.loop_mode = Animation.LOOP_LINEAR
+
+		# Subtle breathing/swaying motion
+		var pos_track = idle_anim.add_track(Animation.TYPE_VALUE)
+		idle_anim.track_set_path(pos_track, "%s:position" % model_path)
+		var base_pos = model.position if model else Vector3.ZERO
+		idle_anim.track_insert_key(pos_track, 0.0, base_pos)
+		idle_anim.track_insert_key(pos_track, 1.0, base_pos + Vector3(0, 0.02, 0))
+		idle_anim.track_insert_key(pos_track, 2.0, base_pos)
+
+		library.add_animation("idle", idle_anim)
+
+	if not animation_player.has_animation("walk"):
+		var walk_anim = Animation.new()
+		walk_anim.length = 0.8
+		walk_anim.loop_mode = Animation.LOOP_LINEAR
+
+		# Bobbing motion while walking
+		var pos_track = walk_anim.add_track(Animation.TYPE_VALUE)
+		walk_anim.track_set_path(pos_track, "%s:position" % model_path)
+		var base_pos = model.position if model else Vector3.ZERO
+		walk_anim.track_insert_key(pos_track, 0.0, base_pos)
+		walk_anim.track_insert_key(pos_track, 0.2, base_pos + Vector3(0, 0.03, 0))
+		walk_anim.track_insert_key(pos_track, 0.4, base_pos)
+		walk_anim.track_insert_key(pos_track, 0.6, base_pos + Vector3(0, 0.03, 0))
+		walk_anim.track_insert_key(pos_track, 0.8, base_pos)
+
+		# Slight rotation for shamble effect
+		var rot_track = walk_anim.add_track(Animation.TYPE_VALUE)
+		walk_anim.track_set_path(rot_track, "%s:rotation" % model_path)
+		var base_rot = model.rotation if model else Vector3.ZERO
+		walk_anim.track_insert_key(rot_track, 0.0, base_rot)
+		walk_anim.track_insert_key(rot_track, 0.4, base_rot + Vector3(0, 0, deg_to_rad(2)))
+		walk_anim.track_insert_key(rot_track, 0.8, base_rot + Vector3(0, 0, deg_to_rad(-2)))
+
+		library.add_animation("walk", walk_anim)
+
+	if not animation_player.has_animation("attack"):
+		var attack_anim = Animation.new()
+		attack_anim.length = 0.6
+
+		# Lunge forward motion
+		var pos_track = attack_anim.add_track(Animation.TYPE_VALUE)
+		attack_anim.track_set_path(pos_track, "%s:position" % model_path)
+		var base_pos = model.position if model else Vector3.ZERO
+		attack_anim.track_insert_key(pos_track, 0.0, base_pos)
+		attack_anim.track_insert_key(pos_track, 0.2, base_pos + Vector3(0, 0.1, 0.2))
+		attack_anim.track_insert_key(pos_track, 0.4, base_pos + Vector3(0, -0.05, 0.1))
+		attack_anim.track_insert_key(pos_track, 0.6, base_pos)
+
+		# Head/body tilt for attack
+		var rot_track = attack_anim.add_track(Animation.TYPE_VALUE)
+		attack_anim.track_set_path(rot_track, "%s:rotation" % model_path)
+		var base_rot = model.rotation if model else Vector3.ZERO
+		attack_anim.track_insert_key(rot_track, 0.0, base_rot)
+		attack_anim.track_insert_key(rot_track, 0.2, base_rot + Vector3(deg_to_rad(-20), 0, 0))
+		attack_anim.track_insert_key(rot_track, 0.6, base_rot)
+
+		library.add_animation("attack", attack_anim)
+
+	if not animation_player.has_animation("hurt"):
+		var hurt_anim = Animation.new()
+		hurt_anim.length = 0.3
+
+		# Flinch back
+		var pos_track = hurt_anim.add_track(Animation.TYPE_VALUE)
+		hurt_anim.track_set_path(pos_track, "%s:position" % model_path)
+		var base_pos = model.position if model else Vector3.ZERO
+		hurt_anim.track_insert_key(pos_track, 0.0, base_pos)
+		hurt_anim.track_insert_key(pos_track, 0.1, base_pos + Vector3(0, 0, -0.1))
+		hurt_anim.track_insert_key(pos_track, 0.3, base_pos)
+
+		library.add_animation("hurt", hurt_anim)
+
+	# Add library to animation player
+	if library.get_animation_list().size() > 0:
+		if animation_player.has_animation_library(""):
+			animation_player.remove_animation_library("")
+		animation_player.add_animation_library("", library)
 
 # ============================================
 # ZOMBIE CLASS SETUP (Called by WaveManager)

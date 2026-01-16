@@ -1,8 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_sniper001"]
+[gd_scene load_steps=3 format=3 uid="uid://weapon_sniper001"]
 
 [ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_RifleSVD.fbx" id="1"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="2"]
 
 [node name="WeaponSniper" instance=ExtResource("1")]
+script = ExtResource("2")
+weapon_name = "SVD Sniper"
+weapon_id = "sniper"
+damage = 95.0
+fire_rate = 40.0
+range_distance = 200.0
+accuracy = 0.98
+recoil_amount = 0.04
+magazine_size = 10
+current_ammo = 10
+reserve_ammo = 30
+ammo_type = "7.62x54r"
+reload_time = 2.8
 
 [node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -0.8)

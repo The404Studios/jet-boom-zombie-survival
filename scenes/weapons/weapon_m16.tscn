@@ -1,8 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_m16001"]
+[gd_scene load_steps=3 format=3 uid="uid://weapon_m16001"]
 
 [ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_M16.fbx" id="1"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="2"]
 
 [node name="WeaponM16" instance=ExtResource("1")]
+script = ExtResource("2")
+weapon_name = "M16"
+weapon_id = "m16"
+damage = 30.0
+fire_rate = 750.0
+range_distance = 90.0
+accuracy = 0.92
+recoil_amount = 0.02
+magazine_size = 30
+current_ammo = 30
+reserve_ammo = 120
+ammo_type = "5.56x45"
+reload_time = 2.0
 
 [node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.5)

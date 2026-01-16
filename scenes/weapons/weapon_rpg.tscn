@@ -1,8 +1,22 @@
-[gd_scene load_steps=2 format=3 uid="uid://weapon_rpg001"]
+[gd_scene load_steps=3 format=3 uid="uid://weapon_rpg001"]
 
 [ext_resource type="PackedScene" path="res://LP_WeaponsPack (GODOT)/Wep_RPG7.fbx" id="1"]
+[ext_resource type="Script" path="res://scripts/weapons/weapon_base.gd" id="2"]
 
 [node name="WeaponRPG" instance=ExtResource("1")]
+script = ExtResource("2")
+weapon_name = "RPG-7"
+weapon_id = "rpg"
+damage = 300.0
+fire_rate = 15.0
+range_distance = 150.0
+accuracy = 0.85
+recoil_amount = 0.1
+magazine_size = 1
+current_ammo = 1
+reserve_ammo = 5
+ammo_type = "rocket"
+reload_time = 4.0
 
 [node name="MuzzleFlash" type="GPUParticles3D" parent="." index="0"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, -0.7)
