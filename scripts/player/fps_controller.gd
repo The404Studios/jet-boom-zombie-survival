@@ -1438,7 +1438,8 @@ func _show_interact_prompt(collider: Node, hud):
 	if collider.is_in_group("barricades"):
 		if "current_health" in collider and "max_health" in collider:
 			if collider.current_health < collider.max_health:
-				hud.show_interact_prompt("[E] Hold to Repair (%d%%)" % [int(collider.current_health / collider.max_health * 100)])
+				var health_percent = int(collider.current_health / collider.max_health * 100) if collider.max_health > 0 else 0
+				hud.show_interact_prompt("[E] Hold to Repair (%d%%)" % [health_percent])
 			else:
 				hud.show_interact_prompt("Barricade Full Health")
 		return
@@ -1539,7 +1540,7 @@ func _start_nailing(barricade: Node):
 		# Calculate based on missing health
 		var health_missing = barricade.max_health - barricade.current_health if "max_health" in barricade else 100.0
 		var nail_health = barricade.nail_health if "nail_health" in barricade else 20.0
-		nails_required = int(ceil(health_missing / nail_health))
+		nails_required = int(ceil(health_missing / max(nail_health, 1.0)))
 
 	# Play starting sound
 	if has_node("/root/AudioManager"):
@@ -1609,7 +1610,8 @@ func _place_nail(hud):
 	if hud and hud.has_method("show_interact_prompt"):
 		hud.show_interact_prompt("Nailing... %d/%d" % [nails_placed, nails_required])
 	if hud and hud.has_method("update_nail_progress"):
-		hud.update_nail_progress(float(nails_placed) / float(nails_required), true)
+		var progress = float(nails_placed) / float(nails_required) if nails_required > 0 else 1.0
+		hud.update_nail_progress(progress, true)
 
 	# Check if complete
 	if nails_placed >= nails_required:

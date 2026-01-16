@@ -459,7 +459,8 @@ func _show_status_warning(message: String):
 
 func _on_sigil_damaged(_damage: float, health: float):
 	if sigil_health_bar and sigil_system:
-		sigil_health_bar.value = health / sigil_system.sigil_max_health * 100.0
+		var max_hp = sigil_system.sigil_max_health if sigil_system.sigil_max_health > 0 else 1.0
+		sigil_health_bar.value = health / max_hp * 100.0
 
 func _on_round_started(round_num: int):
 	if wave_label:

@@ -28,14 +28,14 @@ var is_reloading: bool = false
 var fire_cooldown: float = 0.0
 
 func _ready():
-	fire_cooldown = 60.0 / fire_rate
+	fire_cooldown = 60.0 / max(fire_rate, 1.0)
 
 func _process(delta):
 	if not can_shoot:
 		fire_cooldown -= delta
 		if fire_cooldown <= 0:
 			can_shoot = true
-			fire_cooldown = 60.0 / fire_rate
+			fire_cooldown = 60.0 / max(fire_rate, 1.0)
 
 func shoot() -> bool:
 	if not can_shoot or is_reloading: return false

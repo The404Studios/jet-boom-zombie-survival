@@ -101,7 +101,7 @@ func _destroy():
 		event_bus.sigil_destroyed.emit(self)
 
 func _update_visuals():
-	var health_percent = current_health / max_health
+	var health_percent = current_health / max_health if max_health > 0 else 0.0
 
 	# Determine color based on health
 	var color = COLOR_HEALTHY
@@ -160,10 +160,10 @@ func stop_repair(player: Node):
 
 # Utility
 func get_health_percent() -> float:
-	return current_health / max_health
+	return current_health / max_health if max_health > 0 else 0.0
 
 func is_critical() -> bool:
-	return current_health / max_health < 0.25
+	return (current_health / max_health if max_health > 0 else 0.0) < 0.25
 
 func reset():
 	current_health = max_health

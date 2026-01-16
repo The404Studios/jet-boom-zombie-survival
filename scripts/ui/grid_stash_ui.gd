@@ -144,18 +144,20 @@ func _create_stash_panel() -> Panel:
 	header.add_child(slots_label)
 
 	# Grid container with scroll
+	# Default stash dimensions (same as GridInventorySystem defaults)
+	var stash_width = 12
+	var stash_height = 10
+
 	var scroll = ScrollContainer.new()
 	scroll.name = "StashScroll"
 	scroll.custom_minimum_size = Vector2(
-		GridInventorySystem.new().stash_width * CELL_SIZE + 20,
-		GridInventorySystem.new().stash_height * CELL_SIZE
+		stash_width * CELL_SIZE + 20,
+		stash_height * CELL_SIZE
 	)
 	vbox.add_child(scroll)
 
 	var grid_container = Control.new()
 	grid_container.name = "StashGridContainer"
-	var stash_width = 12
-	var stash_height = 10
 	grid_container.custom_minimum_size = Vector2(stash_width * CELL_SIZE, stash_height * CELL_SIZE)
 	scroll.add_child(grid_container)
 
