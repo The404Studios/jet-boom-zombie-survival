@@ -240,6 +240,8 @@ func _sync_teleport(_area: String):
 # ============================================
 
 func get_sigil_health_percent() -> float:
+	if sigil_max_health <= 0:
+		return 0.0
 	return (sigil_health / sigil_max_health) * 100.0
 
 func is_player_in_extraction_zone(position: Vector3, radius: float = 3.0) -> bool:

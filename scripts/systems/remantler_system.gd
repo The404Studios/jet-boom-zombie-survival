@@ -202,7 +202,8 @@ func _apply_upgrade(weapon: Resource, new_tier: int):
 
 	# Apply fire rate multiplier (lower is faster)
 	var base_fire_rate = weapon.get_meta("base_fire_rate", weapon.fire_rate)
-	weapon.fire_rate = base_fire_rate / bonuses.fire_rate_mult
+	var fire_rate_mult = maxf(bonuses.fire_rate_mult, 0.01)  # Prevent division by zero
+	weapon.fire_rate = base_fire_rate / fire_rate_mult
 
 	# Apply crit chance
 	if "crit_chance_bonus" in weapon:
@@ -469,11 +470,12 @@ func get_upgrade_preview(weapon: Resource) -> Dictionary:
 	var base_fire_rate = weapon.get_meta("base_fire_rate", weapon.fire_rate * current_bonuses.fire_rate_mult)
 	var base_crit = weapon.get_meta("base_crit_chance", (weapon.crit_chance_bonus if "crit_chance_bonus" in weapon else 0.0) - current_bonuses.crit_chance)
 
+	var next_fire_rate_mult = maxf(next_bonuses.fire_rate_mult, 0.01)  # Prevent division by zero
 	preview.upgraded = {
 		"tier": next_tier,
 		"tier_name": get_tier_name(next_tier),
 		"damage": base_damage * next_bonuses.damage_mult,
-		"fire_rate": base_fire_rate / next_bonuses.fire_rate_mult,
+		"fire_rate": base_fire_rate / next_fire_rate_mult,
 		"crit_chance": base_crit + next_bonuses.crit_chance,
 		"sockets": next_bonuses.sockets
 	}

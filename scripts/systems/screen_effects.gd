@@ -356,6 +356,8 @@ func request_screen_shake(intensity: float = 0.3, duration: float = 0.2):
 
 func on_player_damaged(damage: float, max_health: float):
 	"""Called when player takes damage"""
+	if max_health <= 0:
+		return
 	var damage_percent = damage / max_health
 	if damage_percent > 0.3:
 		show_critical_damage()
@@ -366,6 +368,8 @@ func on_player_damaged(damage: float, max_health: float):
 
 func on_player_healed(amount: float, max_health: float):
 	"""Called when player heals"""
+	if max_health <= 0:
+		return
 	var heal_percent = amount / max_health
 	if heal_percent > 0.5:
 		show_full_heal()
